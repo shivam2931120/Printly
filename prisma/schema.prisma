@@ -1,0 +1,161 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+  DEVELOPER
+}
+
+enum OrderStatus {
+  PENDING
+  PRINTING
+  READY
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PAID
+  UNPAID
+  REFUNDED
+}
+
+// ===== SHOPS (Multi-tenant) =====
+model Shop {
+  id             String   @id @default(cuid())
+  shopName       String
+  tagline        String   @default("Print Shop")
+  operatingHours String   @default("9:00 AM - 6:00 PM")
+  location       String   @default("")
+  contact        String   @default("")
+  email          String   @default("")
+  logo           String?
+  primaryColor   String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  users          User[]
+  orders         Order[]
+  products       Product[]
+  services       Service[]
+  inventory      InventoryItem[]
+}
+
+// ===== USERS =====
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String?  @unique
+  email     String   @unique
+  name      String?
+  avatar    String?
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  shopId    String?
+  shop      Shop?    @relation(fields: [shopId], references: [id])
+  orders    Order[]
+}
+
+// ===== PRODUCTS =====
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  category    String
+  price       Float
+  stock       Int
+  image       String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  shopId      String?
+  shop        Shop?    @relation(fields: [shopId], references: [id])
+  orderItems  OrderItem[]
+}
+
+// ===== SERVICES =====
+model Service {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  category    String
+  basePrice   Float
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  shopId      String?
+  shop        Shop?    @relation(fields: [shopId], references: [id])
+  variants    ServiceVariant[]
+  orderItems  OrderItem[]
+}
+
+model ServiceVariant {
+  id        String   @id @default(cuid())
+  name      String
+  price     Float
+  serviceId String
+  service   Service  @relation(fields: [serviceId], references: [id])
+}
+
+// ===== ORDERS =====
+model Order {
+  id            String        @id @default(cuid())
+  orderToken    String        @unique @default(cuid())
+  totalAmount   Float
+  status        OrderStatus   @default(PENDING)
+  paymentStatus PaymentStatus @default(UNPAID)
+  fileName      String?
+  pageCount     Int?
+  copies        Int?
+  paperSize     String?
+  colorMode     String?
+  sides         String?
+  binding       String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  
+  userId        String?
+  user          User?         @relation(fields: [userId], references: [id])
+  shopId        String?
+  shop          Shop?         @relation(fields: [shopId], references: [id])
+  items         OrderItem[]
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id])
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id])
+  serviceId String?
+  service   Service? @relation(fields: [serviceId], references: [id])
+  quantity  Int
+  price     Float
+  details   Json?
+}
+
+// ===== INVENTORY =====
+model InventoryItem {
+  id        String @id @default(cuid())
+  name      String
+  stock     Int
+  unit      String
+  threshold Int
+  
+  shopId    String
+  shop      Shop   @relation(fields: [shopId], references: [id])
+}
