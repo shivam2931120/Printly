@@ -1,29 +1,18 @@
 import React, { useState } from 'react';
 import { Icon } from '../ui/Icon';
 
-// Demo accounts for testing
-const DEMO_ACCOUNTS = {
-    developer: {
-        email: 'dev@printly.in',
-        password: 'dev123',
-        name: 'Developer',
-        isAdmin: true,
-        isDeveloper: true,
-    },
-    admin: {
-        email: 'admin@printly.in',
-        password: 'admin123',
-        name: 'Admin User',
-        isAdmin: true,
-        isDeveloper: false,
-    },
-    student: {
-        email: 'student@college.edu',
-        password: 'student123',
-        name: 'Demo Student',
-        isAdmin: false,
-        isDeveloper: false,
-    },
+import { supabase } from '../../services/supabase';
+
+// Map database roles to frontend permissions
+const mapUserRole = (dbUser: any) => {
+    return {
+        id: dbUser.id,
+        email: dbUser.email,
+        name: dbUser.name || dbUser.email.split('@')[0],
+        isAdmin: dbUser.role === 'ADMIN' || dbUser.role === 'DEVELOPER',
+        isDeveloper: dbUser.role === 'DEVELOPER',
+        avatar: dbUser.avatar
+    };
 };
 
 interface SignInModalProps {
@@ -47,126 +36,71 @@ export const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onSig
         setError('');
         setIsLoading(true);
 
-        // Simulate authentication delay
-        await new Promise(resolve => setTimeout(resolve, 800));
+        try {
+            if (isSignUp) {
+                // Check if user already exists
+                const { data: existingUser } = await supabase
+                    .from('User')
+                    .select('email')
+                    .eq('email', email)
+                    .single();
 
-        // Check for developer account
-        if (email === DEMO_ACCOUNTS.developer.email) {
-            if (password === DEMO_ACCOUNTS.developer.password) {
-                const userData = {
-                    id: 'dev_main',
-                    email: DEMO_ACCOUNTS.developer.email,
-                    name: DEMO_ACCOUNTS.developer.name,
-                    isAdmin: true,
-                    isDeveloper: true,
-                };
+                if (existingUser) {
+                    setError('User with this email already exists');
+                    setIsLoading(false);
+                    return;
+                }
+
+                // Create new user
+                const { data: newUser, error: createError } = await supabase
+                    .from('User')
+                    .insert([
+                        {
+                            email,
+                            password, // Storing directly as per current requirement
+                            name,
+                            role: 'USER', // Default role
+                        }
+                    ])
+                    .select()
+                    .single();
+
+                if (createError) throw createError;
+
+                if (newUser) {
+                    const userData = mapUserRole(newUser);
+                    localStorage.setItem('printwise_user', JSON.stringify(userData));
+                    onSignIn(userData);
+                    onClose();
+                }
+            } else {
+                // Sign In
+                const { data: user, error: fetchError } = await supabase
+                    .from('User')
+                    .select('*')
+                    .eq('email', email)
+                    .eq('password', password)
+                    .single();
+
+                if (fetchError || !user) {
+                    setError('Invalid email or password');
+                    setIsLoading(false);
+                    return;
+                }
+
+                const userData = mapUserRole(user);
                 localStorage.setItem('printwise_user', JSON.stringify(userData));
-                setIsLoading(false);
                 onSignIn(userData);
                 onClose();
-                return;
-            } else {
-                setError('Invalid password for developer account');
-                setIsLoading(false);
-                return;
             }
+        } catch (err: any) {
+            console.error('Auth error:', err);
+            setError(err.message || 'An error occurred during authentication');
+        } finally {
+            setIsLoading(false);
         }
-
-        // Check for demo admin account
-        if (email === DEMO_ACCOUNTS.admin.email) {
-            if (password === DEMO_ACCOUNTS.admin.password) {
-                const userData = {
-                    id: 'admin_demo',
-                    email: DEMO_ACCOUNTS.admin.email,
-                    name: DEMO_ACCOUNTS.admin.name,
-                    isAdmin: true,
-                    isDeveloper: false,
-                };
-                localStorage.setItem('printwise_user', JSON.stringify(userData));
-                setIsLoading(false);
-                onSignIn(userData);
-                onClose();
-                return;
-            } else {
-                setError('Invalid password for admin account');
-                setIsLoading(false);
-                return;
-            }
-        }
-
-        // Check for demo student account
-        if (email === DEMO_ACCOUNTS.student.email) {
-            if (password === DEMO_ACCOUNTS.student.password) {
-                const userData = {
-                    id: 'student_demo',
-                    email: DEMO_ACCOUNTS.student.email,
-                    name: DEMO_ACCOUNTS.student.name,
-                    isAdmin: false,
-                };
-                localStorage.setItem('printwise_user', JSON.stringify(userData));
-                setIsLoading(false);
-                onSignIn(userData);
-                onClose();
-                return;
-            } else {
-                setError('Invalid password for student account');
-                setIsLoading(false);
-                return;
-            }
-        }
-
-        // For any other email - check if contains 'admin' for admin access
-        const isAdmin = email.toLowerCase().includes('admin');
-
-        // Store in localStorage for persistence
-        const userData = {
-            id: `user_${Date.now()}`,
-            email,
-            name: name || email.split('@')[0],
-            isAdmin,
-        };
-        localStorage.setItem('printwise_user', JSON.stringify(userData));
-
-        setIsLoading(false);
-        onSignIn(userData);
-        onClose();
     };
 
-    const handleDemoLogin = async (type: 'admin' | 'student') => {
-        setIsLoading(true);
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        const account = DEMO_ACCOUNTS[type];
-        const userData = {
-            id: `${type}_demo`,
-            email: account.email,
-            name: account.name,
-            isAdmin: account.isAdmin,
-        };
-        localStorage.setItem('printwise_user', JSON.stringify(userData));
-
-        setIsLoading(false);
-        onSignIn(userData);
-        onClose();
-    };
-
-    const handleGoogleSignIn = async () => {
-        setIsLoading(true);
-        // Simulate Google OAuth
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        const userData = {
-            id: `google_${Date.now()}`,
-            email: 'student@college.edu',
-            name: 'Google User',
-            isAdmin: false,
-        };
-        localStorage.setItem('printwise_user', JSON.stringify(userData));
-
-        setIsLoading(false);
-        onSignIn(userData);
-        onClose();
-    };
 
     return (
         <div className="fixed inset-0 z-[200] flex items-center justify-center">
@@ -204,27 +138,6 @@ export const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onSig
 
                 {/* Content */}
                 <div className="p-6">
-                    {/* Google Sign In */}
-                    <button
-                        onClick={handleGoogleSignIn}
-                        disabled={isLoading}
-                        className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white dark:bg-slate-800 border border-border-light dark:border-border-dark rounded-xl font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
-                    >
-                        <img
-                            alt="Google"
-                            className="w-5 h-5"
-                            src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-                        />
-                        Continue with Google
-                    </button>
-
-                    {/* Divider */}
-                    <div className="flex items-center gap-4 my-6">
-                        <div className="flex-1 h-px bg-border-light dark:bg-border-dark" />
-                        <span className="text-sm text-slate-400">or</span>
-                        <div className="flex-1 h-px bg-border-light dark:bg-border-dark" />
-                    </div>
-
                     {/* Form */}
                     <form onSubmit={handleSubmit} className="space-y-4">
                         {isSignUp && (
@@ -307,36 +220,6 @@ export const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onSig
                         </button>
                     </p>
 
-                    {/* Demo Accounts Section */}
-                    <div className="mt-6 pt-6 border-t border-border-light dark:border-border-dark">
-                        <p className="text-center text-xs text-slate-500 dark:text-slate-400 mb-3">
-                            <Icon name="science" className="text-xs align-middle mr-1" />
-                            Quick Demo Login
-                        </p>
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => handleDemoLogin('admin')}
-                                disabled={isLoading}
-                                className="flex-1 py-2.5 px-3 rounded-lg bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-sm font-medium hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                            >
-                                <Icon name="admin_panel_settings" className="text-lg" />
-                                Admin
-                            </button>
-                            <button
-                                onClick={() => handleDemoLogin('student')}
-                                disabled={isLoading}
-                                className="flex-1 py-2.5 px-3 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-sm font-medium hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                            >
-                                <Icon name="school" className="text-lg" />
-                                Student
-                            </button>
-                        </div>
-                        <div className="mt-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 text-xs text-slate-500 dark:text-slate-400">
-                            <p className="font-medium mb-1">Demo Credentials:</p>
-                            <p>👤 Admin: <code className="bg-slate-200 dark:bg-slate-700 px-1 rounded">admin@printwise.in</code> / <code className="bg-slate-200 dark:bg-slate-700 px-1 rounded">admin123</code></p>
-                            <p>🎓 Student: <code className="bg-slate-200 dark:bg-slate-700 px-1 rounded">student@college.edu</code> / <code className="bg-slate-200 dark:bg-slate-700 px-1 rounded">student123</code></p>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
