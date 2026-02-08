@@ -4,6 +4,7 @@ export type ViewMode = 'student' | 'admin' | 'developer';
 // ===== USER SESSION =====
 export interface User {
   id: string;
+  authId?: string; // Supabase Auth ID
   email: string;
   name: string;
   avatar?: string;
@@ -92,14 +93,50 @@ export const DEFAULT_PRICING: PricingConfig = {
 export type OrderStatus = 'pending' | 'confirmed' | 'printing' | 'ready' | 'completed' | 'cancelled';
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
 
+// ===== CART & ORDER =====
+export type CartItemType = 'product' | 'print';
+
+export interface BaseCartItem {
+  id: string; // Unique ID for valid React keys and removal
+  type: CartItemType;
+  price: number;
+  quantity: number;
+  name: string;
+}
+
+export interface ProductCartItem extends BaseCartItem {
+  type: 'product';
+  productId: string;
+  image?: string;
+}
+
+export interface PrintCartItem extends BaseCartItem {
+  type: 'print';
+  file?: File; // In-memory only (not persisted reliably)
+  fileUrl?: string; // For persistence/cloud
+  fileName: string;
+  fileSize?: string;
+  options: PrintOptions;
+  pageCount: number;
+}
+
+export type CartItem = ProductCartItem | PrintCartItem;
+
 export interface Order {
   id: string;
-  userId: string;
+  userId?: string; // Optional for guest orders
   userEmail: string;
   userName: string;
-  fileName: string;
-  pageCount: number;
-  options: PrintOptions;
+
+  // Unified items list
+  items: CartItem[];
+  type: 'mixed' | 'print' | 'product'; // 'mixed' is preferred for new orders
+
+  // Retroactive support (optional)
+  fileName?: string;
+  pageCount?: number;
+  options?: PrintOptions;
+
   totalAmount: number;
   status: OrderStatus;
   paymentStatus: PaymentStatus;

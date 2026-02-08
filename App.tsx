@@ -171,6 +171,7 @@ const App: React.FC = () => {
           onSignOut={handleSignOut}
           darkMode={darkMode}
           onToggleDarkMode={() => setDarkMode(!darkMode)}
+          onNavigate={(view) => setView(view)}
         />
       ) : view === 'student' ? (
         renderStudentContent()

@@ -1,20 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Icon } from './ui/Icon';
-import { PrintOptions, PricingConfig, DEFAULT_PRICING, User, ShopConfig, DEFAULT_SHOP_CONFIG } from '../types';
+import { PrintOptions, PricingConfig, DEFAULT_PRICING, User, ShopConfig, DEFAULT_SHOP_CONFIG, Order, CartItem, Product } from '../types';
+import { StudentShop } from './student/StudentShop';
 import { initiatePayment } from '../services/razorpay';
+import { createOrder } from '../services/data';
 import { OrderConfirmation, generateOrderToken } from './user/OrderConfirmation';
 
-// Order type for confirmed orders
+// Order type for confirmation modal
 interface ConfirmedOrder {
   id: string;
   tokenNumber: string;
   fileName: string;
   pageCount: number;
-  options: PrintOptions;
+  options: PrintOptions; // For print jobs
   totalAmount: number;
   status: string;
   createdAt: string;
   estimatedReady?: string;
+  items?: CartItem[]; // For unified orders
 }
 
 type PageView = 'home' | 'orders' | 'support';
@@ -32,27 +35,15 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   onSignInClick,
   pricing = DEFAULT_PRICING
 }) => {
+  // ===== SHARED STATE =====
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [shopConfig, setShopConfig] = useState<ShopConfig>(DEFAULT_SHOP_CONFIG);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // ===== PRINT STATE (Current Job) =====
   const [file, setFile] = useState<File | null>(null);
   const [pageCount, setPageCount] = useState<number>(1);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'success' | 'error'>('idle');
-  const [confirmedOrder, setConfirmedOrder] = useState<ConfirmedOrder | null>(null);
-  const [shopConfig, setShopConfig] = useState<ShopConfig>(DEFAULT_SHOP_CONFIG);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Load shop config
-  useEffect(() => {
-    const stored = localStorage.getItem('printwise_shop_config');
-    if (stored) {
-      try {
-        setShopConfig({ ...DEFAULT_SHOP_CONFIG, ...JSON.parse(stored) });
-      } catch (e) {
-        console.error('Failed to parse shop config:', e);
-      }
-    }
-  }, []);
-
   const [options, setOptions] = useState<PrintOptions>({
     copies: 1,
     paperSize: 'a4',
@@ -61,162 +52,188 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
     sides: 'double',
     binding: 'none'
   });
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [totalPrice, setTotalPrice] = useState(0);
+  // ===== CHECKOUT STATE =====
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [confirmedOrder, setConfirmedOrder] = useState<ConfirmedOrder | null>(null);
 
-  // Calculate price based on pricing config
+  // Guest Checkout State
+  const [showGuestDetails, setShowGuestDetails] = useState(false);
+  const [guestDetails, setGuestDetails] = useState({ name: '', email: '' });
+
+  // Load shop config
   useEffect(() => {
-    if (!file || pageCount < 1) {
-      setTotalPrice(0);
-      return;
+    const stored = localStorage.getItem('printwise_shop_config');
+    if (stored) {
+      try {
+        setShopConfig({ ...DEFAULT_SHOP_CONFIG, ...JSON.parse(stored) });
+      } catch (e) { console.error(e); }
     }
+  }, []);
 
+  // Calculate Print Price (for current configuration)
+  const calculatePrintPrice = () => {
+    if (!file || pageCount < 1) return 0;
     const baseRate = options.colorMode === 'color' ? pricing.perPageColor : pricing.perPageBW;
     const paperMultiplier = pricing.paperSizeMultiplier[options.paperSize];
     let cost = pageCount * baseRate * options.copies * paperMultiplier;
-
-    // Double-sided discount
-    if (options.sides === 'double') {
-      cost -= (pageCount * pricing.doubleSidedDiscount * options.copies);
-    }
-
-    // Binding
+    if (options.sides === 'double') cost -= (pageCount * pricing.doubleSidedDiscount * options.copies);
     cost += pricing.bindingPrices[options.binding];
-
-    // Service fees
     cost += pricing.serviceFee;
-
-    setTotalPrice(Math.max(0, cost));
-  }, [options, file, pageCount, pricing]);
-
-  const updateOption = <K extends keyof PrintOptions>(key: K, value: PrintOptions[K]) => {
-    setOptions(prev => ({ ...prev, [key]: value }));
+    return Math.max(0, cost);
   };
+  const currentPrintPrice = calculatePrintPrice();
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
+  // ===== HANDLERS =====
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const droppedFile = e.dataTransfer.files[0];
-    if (droppedFile && droppedFile.type === 'application/pdf') {
-      setFile(droppedFile);
-      setPageCount(1); // Reset to 1, user will input actual count
-    } else {
-      alert('Please upload a valid PDF file.');
-    }
-  };
-
+  // Print Handlers
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
       setPageCount(1);
     }
   };
-
-  const triggerFileUpload = () => {
-    fileInputRef.current?.click();
+  const updateOption = <K extends keyof PrintOptions>(key: K, value: PrintOptions[K]) => {
+    setOptions(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleNavigation = (page: PageView) => {
-    setIsMobileMenuOpen(false);
-    if (onNavigate) {
-      onNavigate(page);
-    }
+  // Cart Handlers
+  const addToCartPrint = () => {
+    if (!file) return;
+    const newItem: CartItem = {
+      id: `print-${Date.now()}`,
+      type: 'print',
+      name: `Print: ${file.name}`,
+      price: currentPrintPrice,
+      quantity: 1,
+      // Print specific
+      fileName: file.name,
+      pageCount: pageCount,
+      options: { ...options },
+      file: file // Note: In-memory only
+    };
+    setCart(prev => [...prev, newItem]);
+    setFile(null); // Reset print form
+    setPageCount(1);
+    setIsCartOpen(true);
   };
 
-  const handlePayment = async () => {
-    if (!file || !currentUser) {
-      if (!currentUser && onSignInClick) {
-        onSignInClick();
+  const addToCartProduct = (product: Product) => {
+    setCart(prev => {
+      const existing = prev.find(item => item.type === 'product' && item.productId === product.id);
+      if (existing) {
+        return prev.map(item =>
+          item.id === existing.id
+            ? { ...item, quantity: Math.min(item.quantity + 1, product.stock), price: product.price }
+            : item
+        );
       }
-      return;
+      return [...prev, {
+        id: `prod-${product.id}-${Date.now()}`,
+        type: 'product',
+        productId: product.id,
+        name: product.name,
+        price: product.price,
+        quantity: 1,
+        image: product.image
+      }];
+    });
+    setIsCartOpen(true);
+  };
+
+  const removeFromCart = (itemId: string) => {
+    setCart(prev => prev.filter(item => item.id !== itemId));
+  };
+
+  const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+  // Checkout Logic
+  const handleCheckoutClick = () => {
+    if (currentUser) {
+      processCheckout({ name: currentUser.name, email: currentUser.email, id: currentUser.id });
+    } else {
+      setShowGuestDetails(true);
     }
+  };
 
+  const processCheckout = async (user: { name: string, email: string, id?: string }) => {
     setIsProcessingPayment(true);
-    setPaymentStatus('idle');
-
     const tokenNumber = generateOrderToken();
     const orderId = `ORD-${tokenNumber}-${Date.now()}`;
 
     await initiatePayment(
       {
-        amount: totalPrice,
+        amount: cartTotal,
         orderId,
-        description: `Print Order: ${file.name} (${pageCount} pages)`,
-        customerName: currentUser.name,
-        customerEmail: currentUser.email,
+        description: `Order: ${cart.length} items`,
+        customerName: user.name,
+        customerEmail: user.email,
       },
       (response) => {
-        console.log('Payment successful:', response);
-        setPaymentStatus('success');
-        setIsProcessingPayment(false);
-
-        // Calculate estimated ready time (30 mins from now)
+        // Success
         const estimatedTime = new Date();
         estimatedTime.setMinutes(estimatedTime.getMinutes() + 30);
-        const estimatedReady = estimatedTime.toLocaleTimeString('en-IN', {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true
-        });
 
-        // Create order with token number
-        const order: ConfirmedOrder = {
+        // Construct Unified Order
+        const newOrder: Order = {
           id: orderId,
-          tokenNumber,
-          fileName: file.name,
-          pageCount,
-          options: { ...options },
-          totalAmount: totalPrice,
+          userId: user.id, // Optional
+          userEmail: user.email,
+          userName: user.name,
+          type: 'mixed',
+          items: cart,
+          totalAmount: cartTotal,
           status: 'confirmed',
-          createdAt: new Date().toISOString(),
-          estimatedReady,
-        };
-
-        // Save order to localStorage with user info
-        const orderForStorage = {
-          ...order,
+          paymentStatus: 'paid',
           paymentId: response.razorpay_payment_id,
-          userId: currentUser.id,
-          userName: currentUser.name,
-          userEmail: currentUser.email,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         };
-        const existingOrders = JSON.parse(localStorage.getItem('printwise_orders') || '[]');
-        localStorage.setItem('printwise_orders', JSON.stringify([orderForStorage, ...existingOrders]));
 
-        // Show confirmation modal
-        setConfirmedOrder(order);
+        // Create Order in Supabase
+        createOrder(newOrder).then(result => {
+          if (result.success) {
+            // Show Confirmation
+            setConfirmedOrder({
+              id: orderId,
+              tokenNumber,
+              fileName: `Order (${cart.length} items)`,
+              pageCount: 0,
+              options: options,
+              totalAmount: cartTotal,
+              status: 'confirmed',
+              createdAt: new Date().toISOString(),
+              estimatedReady: estimatedTime.toLocaleTimeString(),
+              items: cart
+            });
+
+            setCart([]);
+            setIsCartOpen(false);
+            setShowGuestDetails(false);
+            setIsProcessingPayment(false);
+            setPaymentStatus('success');
+          } else {
+            console.error('Failed to save order:', result.error);
+            setIsProcessingPayment(false);
+            setPaymentStatus('error');
+            alert('Payment successful but failed to save order. Please contact support.');
+          }
+        });
       },
       (error) => {
-        console.error('Payment error:', error);
-        setPaymentStatus('error');
+        console.error('Payment error', error);
         setIsProcessingPayment(false);
+        setPaymentStatus('error');
       }
     );
   };
 
-  const handleConfirmationClose = () => {
-    setConfirmedOrder(null);
-    setFile(null);
-    setPageCount(1);
-    setPaymentStatus('idle');
+  const handleNavigation = (page: PageView) => {
+    setIsMobileMenuOpen(false);
+    onNavigate?.(page);
   };
-
-  const handleViewOrders = () => {
-    setConfirmedOrder(null);
-    setFile(null);
-    setPageCount(1);
-    setPaymentStatus('idle');
-    if (onNavigate) {
-      onNavigate('orders');
-    }
-  };
-
-  const fileSizeFormatted = file ? `${(file.size / (1024 * 1024)).toFixed(2)} MB` : '';
 
   return (
     <div className="flex flex-col min-h-screen bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 transition-colors duration-200">
@@ -224,40 +241,48 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
       <header className="sticky top-0 z-50 w-full border-b border-border-light dark:border-border-dark bg-surface-light/80 dark:bg-surface-dark/80 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-2">
-              <div className="flex items-center justify-center size-8 rounded-lg bg-primary/10 text-primary">
-                <Icon name="print" className="text-2xl" />
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-2">
+                <div className="flex items-center justify-center size-8 rounded-lg bg-primary/10 text-primary">
+                  <Icon name="print" className="text-2xl" />
+                </div>
+                <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white hidden sm:block">{shopConfig.shopName}</h1>
               </div>
-              <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">{shopConfig.shopName}</h1>
             </div>
 
             {/* Desktop Navigation */}
-            <div className="hidden sm:flex items-center gap-4">
-              <button
-                onClick={() => handleNavigation('orders')}
-                className="px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
-              >
+            <div className="flex items-center gap-4">
+              <button onClick={() => handleNavigation('orders')} className="hidden sm:block px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
                 My Orders
               </button>
+
+              {/* Cart Trigger */}
               <button
-                onClick={() => handleNavigation('support')}
-                className="px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+                onClick={() => setIsCartOpen(true)}
+                className="relative p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                title="View Cart"
               >
-                Support
+                <Icon name="shopping_cart" className="text-xl" />
+                {cart.length > 0 && (
+                  <span className="absolute -top-1 -right-1 flex items-center justify-center size-5 bg-primary text-white text-[10px] font-bold rounded-full border-2 border-white dark:border-slate-900">
+                    {cart.length}
+                  </span>
+                )}
               </button>
 
               {!currentUser ? (
                 <button
                   onClick={onSignInClick}
-                  className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary-hover transition-colors"
+                  className="flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-primary transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/50"
+                  title="Staff Login"
                 >
-                  <Icon name="login" />
-                  Sign In
+                  <Icon name="lock" className="text-sm" />
+                  <span className="hidden lg:inline">Staff</span>
                 </button>
               ) : (
-                <div className="flex items-center gap-3 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800">
+                <div className="hidden sm:flex items-center gap-3 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800">
                   <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                    Hi, {currentUser.name.split(' ')[0]}
+                    {currentUser.name.split(' ')[0]}
                   </span>
                   {currentUser.avatar ? (
                     <img src={currentUser.avatar} className="size-7 rounded-full" alt="User" />
@@ -269,422 +294,261 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                 </div>
               )}
             </div>
-
-            {/* Mobile Menu Button */}
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="sm:hidden text-slate-500 hover:text-slate-700 dark:text-slate-400 p-2"
-            >
-              <Icon name={isMobileMenuOpen ? "close" : "menu"} className="text-2xl" />
-            </button>
           </div>
         </div>
-
-        {/* Mobile Menu */}
-        {isMobileMenuOpen && (
-          <div className="sm:hidden border-t border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark p-4 space-y-3">
-            {!currentUser ? (
-              <button
-                onClick={() => { setIsMobileMenuOpen(false); onSignInClick?.(); }}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-primary text-white text-sm font-semibold"
-              >
-                <Icon name="login" />
-                Sign In
-              </button>
-            ) : (
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-100 dark:bg-slate-800">
-                <div className="size-8 rounded-full bg-primary/20 flex items-center justify-center">
-                  <Icon name="person" className="text-primary" />
-                </div>
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                  {currentUser.name}
-                </span>
-              </div>
-            )}
-            <div className="space-y-1 pt-2">
-              <button
-                onClick={() => handleNavigation('orders')}
-                className="w-full flex items-center gap-3 px-3 py-2.5 text-base font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-              >
-                <Icon name="receipt_long" className="text-slate-500" />
-                My Orders
-              </button>
-              <button
-                onClick={() => handleNavigation('support')}
-                className="w-full flex items-center gap-3 px-3 py-2.5 text-base font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-              >
-                <Icon name="support_agent" className="text-slate-500" />
-                Support
-              </button>
-            </div>
-          </div>
-        )}
       </header>
 
-      {/* Success Message */}
-      {paymentStatus === 'success' && (
-        <div className="bg-green-500 text-white px-4 py-3 text-center">
-          <Icon name="check_circle" className="mr-2" />
-          Payment successful! Your order has been placed.
+      {/* Main Content */}
+      <main className="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12 space-y-20">
+
+        {/* Section 1: Upload & Print */}
+        <section>
+          <div className="mb-10 text-center lg:text-left">
+            <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 dark:text-white mb-3">
+              Upload & Print Documents
+            </h2>
+            <p className="text-lg text-slate-500 dark:text-slate-400 max-w-2xl mx-auto lg:mx-0">
+              Upload your PDF, configure settings, and add to cart directly.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+            {/* Upload Area */}
+            <div className="lg:col-span-7 xl:col-span-8 space-y-8">
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className={`group relative flex flex-col items-center justify-center w-full min-h-[240px] px-6 py-12 bg-surface-light dark:bg-surface-dark border-2 border-dashed ${file ? 'border-primary bg-primary/5' : 'border-primary/30'} dark:border-primary/20 rounded-xl hover:border-primary transition-all cursor-pointer`}
+              >
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileSelect}
+                  accept="application/pdf"
+                  className="hidden"
+                />
+                <div className="size-16 mb-4 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                  <Icon name={file ? "check_circle" : "cloud_upload"} className="text-4xl" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">
+                  {file ? file.name : "Upload your PDF"}
+                </h3>
+                <p className="text-slate-500 dark:text-slate-400 text-sm mb-6 text-center max-w-xs">
+                  {file ? "File selected. Configure options below." : "Drag & drop files here or click to browse"}
+                </p>
+              </div>
+
+              {/* Options */}
+              {file && (
+                <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-6 sm:p-8 space-y-8 animate-fade-in">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    {/* Page Count */}
+                    <div className="space-y-3">
+                      <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Page Count</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={pageCount}
+                        onChange={(e) => setPageCount(Math.max(1, parseInt(e.target.value) || 1))}
+                        className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg font-bold"
+                      />
+                    </div>
+                    {/* Copies */}
+                    <div className="space-y-3">
+                      <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Copies</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={options.copies}
+                        onChange={(e) => updateOption('copies', Math.max(1, parseInt(e.target.value) || 1))}
+                        className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    {/* Paper Size */}
+                    <div className="space-y-3">
+                      <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Paper Size</label>
+                      <select value={options.paperSize} onChange={(e) => updateOption('paperSize', e.target.value as any)} className="w-full p-3 bg-background-light dark:bg-background-dark border-none rounded-lg text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-primary">
+                        <option value="a4">A4</option>
+                        <option value="a3">A3</option>
+                      </select>
+                    </div>
+                    {/* Color */}
+                    <div className="space-y-3">
+                      <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Color</label>
+                      <select value={options.colorMode} onChange={(e) => updateOption('colorMode', e.target.value as any)} className="w-full p-3 bg-background-light dark:bg-background-dark border-none rounded-lg text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-primary">
+                        <option value="bw">B&W</option>
+                        <option value="color">Color</option>
+                      </select>
+                    </div>
+                    {/* Sides */}
+                    <div className="space-y-3">
+                      <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Sides</label>
+                      <select value={options.sides} onChange={(e) => updateOption('sides', e.target.value as any)} className="w-full p-3 bg-background-light dark:bg-background-dark border-none rounded-lg text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-primary">
+                        <option value="single">Single</option>
+                        <option value="double">Double</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Add to Cart Panel */}
+            <div className="lg:col-span-5 xl:col-span-4">
+              <div className="sticky top-24 bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Pricing Summary</h3>
+                {!file ? (
+                  <div className="text-center py-8 text-slate-400">
+                    <p>Upload a file to estimate cost</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-600 dark:text-slate-400">Estimated Cost</span>
+                      <span className="font-bold text-slate-900 dark:text-white">₹{currentPrintPrice.toFixed(2)}</span>
+                    </div>
+                    <button
+                      onClick={addToCartPrint}
+                      className="w-full py-3.5 bg-primary text-white font-bold rounded-xl shadow-lg hover:bg-primary-hover transition-all flex items-center justify-center gap-2"
+                    >
+                      <Icon name="add_shopping_cart" />
+                      Add to Cart
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <hr className="border-border-light dark:border-border-dark" />
+
+        {/* Section 2: Shop */}
+        <section>
+          <StudentShop onAddToCart={addToCartProduct} />
+        </section>
+
+      </main>
+
+      {/* Cart Drawer */}
+      {isCartOpen && (
+        <div className="fixed inset-0 z-[100] flex justify-end">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsCartOpen(false)} />
+          <div className="relative w-full max-w-md bg-white dark:bg-surface-darker h-full shadow-2xl flex flex-col animate-slide-left">
+            <div className="p-5 border-b border-slate-100 dark:border-border-dark flex items-center justify-between">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Icon name="shopping_bag" />
+                Your Cart ({cart.length})
+              </h2>
+              <button onClick={() => setIsCartOpen(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
+                <Icon name="close" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-5 space-y-4">
+              {cart.length === 0 ? (
+                <div className="text-center py-10 text-slate-400">
+                  <p>Your cart is empty</p>
+                </div>
+              ) : (
+                cart.map(item => (
+                  <div key={item.id} className="flex gap-4 p-3 bg-slate-50 dark:bg-surface-dark rounded-xl border border-slate-100 dark:border-border-dark">
+                    <div className="size-16 bg-white dark:bg-slate-800 rounded-lg flex items-center justify-center text-2xl shrink-0">
+                      {item.type === 'product' ? (item.image || '📦') : <Icon name="description" className="text-red-500" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-slate-900 dark:text-white line-clamp-1">{item.name}</h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        {item.type === 'print' ? `${item.pageCount} pgs • ${item.options.colorMode}` : `Qty: ${item.quantity}`}
+                      </p>
+                      <div className="flex justify-between items-center mt-2">
+                        <span className="font-bold text-primary">₹{item.price * item.quantity}</span>
+                        <button onClick={() => removeFromCart(item.id)} className="text-red-500 text-xs hover:underline">Remove</button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="p-5 border-t border-slate-100 dark:border-border-dark bg-slate-50 dark:bg-surface-dark">
+              <div className="flex justify-between items-end mb-4">
+                <span className="text-slate-500 dark:text-slate-400 font-medium">Total Amount</span>
+                <span className="text-2xl font-black text-slate-900 dark:text-white">₹{cartTotal.toFixed(2)}</span>
+              </div>
+              <button
+                onClick={handleCheckoutClick}
+                disabled={cart.length === 0 || isProcessingPayment}
+                className="w-full py-3.5 bg-primary text-white font-bold rounded-xl shadow-lg hover:bg-primary-hover disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+              >
+                {isProcessingPayment ? "Processing..." : "Checkout"}
+                <Icon name="arrow_forward" />
+              </button>
+            </div>
+
+            {/* Guest Details Modal - Inside Cart Drawer or overlaid */}
+            {showGuestDetails && (
+              <div className="absolute inset-0 bg-white dark:bg-surface-darker z-10 flex flex-col p-6 animate-fade-in">
+                <div className="flex items-center justify-between mb-8">
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-white">Guest Checkout</h3>
+                  <button onClick={() => setShowGuestDetails(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
+                    <Icon name="close" />
+                  </button>
+                </div>
+
+                <div className="space-y-6 flex-1">
+                  <p className="text-slate-500 dark:text-slate-400 text-sm">
+                    Please provide your details for the order receipt and tracking.
+                  </p>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Full Name</label>
+                      <input
+                        type="text"
+                        value={guestDetails.name}
+                        onChange={(e) => setGuestDetails(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="e.g. John Doe"
+                        className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email Address</label>
+                      <input
+                        type="email"
+                        value={guestDetails.email}
+                        onChange={(e) => setGuestDetails(prev => ({ ...prev, email: e.target.value }))}
+                        placeholder="e.g. john@example.com"
+                        className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => processCheckout(guestDetails)}
+                    disabled={!guestDetails.name || !guestDetails.email || isProcessingPayment}
+                    className="w-full py-3.5 bg-primary text-white font-bold rounded-xl shadow-lg hover:bg-primary-hover disabled:opacity-50 transition-all flex items-center justify-center gap-2 mt-8"
+                  >
+                    {isProcessingPayment ? "Processing..." : "Pay & Order"}
+                    <Icon name="payment" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
-      {/* Main Content */}
-      <main className="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
-        <div className="mb-10 text-center lg:text-left">
-          <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 dark:text-white mb-3">
-            Upload & Print Documents
-          </h2>
-          <p className="text-lg text-slate-500 dark:text-slate-400 max-w-2xl mx-auto lg:mx-0">
-            Fast, affordable printing for students. Upload your PDF, set the page count, and pay securely.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
-          {/* Left Column: Upload & Options */}
-          <div className="lg:col-span-7 xl:col-span-8 space-y-8">
-
-            {/* Upload Area */}
-            <div
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
-              onClick={triggerFileUpload}
-              className="group relative flex flex-col items-center justify-center w-full min-h-[240px] px-6 py-12 bg-surface-light dark:bg-surface-dark border-2 border-dashed border-primary/30 dark:border-primary/20 rounded-xl hover:border-primary hover:bg-primary/5 dark:hover:bg-primary/5 transition-all cursor-pointer"
-            >
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileSelect}
-                accept="application/pdf"
-                className="hidden"
-              />
-              <div className="size-16 mb-4 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-                <Icon name="cloud_upload" className="text-4xl" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Upload your PDF</h3>
-              <p className="text-slate-500 dark:text-slate-400 text-sm mb-6 text-center max-w-xs">
-                Drag & drop files here or click to browse (Max 50MB)
-              </p>
-              <span className="px-6 py-2.5 rounded-lg bg-primary text-white font-bold text-sm shadow-lg shadow-primary/25 hover:bg-primary-hover transition-colors">
-                Select PDF
-              </span>
-            </div>
-
-            {/* Page Count Input - Shown after file upload */}
-            {file && (
-              <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-6">
-                <div className="flex items-start gap-4">
-                  <div className="shrink-0 p-3 rounded-xl bg-red-50 dark:bg-red-900/20">
-                    <Icon name="picture_as_pdf" className="text-2xl text-red-500" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-slate-900 dark:text-white truncate">{file.name}</p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">{fileSizeFormatted}</p>
-                  </div>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setFile(null); }}
-                    className="p-2 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                  >
-                    <Icon name="delete" />
-                  </button>
-                </div>
-                <div className="mt-4 pt-4 border-t border-border-light dark:border-border-dark">
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                    <Icon name="description" className="text-primary mr-1 align-middle" />
-                    How many pages do you want to print?
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="500"
-                    value={pageCount}
-                    onChange={(e) => setPageCount(Math.max(1, parseInt(e.target.value) || 1))}
-                    className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-2xl font-bold text-center text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary"
-                    placeholder="Enter page count"
-                  />
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 text-center">
-                    Enter the exact number of pages you want to print
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Printing Options */}
-            <div className={`bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-6 sm:p-8 space-y-8 transition-all duration-300 ${!file ? 'opacity-60 pointer-events-none' : ''}`}>
-              <div className="flex items-center gap-2 mb-2">
-                <Icon name="tune" className="text-primary" />
-                <h3 className="text-xl font-bold text-slate-900 dark:text-white">Printing Options</h3>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {/* Copies */}
-                <div className="space-y-3">
-                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Number of Copies</label>
-                  <div className="flex items-center justify-between p-1 bg-background-light dark:bg-background-dark rounded-lg border border-transparent focus-within:border-primary">
-                    <button
-                      onClick={() => updateOption('copies', Math.max(1, options.copies - 1))}
-                      className="flex items-center justify-center w-10 h-10 rounded-md text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 transition-all"
-                    >
-                      <Icon name="remove" className="text-xl" />
-                    </button>
-                    <input
-                      className="w-16 text-center bg-transparent border-none text-slate-900 dark:text-white font-bold focus:ring-0 p-0"
-                      type="number"
-                      min="1"
-                      max="100"
-                      value={options.copies}
-                      onChange={(e) => updateOption('copies', parseInt(e.target.value) || 1)}
-                    />
-                    <button
-                      onClick={() => updateOption('copies', options.copies + 1)}
-                      className="flex items-center justify-center w-10 h-10 rounded-md text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700 transition-all"
-                    >
-                      <Icon name="add" className="text-xl" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Paper Size */}
-                <div className="space-y-3">
-                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Paper Size</label>
-                  <div className="relative">
-                    <select
-                      value={options.paperSize}
-                      onChange={(e) => updateOption('paperSize', e.target.value as any)}
-                      className="w-full p-3 pl-4 pr-10 bg-background-light dark:bg-background-dark border-none rounded-lg text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-primary appearance-none cursor-pointer"
-                    >
-                      <option value="a4">A4 (Standard)</option>
-                      <option value="a3">A3 (Large)</option>
-                      <option value="letter">Letter</option>
-                      <option value="legal">Legal</option>
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-slate-500">
-                      <Icon name="expand_more" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Color Mode */}
-              <div className="space-y-3">
-                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Color Mode</label>
-                <div className="flex p-1 bg-background-light dark:bg-background-dark rounded-lg">
-                  <label className="flex-1 relative cursor-pointer group">
-                    <input
-                      type="radio"
-                      name="color_mode"
-                      value="bw"
-                      checked={options.colorMode === 'bw'}
-                      onChange={() => updateOption('colorMode', 'bw')}
-                      className="peer sr-only"
-                    />
-                    <div className="flex items-center justify-center gap-2 py-2.5 rounded-md text-sm font-medium text-slate-500 dark:text-slate-400 transition-all peer-checked:bg-white dark:peer-checked:bg-slate-700 peer-checked:text-slate-900 dark:peer-checked:text-white peer-checked:shadow-sm">
-                      <Icon name="ink_highlighter" className="text-[18px]" />
-                      B&W (₹{pricing.perPageBW}/pg)
-                    </div>
-                  </label>
-                  <label className="flex-1 relative cursor-pointer group">
-                    <input
-                      type="radio"
-                      name="color_mode"
-                      value="color"
-                      checked={options.colorMode === 'color'}
-                      onChange={() => updateOption('colorMode', 'color')}
-                      className="peer sr-only"
-                    />
-                    <div className="flex items-center justify-center gap-2 py-2.5 rounded-md text-sm font-medium text-slate-500 dark:text-slate-400 transition-all peer-checked:bg-white dark:peer-checked:bg-slate-700 peer-checked:text-slate-900 dark:peer-checked:text-white peer-checked:shadow-sm">
-                      <Icon name="palette" className="text-[18px] text-pink-500" />
-                      Color (₹{pricing.perPageColor}/pg)
-                    </div>
-                  </label>
-                </div>
-              </div>
-
-              {/* Print Sides */}
-              <div className="space-y-3">
-                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Print Sides</label>
-                <div className="flex p-1 bg-background-light dark:bg-background-dark rounded-lg">
-                  <label className="flex-1 relative cursor-pointer group">
-                    <input
-                      type="radio"
-                      name="sides"
-                      value="single"
-                      checked={options.sides === 'single'}
-                      onChange={() => updateOption('sides', 'single')}
-                      className="peer sr-only"
-                    />
-                    <div className="flex items-center justify-center gap-2 py-2.5 rounded-md text-sm font-medium text-slate-500 dark:text-slate-400 transition-all peer-checked:bg-white dark:peer-checked:bg-slate-700 peer-checked:text-slate-900 dark:peer-checked:text-white peer-checked:shadow-sm">
-                      <Icon name="note" className="text-[18px]" />
-                      Single-sided
-                    </div>
-                  </label>
-                  <label className="flex-1 relative cursor-pointer group">
-                    <input
-                      type="radio"
-                      name="sides"
-                      value="double"
-                      checked={options.sides === 'double'}
-                      onChange={() => updateOption('sides', 'double')}
-                      className="peer sr-only"
-                    />
-                    <div className="flex items-center justify-center gap-2 py-2.5 rounded-md text-sm font-medium text-slate-500 dark:text-slate-400 transition-all peer-checked:bg-white dark:peer-checked:bg-slate-700 peer-checked:text-slate-900 dark:peer-checked:text-white peer-checked:shadow-sm">
-                      <Icon name="description" className="text-[18px]" />
-                      Double-sided
-                    </div>
-                  </label>
-                </div>
-              </div>
-
-              {/* Binding Type */}
-              <div className="space-y-3">
-                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Binding Type</label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {[
-                    { val: 'none', label: 'No Binding', icon: 'do_not_disturb_on', price: pricing.bindingPrices.none },
-                    { val: 'spiral', label: 'Spiral', icon: 'format_list_bulleted', price: pricing.bindingPrices.spiral },
-                    { val: 'soft', label: 'Soft Cover', icon: 'menu_book', price: pricing.bindingPrices.soft },
-                    { val: 'hard', label: 'Hard Cover', icon: 'book', price: pricing.bindingPrices.hard }
-                  ].map((item) => (
-                    <label key={item.val} className="relative cursor-pointer">
-                      <input
-                        type="radio"
-                        name="binding"
-                        value={item.val}
-                        checked={options.binding === item.val}
-                        onChange={() => updateOption('binding', item.val as any)}
-                        className="peer sr-only"
-                      />
-                      <div className="h-full flex flex-col items-center justify-center p-4 rounded-xl border-2 border-transparent bg-background-light dark:bg-background-dark hover:bg-slate-100 dark:hover:bg-slate-800 peer-checked:border-primary peer-checked:bg-primary/5 dark:peer-checked:bg-primary/10 transition-all">
-                        <Icon name={item.icon} className="text-2xl mb-2 text-slate-400 peer-checked:text-primary" />
-                        <span className="font-medium text-xs text-slate-700 dark:text-slate-200 text-center">
-                          {item.label}
-                        </span>
-                        <span className="text-xs text-slate-500 mt-1">
-                          {item.price === 0 ? 'Free' : `₹${item.price}`}
-                        </span>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column: Order Summary (Sticky) */}
-          <div className="lg:col-span-5 xl:col-span-4">
-            <div className="sticky top-24 space-y-6">
-              <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark overflow-hidden shadow-sm">
-                <div className="p-6 border-b border-border-light dark:border-border-dark bg-slate-50/50 dark:bg-slate-800/50">
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white">Order Summary</h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Review your order details</p>
-                </div>
-                <div className="p-6 space-y-4">
-                  {!file ? (
-                    <div className="flex flex-col items-center justify-center py-8 text-slate-400">
-                      <Icon name="upload_file" className="text-4xl mb-2" />
-                      <p className="text-sm">Upload a file to see pricing</p>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="flex items-start gap-3 p-3 rounded-lg bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark">
-                        <div className="text-red-500 shrink-0">
-                          <Icon name="picture_as_pdf" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{file.name}</p>
-                          <p className="text-xs text-slate-500 dark:text-slate-400">{pageCount} Pages • {fileSizeFormatted}</p>
-                        </div>
-                      </div>
-
-                      <div className="space-y-3 pt-2">
-                        <SummaryRow label="Pages" value={pageCount.toString()} />
-                        <SummaryRow label="Copies" value={options.copies.toString()} />
-                        <SummaryRow label="Paper Size" value={options.paperSize.toUpperCase()} />
-                        <SummaryRow
-                          label={`${options.colorMode === 'bw' ? 'B&W' : 'Color'} Print`}
-                          value={`₹${(pageCount * (options.colorMode === 'bw' ? pricing.perPageBW : pricing.perPageColor) * options.copies * pricing.paperSizeMultiplier[options.paperSize]).toFixed(2)}`}
-                        />
-                        {options.sides === 'double' && (
-                          <div className="flex justify-between text-sm">
-                            <span className="text-slate-600 dark:text-slate-400">Double-sided discount</span>
-                            <span className="font-medium text-green-600 dark:text-green-400">-₹{(pageCount * pricing.doubleSidedDiscount * options.copies).toFixed(2)}</span>
-                          </div>
-                        )}
-                        <SummaryRow label="Binding" value={`₹${pricing.bindingPrices[options.binding].toFixed(2)}`} />
-                        <SummaryRow label="Service Fee" value={`₹${pricing.serviceFee.toFixed(2)}`} />
-                      </div>
-
-                      <div className="border-t border-dashed border-border-light dark:border-border-dark my-2"></div>
-
-                      <div className="flex justify-between items-end">
-                        <span className="text-base font-bold text-slate-700 dark:text-slate-200">Total</span>
-                        <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-                          ₹{totalPrice.toFixed(2)}
-                        </span>
-                      </div>
-
-                      <button
-                        onClick={handlePayment}
-                        disabled={isProcessingPayment || pageCount < 1}
-                        className="w-full flex items-center justify-center gap-2 mt-4 px-6 py-3.5 rounded-lg bg-primary text-white font-bold text-base shadow-lg shadow-primary/25 hover:bg-primary-hover active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isProcessingPayment ? (
-                          <>
-                            <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            Processing...
-                          </>
-                        ) : (
-                          <>
-                            <span>Pay with Razorpay</span>
-                            <Icon name="arrow_forward" className="text-[20px]" />
-                          </>
-                        )}
-                      </button>
-
-                      <p className="text-xs text-center text-slate-400 dark:text-slate-500 mt-2 flex items-center justify-center gap-1">
-                        <Icon name="lock" className="text-xs" />
-                        Secure payment via Razorpay
-                      </p>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* Support Card */}
-              <div
-                onClick={() => handleNavigation('support')}
-                className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/30 cursor-pointer hover:shadow-md transition-shadow"
-              >
-                <div className="flex gap-3">
-                  <Icon name="support_agent" className="text-primary" />
-                  <div>
-                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">Need help?</h4>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
-                      Contact support for any issues.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </main>
-
-      {/* Order Confirmation Modal */}
+      {/* Confirmation Modal */}
       {confirmedOrder && (
         <OrderConfirmation
           order={confirmedOrder}
-          onClose={handleConfirmationClose}
-          onViewOrders={handleViewOrders}
+          onClose={() => setConfirmedOrder(null)}
+          onViewOrders={() => handleNavigation('orders')}
         />
       )}
     </div>
   );
 };
-
-const SummaryRow: React.FC<{ label: string; value: string }> = ({ label, value }) => (
-  <div className="flex justify-between text-sm">
-    <span className="text-slate-600 dark:text-slate-400">{label}</span>
-    <span className="font-medium text-slate-900 dark:text-white">{value}</span>
-  </div>
-);

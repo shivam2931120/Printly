@@ -55,12 +55,12 @@ model Shop {
 // ===== USERS =====
 model User {
   id        String   @id @default(cuid())
-  clerkId   String?  @unique
+  authId    String?  @unique // Supabase Auth ID
   email     String   @unique
   name      String?
   avatar    String?
   role      Role     @default(USER)
-  password  String?  // For direct auth (optional to allow social auth later)
+  password  String?  // For direct auth
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
@@ -137,16 +137,27 @@ model Order {
 }
 
 model OrderItem {
-  id        String   @id @default(cuid())
-  orderId   String
-  order     Order    @relation(fields: [orderId], references: [id])
-  productId String?
-  product   Product? @relation(fields: [productId], references: [id])
-  serviceId String?
-  service   Service? @relation(fields: [serviceId], references: [id])
-  quantity  Int
-  price     Float
-  details   Json?
+  id          String   @id @default(cuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id])
+  
+  // Type discriminator
+  type        String   @default("product") // 'product' | 'print' | 'service'
+
+  // Product/Service Link
+  productId   String?
+  product     Product? @relation(fields: [productId], references: [id])
+  serviceId   String?
+  service     Service? @relation(fields: [serviceId], references: [id])
+  
+  // Print Job Details
+  fileUrl     String?
+  fileName    String?
+  printConfig Json?    // Stores PrintOptions, pageCount, etc.
+  
+  quantity    Int
+  price       Float
+  details     Json?    // Generic details/metadata
 }
 
 // ===== INVENTORY =====

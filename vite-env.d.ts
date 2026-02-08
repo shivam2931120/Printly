@@ -4,6 +4,8 @@ interface ImportMetaEnv {
     readonly VITE_RAZORPAY_KEY_ID: string;
     readonly VITE_FORMSPREE_ENDPOINT: string;
     readonly VITE_API_URL: string;
+    readonly NEXT_PUBLIC_SUPABASE_URL: string;
+    readonly NEXT_PUBLIC_SUPABASE_ANON_KEY: string;
 }
 
 interface ImportMeta {

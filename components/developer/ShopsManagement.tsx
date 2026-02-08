@@ -7,7 +7,7 @@ interface Shop extends ShopConfig {
     totalRevenue: number;
 }
 
-export const ShopsManagement: React.FC<{ onSelectShop?: (shopId: string) => void }> = ({ onSelectShop }) => {
+export const ShopsManagement: React.FC<{ onSelectShop?: (shopId: string) => void; onManageShop?: (shopId: string) => void }> = ({ onSelectShop, onManageShop }) => {
     const [shops, setShops] = useState<Shop[]>([]);
     const [isAddingShop, setIsAddingShop] = useState(false);
     const [newShopName, setNewShopName] = useState('');
@@ -170,57 +170,57 @@ export const ShopsManagement: React.FC<{ onSelectShop?: (shopId: string) => void
             )}
 
             {/* Shops List */}
-            <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark overflow-hidden">
+            <div className="bg-surface-dark rounded-xl border border-border-dark overflow-hidden shadow-sm">
                 <table className="w-full">
                     <thead>
-                        <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-border-light dark:border-border-dark">
-                            <th className="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Shop</th>
-                            <th className="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Location</th>
-                            <th className="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Orders</th>
-                            <th className="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Revenue</th>
-                            <th className="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Status</th>
-                            <th className="text-right py-3 px-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Actions</th>
+                        <tr className="bg-surface-darker/50 border-b border-border-dark">
+                            <th className="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider text-text-secondary">Shop</th>
+                            <th className="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider text-text-secondary">Location</th>
+                            <th className="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider text-text-secondary">Orders</th>
+                            <th className="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider text-text-secondary">Revenue</th>
+                            <th className="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider text-text-secondary">Status</th>
+                            <th className="text-right py-3 px-4 text-xs font-semibold uppercase tracking-wider text-text-secondary">Actions</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-border-light dark:divide-border-dark">
+                    <tbody className="divide-y divide-border-dark">
                         {shops.map((shop) => (
-                            <tr key={shop.shopId} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                            <tr key={shop.shopId} className="hover:bg-surface-darker/30 transition-colors group">
                                 <td className="py-4 px-4">
                                     <div className="flex items-center gap-3">
                                         <div className="p-2 rounded-lg bg-primary/10">
                                             <Icon name="store" className="text-primary" />
                                         </div>
                                         <div>
-                                            <p className="font-semibold text-slate-900 dark:text-white">{shop.shopName}</p>
-                                            <p className="text-sm text-slate-500 dark:text-slate-400">{shop.tagline}</p>
+                                            <p className="font-semibold text-text-primary">{shop.shopName}</p>
+                                            <p className="text-sm text-text-secondary">{shop.tagline}</p>
                                         </div>
                                     </div>
                                 </td>
-                                <td className="py-4 px-4 text-slate-600 dark:text-slate-400 text-sm">{shop.location}</td>
-                                <td className="py-4 px-4 font-medium text-slate-900 dark:text-white">{shop.totalOrders}</td>
-                                <td className="py-4 px-4 font-semibold text-green-600 dark:text-green-400">₹{shop.totalRevenue.toLocaleString()}</td>
+                                <td className="py-4 px-4 text-text-secondary text-sm">{shop.location}</td>
+                                <td className="py-4 px-4 font-medium text-text-primary">{shop.totalOrders}</td>
+                                <td className="py-4 px-4 font-semibold text-success">₹{shop.totalRevenue.toLocaleString()}</td>
                                 <td className="py-4 px-4">
                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${shop.isActive
-                                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                                            : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
+                                        ? 'bg-success/10 text-success'
+                                        : 'bg-surface-darker text-text-secondary'
                                         }`}>
                                         {shop.isActive ? 'Active' : 'Inactive'}
                                     </span>
                                 </td>
                                 <td className="py-4 px-4 text-right">
-                                    <div className="flex items-center justify-end gap-1">
+                                    <div className="flex items-center justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                                         <button
-                                            onClick={() => onSelectShop?.(shop.shopId)}
-                                            className="p-2 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/10 transition-colors"
-                                            title="View Details"
+                                            onClick={() => onManageShop?.(shop.shopId)}
+                                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-darker border border-border-dark text-xs font-medium text-text-secondary hover:text-white hover:border-primary/50 transition-all mr-2"
                                         >
-                                            <Icon name="visibility" className="text-lg" />
+                                            <Icon name="admin_panel_settings" className="text-sm" />
+                                            Manage
                                         </button>
                                         <button
                                             onClick={() => toggleShopStatus(shop.shopId)}
                                             className={`p-2 rounded-lg transition-colors ${shop.isActive
-                                                    ? 'text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
-                                                    : 'text-slate-400 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20'
+                                                ? 'text-text-secondary hover:text-error hover:bg-error/10'
+                                                : 'text-text-secondary hover:text-success hover:bg-success/10'
                                                 }`}
                                             title={shop.isActive ? 'Deactivate' : 'Activate'}
                                         >

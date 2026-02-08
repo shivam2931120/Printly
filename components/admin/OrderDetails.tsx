@@ -1,40 +1,58 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Icon } from '../ui/Icon';
 import { OrderTimeline, mockOrderEvents } from './OrderTimeline';
-
-// Order interface compatible with OrdersPanel.LocalOrder
-interface Order {
-    id: string;
-    user: { name: string; avatar?: string; initials: string; color: string };
-    file: { name: string };
-    specs: { summary: string; pages: number };
-    copies: number;
-    amount: number;
-    status: 'Pending' | 'Printing' | 'Shipped' | 'On Hold';
-    paymentStatus: 'Paid' | 'Unpaid';
-    paperSize?: string;
-    orientation?: string;
-}
+import { Order, CartItem, OrderStatus } from '../../types';
+import { supabase } from '../../services/data';
 
 interface OrderDetailsProps {
     order: Order;
     onClose: () => void;
-    onStatusChange?: (orderId: string, newStatus: Order['status']) => void;
+    onStatusChange?: (orderId: string, newStatus: OrderStatus) => void;
 }
 
-export const OrderDetails: React.FC<OrderDetailsProps> = ({ order, onClose, onStatusChange }) => {
+export const OrderDetails: React.FC<OrderDetailsProps> = ({ order: initialOrder, onClose, onStatusChange }) => {
     const [activeTab, setActiveTab] = useState<'details' | 'timeline'>('details');
+    const [order, setOrder] = useState<Order>(initialOrder);
+
+    // Subscribe to real-time updates
+    useEffect(() => {
+        const channel = supabase
+            .channel(`order_${order.id}`)
+            .on(
+                'postgres_changes',
+                { event: 'UPDATE', schema: 'public', table: 'Order', filter: `id=eq.${order.id}` },
+                (payload) => {
+                    if (payload.new && payload.new.status) {
+                        const updatedOrder = { ...order, ...payload.new, status: payload.new.status.toLowerCase() as OrderStatus };
+                        setOrder(updatedOrder);
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [order.id]);
 
     const statusColors = {
-        'Pending': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-        'Printing': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-        'Shipped': 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
-        'On Hold': 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300',
+        'pending': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
+        'printing': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+        'ready': 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
+        'completed': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+        'cancelled': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+        'confirmed': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
     };
 
     const paymentColors = {
-        'Paid': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-        'Unpaid': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+        'paid': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+        'unpaid': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+        'pending': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
+        'failed': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+    };
+
+    const formatDate = (date: Date | string) => {
+        return new Date(date).toLocaleString();
     };
 
     return (
@@ -51,13 +69,16 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ order, onClose, onSt
                             <Icon name="receipt_long" className="text-2xl text-primary" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold text-slate-900 dark:text-white">{order.id}</h2>
+                            <h2 className="text-xl font-bold text-slate-900 dark:text-white truncate max-w-[200px]">{order.id}</h2>
                             <div className="flex items-center gap-2 mt-1">
-                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[order.status]}`}>
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[order.status] || 'bg-slate-100'}`}>
                                     {order.status}
                                 </span>
-                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${paymentColors[order.paymentStatus]}`}>
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${paymentColors[order.paymentStatus] || 'bg-slate-100'}`}>
                                     {order.paymentStatus}
+                                </span>
+                                <span className="text-xs text-slate-500 dark:text-slate-400 ml-2">
+                                    {formatDate(order.createdAt)}
                                 </span>
                             </div>
                         </div>
@@ -100,61 +121,80 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ order, onClose, onSt
                             <section>
                                 <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Customer</h3>
                                 <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50">
-                                    {order.user.avatar ? (
-                                        <div
-                                            className="size-12 rounded-full bg-slate-200 bg-cover bg-center"
-                                            style={{ backgroundImage: `url("${order.user.avatar}")` }}
-                                        />
-                                    ) : (
-                                        <div className={`size-12 rounded-full flex items-center justify-center text-lg font-bold ${order.user.color || 'bg-slate-200'}`}>
-                                            {order.user.initials}
-                                        </div>
-                                    )}
+                                    <div className="size-12 rounded-full bg-primary/20 flex items-center justify-center text-lg font-bold text-primary">
+                                        {order.userName.charAt(0).toUpperCase()}
+                                    </div>
                                     <div>
-                                        <p className="font-semibold text-slate-900 dark:text-white">{order.user.name}</p>
-                                        <p className="text-sm text-slate-500 dark:text-slate-400">customer@email.com</p>
+                                        <p className="font-semibold text-slate-900 dark:text-white">{order.userName}</p>
+                                        <p className="text-sm text-slate-500 dark:text-slate-400">{order.userEmail}</p>
                                     </div>
                                 </div>
                             </section>
 
-                            {/* File Info */}
+                            {/* Order Items */}
                             <section>
-                                <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">File</h3>
-                                <div className="flex items-center gap-4 p-4 rounded-xl border border-border-light dark:border-border-dark">
-                                    <div className="size-12 rounded-xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center">
-                                        <Icon name="picture_as_pdf" className="text-2xl text-red-500" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-medium text-slate-900 dark:text-white truncate">{order.file.name}</p>
-                                        <p className="text-sm text-slate-500 dark:text-slate-400">{order.specs.pages} pages</p>
-                                    </div>
-                                    <button className="p-2 rounded-lg text-primary hover:bg-primary/10 transition-colors">
-                                        <Icon name="download" className="text-xl" />
-                                    </button>
+                                <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">
+                                    items ({order.items.length})
+                                </h3>
+                                <div className="space-y-3">
+                                    {order.items.map((item, index) => (
+                                        <div key={item.id || index} className="p-4 rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-surface-darker">
+                                            <div className="flex items-start justify-between gap-4">
+                                                <div className="flex gap-4">
+                                                    {/* Icon/Image */}
+                                                    <div className="size-12 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 text-xl">
+                                                        {item.type === 'product' ? (item.image || '📦') : <Icon name="description" className="text-red-500" />}
+                                                    </div>
+
+                                                    {/* Details */}
+                                                    <div>
+                                                        <h4 className="font-bold text-slate-900 dark:text-white">{item.name}</h4>
+                                                        {item.type === 'print' ? (
+                                                            <div className="text-sm text-slate-500 dark:text-slate-400 space-y-1 mt-1">
+                                                                <p>{item.pageCount} pages • {item.options.copies} copies</p>
+                                                                <p className="text-xs bg-slate-100 dark:bg-slate-800 inline-block px-2 py-0.5 rounded">
+                                                                    {item.options.colorMode} • {item.options.paperSize} • {item.options.sides}
+                                                                </p>
+                                                            </div>
+                                                        ) : (
+                                                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                                                                Quantity: {item.quantity}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* Price */}
+                                                <div className="text-right">
+                                                    <p className="font-bold text-slate-900 dark:text-white">₹{(item.price * item.quantity).toFixed(2)}</p>
+                                                    {item.quantity > 1 && (
+                                                        <p className="text-xs text-slate-500">₹{item.price} each</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </section>
 
-                            {/* Print Specifications */}
-                            <section>
-                                <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Print Specifications</h3>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <DetailRow icon="content_copy" label="Copies" value={order.copies.toString()} />
-                                    <DetailRow icon="description" label="Paper Size" value={order.paperSize} />
-                                    <DetailRow icon="crop_rotate" label="Orientation" value={order.orientation} />
-                                    <DetailRow icon="palette" label="Print Mode" value={order.specs.summary.split(',')[0]} />
-                                    <DetailRow icon="menu_book" label="Binding" value={order.specs.summary.includes('Spiral') ? 'Spiral' : order.specs.summary.includes('Soft') ? 'Soft Cover' : 'None'} />
-                                    <DetailRow icon="pages" label="Total Pages" value={`${order.specs.pages * order.copies}`} />
-                                </div>
-                            </section>
+                            {/* Legacy Single File Support (if items is empty but file exists) */}
+                            {(!order.items || order.items.length === 0) && order.fileName && (
+                                <section>
+                                    <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Legacy File</h3>
+                                    <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-700">
+                                        <p className="font-bold">{order.fileName}</p>
+                                        <p className="text-sm text-gray-500">{order.pageCount} pages</p>
+                                    </div>
+                                </section>
+                            )}
 
-                            {/* Pricing */}
+                            {/* Total Pricing */}
                             <section>
-                                <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Pricing</h3>
                                 <div className="p-4 rounded-xl bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-900/30">
                                     <div className="flex items-baseline justify-between">
-                                        <span className="text-slate-600 dark:text-slate-400">Total Amount</span>
+                                        <span className="text-slate-600 dark:text-slate-400 font-medium">Total Amount</span>
                                         <span className="text-3xl font-bold text-green-700 dark:text-green-400">
-                                            ₹{order.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                            ₹{order.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                         </span>
                                     </div>
                                 </div>
@@ -168,22 +208,32 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ order, onClose, onSt
                 {/* Actions Footer */}
                 <div className="flex items-center justify-between p-6 border-t border-border-light dark:border-border-dark bg-slate-50 dark:bg-slate-800/50">
                     <div className="flex gap-2">
-                        {order.status === 'Pending' && (
+                        {/* Action buttons based on status */}
+                        {order.status === 'confirmed' && (
                             <button
-                                onClick={() => onStatusChange?.(order.id, 'Printing')}
+                                onClick={() => onStatusChange?.(order.id, 'printing')}
                                 className="px-4 py-2 rounded-lg bg-primary text-white font-medium text-sm hover:bg-primary-hover transition-colors flex items-center gap-2"
                             >
                                 <Icon name="print" className="text-lg" />
                                 Start Printing
                             </button>
                         )}
-                        {order.status === 'Printing' && (
+                        {order.status === 'printing' && (
                             <button
-                                onClick={() => onStatusChange?.(order.id, 'Shipped')}
+                                onClick={() => onStatusChange?.(order.id, 'ready')}
                                 className="px-4 py-2 rounded-lg bg-purple-600 text-white font-medium text-sm hover:bg-purple-700 transition-colors flex items-center gap-2"
                             >
-                                <Icon name="local_shipping" className="text-lg" />
-                                Mark Shipped
+                                <Icon name="check_circle" className="text-lg" />
+                                Mark Ready
+                            </button>
+                        )}
+                        {order.status === 'ready' && (
+                            <button
+                                onClick={() => onStatusChange?.(order.id, 'completed')}
+                                className="px-4 py-2 rounded-lg bg-green-600 text-white font-medium text-sm hover:bg-green-700 transition-colors flex items-center gap-2"
+                            >
+                                <Icon name="done_all" className="text-lg" />
+                                Mark Completed
                             </button>
                         )}
                     </div>
@@ -198,14 +248,3 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ order, onClose, onSt
         </div>
     );
 };
-
-// Detail Row Component
-const DetailRow: React.FC<{ icon: string; label: string; value: string }> = ({ icon, label, value }) => (
-    <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50">
-        <Icon name={icon} className="text-lg text-slate-400" />
-        <div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
-            <p className="font-medium text-slate-900 dark:text-white">{value}</p>
-        </div>
-    </div>
-);

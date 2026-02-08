@@ -14,15 +14,36 @@ async function main() {
         });
 
         if (existingUser) {
-            console.log(`User ${email} already exists. Updating role and password...`);
+            console.log(`User ${email} already exists. Updating role...`);
             await prisma.user.update({
                 where: { email },
                 data: {
                     role: Role.DEVELOPER,
-                    password: password,
-                    name: 'Shivam (Developer)',
+                    password: password, // Update password
                 },
             });
+
+            // Ensure Shop exists
+            let shop = await prisma.shop.findFirst({ where: { users: { some: { email } } } });
+            if (!shop) {
+                shop = await prisma.shop.create({
+                    data: {
+                        shopName: 'Shivam\'s Print Shop',
+                        users: { connect: { email } },
+                        // Demo products removed
+                        // products: {
+                        //     create: []
+                        // }
+                    }
+                });
+            } else {
+                // Ensure products exist (simplified: count check)
+                const count = await prisma.product.count({ where: { shopId: shop.id } });
+                if (count === 0) {
+                    console.log('Shop exists but has no products. Skipping demo data seeding as per request.');
+                    // await prisma.product.createMany({ ... });
+                }
+            }
         } else {
             console.log(`Creating new user ${email}...`);
             await prisma.user.create({
@@ -39,6 +60,9 @@ async function main() {
                             location: 'Main Campus',
                             contact: 'shivam.bgp@outlook.com',
                             email: 'shivam.bgp@outlook.com',
+                            // products: {
+                            //     create: [...]
+                            // }
                         }
                     }
                 },

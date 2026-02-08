@@ -181,6 +181,31 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
           />
         </div>
       </div>
+
+      {/* Danger Zone */}
+      <div className="bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-200 dark:border-red-900/30 p-6">
+        <h3 className="text-lg font-bold text-red-700 dark:text-red-400 mb-4 flex items-center gap-2">
+          <Icon name="warning" className="text-red-600 dark:text-red-400" />
+          Danger Zone
+        </h3>
+        <p className="text-sm text-red-600 dark:text-red-300 mb-4">
+          Irreversible actions. Please be certain.
+        </p>
+        <button
+          onClick={() => {
+            if (confirm('CRITICAL WARNING: This will PERMANENTLY DELETE all products, orders, inventory, and settings. This cannot be undone. Are you sure?')) {
+              if (confirm('Are you really sure? Everything will be reset.')) {
+                localStorage.clear();
+                window.location.reload();
+              }
+            }
+          }}
+          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold text-sm transition-colors flex items-center gap-2 shadow-sm"
+        >
+          <Icon name="delete_forever" />
+          Factory Reset Data
+        </button>
+      </div>
     </div>
   </div>
 );

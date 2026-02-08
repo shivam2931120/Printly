@@ -1,20 +1,34 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Printly - College Printing Service
 
-# Run and deploy your AI Studio app
+## 🔑 Login Credentials
 
-This contains everything you need to run your app locally.
+The demo accounts have been replaced with a real database account.
 
-View your app in AI Studio: https://ai.studio/apps/temp/1
+| Role | Email | Password |
+|------|-------|----------|
+| **Developer** | `shivam.bgp@outlook.com` | `Sh@2931120` |
 
-## Run Locally
+> This account has full access to:
+> - Student Portal
+> - Admin Dashboard
+> - Developer Panel
 
-**Prerequisites:**  Node.js
+## Setup & Run
 
+1. **Install dependencies**:
+   ```bash
+   npm install
+   ```
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+2. **Environment Setup**:
+   - Ensure `.env` contains your `DATABASE_URL`.
+   - Ensure `.env.local` contains your Supabase keys.
+
+3. **Run Locally**:
+   ```bash
+   npm run dev
+   ```
+
+4. **Database Management**:
+   - To update schema: `npx prisma db push`
+   - To seed users: `npx prisma generate && npx tsx prisma/seed.ts`
