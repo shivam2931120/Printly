@@ -126,6 +126,8 @@ model Order {
   colorMode     String?
   sides         String?
   binding       String?
+  userEmail     String?
+  userName      String?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   

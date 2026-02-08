@@ -13,53 +13,34 @@ export const OrdersPanel: React.FC = () => {
     const [toastMessage, setToastMessage] = useState<{ message: string, type: 'info' | 'success' | 'warning' | 'error' } | null>(null);
     const prevOrdersCountRef = useRef<number>(0);
 
-    const loadOrders = () => {
-        const stored = localStorage.getItem('printwise_orders');
-        if (stored) {
-            try {
-                const parsed: Order[] = JSON.parse(stored);
-                setOrders(parsed);
+    const loadOrders = async () => {
+        try {
+            const data = await fetchOrders();
+            setOrders(data);
 
-                // Check for new orders
-                if (prevOrdersCountRef.current > 0 && parsed.length > prevOrdersCountRef.current) {
-                    const newOrder = parsed[0]; // Assuming new orders are at index 0
-                    setToastMessage({
-                        message: `New Order Received! ID: ${newOrder.id.split('-').slice(1, 3).join('-')}`,
-                        type: 'success'
-                    });
-                }
-                prevOrdersCountRef.current = parsed.length;
-            } catch (e) {
-                console.error("Failed to parse orders", e);
+            // Check for new orders
+            if (prevOrdersCountRef.current > 0 && data.length > prevOrdersCountRef.current) {
+                // Assuming newer orders are at the top/start of list if API sorts them, 
+                // but fetchOrders currently splits by ID in the implementation plan? 
+                // Let's assume data[0] is newest.
+                const newOrder = data[0];
+                setToastMessage({
+                    message: `New Order Received! ID: ${newOrder.id.split('-')[1] || newOrder.id}`,
+                    type: 'success'
+                });
             }
+            prevOrdersCountRef.current = data.length;
+        } catch (error) {
+            console.error("Failed to fetch orders", error);
+            setToastMessage({ message: 'Failed to load orders', type: 'error' });
         }
     };
 
     useEffect(() => {
         loadOrders();
-
-        // Listen for storage events (updates from other tabs/windows)
-        const handleStorageChange = (e: StorageEvent) => {
-            if (e.key === 'printwise_orders') {
-                loadOrders();
-            }
-        };
-
-        // Listen for custom events (updates from same window/tab if any)
-        const handleCustomEvent = () => loadOrders();
-
-        window.addEventListener('storage', handleStorageChange);
-        // Dispatching a custom event on localStorage setItem isn't automatic, 
-        // but for now storage event handles cross-tab which is the main use case suitable for this architecture.
-        // We can simplisticly assume page refresh or just polling if needed, but 'storage' event is good for multi-tab.
-
-        // Timer to poll every few seconds just in case (as 'storage' event might not fire in same tab if slightly buggy mechanism used)
-        const interval = setInterval(loadOrders, 5000);
-
-        return () => {
-            window.removeEventListener('storage', handleStorageChange);
-            clearInterval(interval);
-        };
+        // Poll for updates every 10 seconds
+        const interval = setInterval(loadOrders, 10000);
+        return () => clearInterval(interval);
     }, []);
 
     const updateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {

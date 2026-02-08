@@ -141,6 +141,7 @@ export interface Order {
   status: OrderStatus;
   paymentStatus: PaymentStatus;
   paymentId?: string;
+  orderToken?: string;
   createdAt: Date;
   updatedAt: Date;
 }

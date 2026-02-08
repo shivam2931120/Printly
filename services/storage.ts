@@ -1,93 +1,58 @@
-/**
- * Storage Service
- * 
- * This module provides a unified API for data storage that works with:
- * - localStorage (development/offline)
- * - Backend API (production with database)
- * 
- * The app will automatically use localStorage if no API is available.
- */
+// Storage Service - Local Storage disabled in favor of Backend/Session
+// This file is kept to avoid breaking imports but methods are no-ops or memory-only
 
-const API_BASE = import.meta.env.VITE_API_URL || '';
-const USE_API = !!API_BASE;
-
-// ===== STORAGE KEYS =====
-const KEYS = {
-    USER: 'printwise_user',
-    ORDERS: 'printwise_orders',
-    SHOP_CONFIG: 'printwise_shop_config',
-    ALL_SHOPS: 'printwise_all_shops',
-    INVENTORY: 'printwise_inventory',
-    PRICING: 'printwise_pricing',
-};
+const memoryStore: Record<string, any> = {};
 
 // ===== GENERIC STORAGE HELPERS =====
+// Using memory only
 function getLocal<T>(key: string, fallback: T): T {
-    try {
-        const stored = localStorage.getItem(key);
-        return stored ? JSON.parse(stored) : fallback;
-    } catch {
-        return fallback;
-    }
+    return memoryStore[key] || fallback;
 }
 
 function setLocal<T>(key: string, value: T): void {
-    localStorage.setItem(key, JSON.stringify(value));
+    memoryStore[key] = value;
 }
 
 // ===== USER =====
 export const userStorage = {
-    get: () => getLocal(KEYS.USER, null),
-    set: (user: unknown) => setLocal(KEYS.USER, user),
-    clear: () => localStorage.removeItem(KEYS.USER),
+    get: () => getLocal('user', null),
+    set: (user: unknown) => setLocal('user', user),
+    clear: () => delete memoryStore['user'],
 };
 
 // ===== ORDERS =====
 export const ordersStorage = {
-    getAll: () => getLocal(KEYS.ORDERS, []),
+    getAll: () => [], // Always empty, forces fetch from DB
     add: (order: unknown) => {
-        const orders = ordersStorage.getAll();
-        orders.push(order);
-        setLocal(KEYS.ORDERS, orders);
+        // No-op: Order should be saved to DB only.
     },
-    update: (orderId: string, updates: Record<string, unknown>) => {
-        const orders = ordersStorage.getAll();
-        const index = orders.findIndex((o: { id: string }) => o.id === orderId);
-        if (index !== -1) {
-            orders[index] = { ...orders[index], ...updates };
-            setLocal(KEYS.ORDERS, orders);
-        }
-    },
+    update: () => { },
 };
 
 // ===== SHOP CONFIG =====
 export const shopConfigStorage = {
-    get: () => getLocal(KEYS.SHOP_CONFIG, null),
-    set: (config: unknown) => setLocal(KEYS.SHOP_CONFIG, config),
+    get: () => null,
+    set: () => { },
 };
 
 // ===== ALL SHOPS (Developer) =====
 export const allShopsStorage = {
-    getAll: () => getLocal(KEYS.ALL_SHOPS, []),
-    set: (shops: unknown[]) => setLocal(KEYS.ALL_SHOPS, shops),
-    add: (shop: unknown) => {
-        const shops = allShopsStorage.getAll();
-        shops.push(shop);
-        setLocal(KEYS.ALL_SHOPS, shops);
-    },
+    getAll: () => [],
+    set: () => { },
+    add: () => { },
 };
 
 // ===== INVENTORY =====
 export const inventoryStorage = {
-    getAll: () => getLocal(KEYS.INVENTORY, []),
-    set: (items: unknown[]) => setLocal(KEYS.INVENTORY, items),
+    getAll: () => [],
+    set: () => { },
 };
 
 // ===== PRICING =====
 export const pricingStorage = {
-    get: () => getLocal(KEYS.PRICING, null),
-    set: (pricing: unknown) => setLocal(KEYS.PRICING, pricing),
+    get: () => null,
+    set: () => { },
 };
 
 // ===== API CHECK =====
-export const isUsingAPI = () => USE_API;
+export const isUsingAPI = () => true; // Always true now

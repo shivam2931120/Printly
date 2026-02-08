@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { StudentPortal } from './components/StudentPortal';
 import { AdminDashboard } from './components/AdminDashboard';
 import { DeveloperDashboard } from './components/developer/DeveloperDashboard';
@@ -13,50 +13,16 @@ type PageView = 'home' | 'orders' | 'support';
 const App: React.FC = () => {
   const [view, setView] = useState<ViewMode>('student');
   const [currentPage, setCurrentPage] = useState<PageView>('home');
-  const [darkMode, setDarkMode] = useState(false);
+  // Dark mode is globally enforced.
+
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [showSignIn, setShowSignIn] = useState(false);
   const [pricing, setPricing] = useState<PricingConfig>(DEFAULT_PRICING);
 
-  // Load user and pricing from localStorage on mount
-  useEffect(() => {
-    const savedUser = localStorage.getItem('printwise_user');
-    if (savedUser) {
-      try {
-        const user = JSON.parse(savedUser);
-        setCurrentUser(user);
-        // Auto-switch view based on user role
-        if (user.isDeveloper) {
-          setView('developer');
-        } else if (user.isAdmin) {
-          setView('admin');
-        }
-      } catch (e) {
-        localStorage.removeItem('printwise_user');
-      }
-    }
-
-    const savedPricing = localStorage.getItem('printwise_pricing');
-    if (savedPricing) {
-      try {
-        setPricing(JSON.parse(savedPricing));
-      } catch (e) {
-        localStorage.removeItem('printwise_pricing');
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [darkMode]);
+  // Removed localStorage loading effects.
 
   const handleViewSwitch = () => {
     if (view === 'student') {
-      // Check if user is admin before switching
       if (!currentUser) {
         setShowSignIn(true);
         return;
@@ -73,6 +39,7 @@ const App: React.FC = () => {
   };
 
   const handleSignIn = (userData: { email: string; name: string; isAdmin: boolean; isDeveloper?: boolean }) => {
+    // Session-only auth for now
     const user: User = {
       id: `user_${Date.now()}`,
       email: userData.email,
@@ -83,7 +50,6 @@ const App: React.FC = () => {
     setCurrentUser(user);
     setShowSignIn(false);
 
-    // Auto-switch to developer if user is developer
     if (userData.isDeveloper) {
       setView('developer');
     } else if (userData.isAdmin && view === 'student') {
@@ -92,7 +58,6 @@ const App: React.FC = () => {
   };
 
   const handleSignOut = () => {
-    localStorage.removeItem('printwise_user');
     setCurrentUser(null);
     setView('student');
     setCurrentPage('home');
@@ -125,15 +90,13 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="relative">
-      {/* Sign In Modal */}
+    <div className="relative min-h-screen bg-slate-900 text-white">
       <SignInModal
         isOpen={showSignIn}
         onClose={() => setShowSignIn(false)}
         onSignIn={handleSignIn}
       />
 
-      {/* Floating Controls - hide in developer view */}
       {view !== 'developer' && (
         <div className="fixed bottom-6 right-6 z-[100] flex gap-2">
           {currentUser && (
@@ -145,13 +108,7 @@ const App: React.FC = () => {
               <Icon name="logout" className="text-xl" />
             </button>
           )}
-          <button
-            onClick={() => setDarkMode(!darkMode)}
-            className="p-3 bg-slate-800 dark:bg-white text-white dark:text-slate-900 rounded-full shadow-lg hover:scale-110 transition-transform"
-            title="Toggle Dark Mode"
-          >
-            <Icon name={darkMode ? 'light_mode' : 'dark_mode'} className="text-xl" />
-          </button>
+
           {currentUser?.isAdmin && (
             <button
               onClick={handleViewSwitch}
@@ -164,13 +121,12 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Main Content */}
       {view === 'developer' ? (
         <DeveloperDashboard
           currentUser={currentUser}
           onSignOut={handleSignOut}
-          darkMode={darkMode}
-          onToggleDarkMode={() => setDarkMode(!darkMode)}
+          darkMode={true}
+          onToggleDarkMode={() => { }}
           onNavigate={(view) => setView(view)}
         />
       ) : view === 'student' ? (

@@ -86,8 +86,12 @@ export const StudentShop: React.FC<StudentShopProps> = ({ onAddToCart }) => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {filteredProducts.map(product => (
                     <div key={product.id} className="group bg-white dark:bg-surface-dark rounded-2xl border border-slate-200 dark:border-border-dark overflow-hidden hover:shadow-xl hover:shadow-primary/5 hover:border-primary/50 dark:hover:border-primary/50 transition-all duration-300">
-                        <div className="aspect-[4/3] bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-6xl relative overflow-hidden">
-                            <span className="group-hover:scale-110 transition-transform duration-300">{product.image || '📦'}</span>
+                        <div className="h-48 bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-6xl text-slate-300 dark:text-slate-500 relative overflow-hidden">
+                            {product.image?.startsWith('http') || product.image?.startsWith('/') ? (
+                                <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
+                            ) : (
+                                <Icon name={product.image || 'inventory_2'} className="text-6xl" />
+                            )}
                             {product.stock < 5 && product.stock > 0 && (
                                 <span className="absolute top-2 right-2 bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
                                     Low Stock

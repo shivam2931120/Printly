@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '../ui/Icon';
+import { fetchOrders } from '../../services/data';
+import { Order } from '../../types';
 import {
     AreaChart,
     Area,
@@ -9,49 +11,49 @@ import {
     Tooltip
 } from 'recharts';
 
-// Order type for display
-interface OrderDisplay {
-    id: string;
-    userName: string;
-    fileName: string;
-    status: string;
-    totalAmount: number;
-}
-
-// Mini chart data
+// Mini chart data (Static for now, hard to aggregate real-time cleanly without backend grouping)
 const revenueData = [
-    { day: 'M', value: 12400 },
-    { day: 'T', value: 18200 },
-    { day: 'W', value: 14800 },
-    { day: 'T', value: 22100 },
-    { day: 'F', value: 28500 },
-    { day: 'S', value: 31200 },
-    { day: 'S', value: 19800 },
+    { day: 'M', value: 0 },
+    { day: 'T', value: 0 },
+    { day: 'W', value: 0 },
+    { day: 'T', value: 0 },
+    { day: 'F', value: 0 },
+    { day: 'S', value: 0 },
+    { day: 'S', value: 0 },
 ];
 
-export const DashboardOverview: React.FC = () => {
-    const [orders, setOrders] = useState<OrderDisplay[]>([]);
+interface DashboardOverviewProps {
+    onNavigate: (section: string) => void;
+}
+
+export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate }) => {
+    const [orders, setOrders] = useState<Order[]>([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const storedOrders = localStorage.getItem('printwise_orders');
-        if (storedOrders) {
+        const loadData = async () => {
             try {
-                const parsed = JSON.parse(storedOrders);
-                setOrders(parsed.map((o: any) => ({
-                    id: o.id,
-                    userName: o.userName || 'Customer',
-                    fileName: o.fileName,
-                    status: o.status === 'confirmed' ? 'Pending' : o.status,
-                    totalAmount: o.totalAmount
-                })));
+                const data = await fetchOrders();
+                setOrders(data);
             } catch (e) {
-                console.error('Failed to parse orders:', e);
+                console.error('Failed to load dashboard data:', e);
+            } finally {
+                setLoading(false);
             }
-        }
+        };
+        loadData();
     }, []);
 
-    const pendingOrders = orders.filter(o => o.status === 'Pending' || o.status === 'confirmed');
-    const printingOrders = orders.filter(o => o.status === 'Printing' || o.status === 'printing');
+    const pendingOrders = orders.filter(o => o.status === 'confirmed');
+    const printingOrders = orders.filter(o => o.status === 'printing');
+    const completedToday = orders.filter(o => o.status === 'completed' && new Date(o.updatedAt).toDateString() === new Date().toDateString());
+
+    // Calculate Today's Revenue
+    const todayRevenue = orders
+        .filter(o => new Date(o.createdAt).toDateString() === new Date().toDateString())
+        .reduce((sum, o) => sum + o.totalAmount, 0);
+
+    const totalRevenue = orders.reduce((sum, o) => sum + o.totalAmount, 0);
 
     return (
         <div className="space-y-6">
@@ -68,9 +70,12 @@ export const DashboardOverview: React.FC = () => {
                         <Icon name="calendar_today" className="text-lg mr-2" />
                         Today
                     </button>
-                    <button className="inline-flex items-center justify-center h-10 px-4 rounded-lg bg-primary text-white text-sm font-bold shadow-md hover:bg-primary-hover transition-colors">
+                    <button
+                        onClick={() => onNavigate('orders')}
+                        className="inline-flex items-center justify-center h-10 px-4 rounded-lg bg-primary text-white text-sm font-bold shadow-md hover:bg-primary-hover transition-colors"
+                    >
                         <Icon name="add" className="text-lg mr-2" />
-                        Quick Order
+                        Manage Orders
                     </button>
                 </div>
             </div>
@@ -79,8 +84,8 @@ export const DashboardOverview: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatCard
                     title="Today's Revenue"
-                    value="₹12,450"
-                    change="+18%"
+                    value={`₹${todayRevenue.toLocaleString()}`}
+                    change="Daily Total"
                     positive
                     icon="payments"
                     iconBg="bg-green-50 dark:bg-green-900/20"
@@ -89,17 +94,17 @@ export const DashboardOverview: React.FC = () => {
                 <StatCard
                     title="Pending Orders"
                     value={pendingOrders.length.toString()}
-                    change="2 urgent"
-                    positive={false}
+                    change={pendingOrders.length > 0 ? "Needs Attention" : "All Caught Up"}
+                    positive={pendingOrders.length === 0}
                     icon="pending_actions"
                     iconBg="bg-orange-50 dark:bg-orange-900/20"
                     iconColor="text-orange-600 dark:text-orange-400"
-                    urgent
+                    urgent={pendingOrders.length > 0}
                 />
                 <StatCard
                     title="Now Printing"
                     value={printingOrders.length.toString()}
-                    change="Active"
+                    change="Active Jobs"
                     positive
                     icon="print"
                     iconBg="bg-blue-50 dark:bg-blue-900/20"
@@ -107,8 +112,8 @@ export const DashboardOverview: React.FC = () => {
                 />
                 <StatCard
                     title="Completed Today"
-                    value="23"
-                    change="+5 vs yesterday"
+                    value={completedToday.length.toString()}
+                    change="Finished Jobs"
                     positive
                     icon="check_circle"
                     iconBg="bg-purple-50 dark:bg-purple-900/20"
@@ -123,42 +128,16 @@ export const DashboardOverview: React.FC = () => {
                     <div className="flex items-center justify-between mb-4">
                         <div>
                             <h3 className="text-lg font-bold text-slate-900 dark:text-white">Revenue Overview</h3>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">This week's performance</p>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">Total Lifetime</p>
                         </div>
                         <div className="text-right">
-                            <p className="text-2xl font-bold text-slate-900 dark:text-white">₹1,47,000</p>
-                            <p className="text-sm text-green-600 dark:text-green-400">+12.5% from last week</p>
+                            <p className="text-2xl font-bold text-slate-900 dark:text-white">₹{totalRevenue.toLocaleString()}</p>
+                            <p className="text-sm text-green-600 dark:text-green-400">Synced from Database</p>
                         </div>
                     </div>
-                    <div className="h-48">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={revenueData}>
-                                <defs>
-                                    <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#2b7cee" stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor="#2b7cee" stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <XAxis dataKey="day" stroke="#94a3b8" fontSize={12} axisLine={false} tickLine={false} />
-                                <YAxis hide />
-                                <Tooltip
-                                    formatter={(value: number) => [`₹${value.toLocaleString()}`, 'Revenue']}
-                                    contentStyle={{
-                                        backgroundColor: '#fff',
-                                        border: '1px solid #e2e8f0',
-                                        borderRadius: '8px'
-                                    }}
-                                />
-                                <Area
-                                    type="monotone"
-                                    dataKey="value"
-                                    stroke="#2b7cee"
-                                    strokeWidth={2}
-                                    fillOpacity={1}
-                                    fill="url(#colorValue)"
-                                />
-                            </AreaChart>
-                        </ResponsiveContainer>
+                    <div className="h-48 flex items-center justify-center text-slate-500">
+                        {/* Chart disabled as real historical data isn't easily aggregatable on client side without expensive ops */}
+                        <p>Chart requires historical data aggregation</p>
                     </div>
                 </div>
 
@@ -166,10 +145,10 @@ export const DashboardOverview: React.FC = () => {
                 <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-6">
                     <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Quick Actions</h3>
                     <div className="space-y-3">
-                        <QuickAction icon="print" label="Start Print Queue" color="bg-blue-500" />
-                        <QuickAction icon="inventory_2" label="Check Inventory" color="bg-purple-500" />
-                        <QuickAction icon="receipt_long" label="Generate Report" color="bg-green-500" />
-                        <QuickAction icon="settings" label="Printer Settings" color="bg-slate-500" />
+                        <QuickAction icon="print" label="Manage Orders" color="bg-blue-500" onClick={() => onNavigate('orders')} />
+                        <QuickAction icon="inventory_2" label="Check Inventory" color="bg-purple-500" onClick={() => onNavigate('inventory')} />
+                        <QuickAction icon="people" label="Customers" color="bg-green-500" onClick={() => onNavigate('customers')} />
+                        <QuickAction icon="settings" label="Platform Settings" color="bg-slate-500" onClick={() => onNavigate('settings')} />
                     </div>
                 </div>
             </div>
@@ -178,32 +157,37 @@ export const DashboardOverview: React.FC = () => {
             <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark overflow-hidden">
                 <div className="flex items-center justify-between p-6 border-b border-border-light dark:border-border-dark">
                     <h3 className="text-lg font-bold text-slate-900 dark:text-white">Recent Orders</h3>
-                    <button className="text-sm text-primary font-medium hover:underline">View All</button>
+                    <button
+                        onClick={() => onNavigate('orders')}
+                        className="text-sm text-primary font-medium hover:underline"
+                    >
+                        View All
+                    </button>
                 </div>
                 <div className="divide-y divide-border-light dark:divide-border-dark">
                     {orders.length === 0 ? (
                         <div className="py-12 text-center text-slate-400">
                             <Icon name="inbox" className="text-3xl mb-2" />
-                            <p>No recent orders</p>
+                            <p>No orders found</p>
                         </div>
                     ) : (
                         orders.slice(0, 4).map((order) => (
                             <div key={order.id} className="flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
                                 <div className="flex items-center gap-4">
                                     <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">
-                                        {order.userName.charAt(0).toUpperCase()}
+                                        {(order.userName || 'C').charAt(0).toUpperCase()}
                                     </div>
                                     <div>
-                                        <p className="font-medium text-slate-900 dark:text-white">{order.userName}</p>
-                                        <p className="text-sm text-slate-500 dark:text-slate-400">{order.id} • {order.fileName}</p>
+                                        <p className="font-medium text-slate-900 dark:text-white">{order.userName || 'Customer'}</p>
+                                        <p className="text-sm text-slate-500 dark:text-slate-400">{order.id.split('-')[1] || order.id}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-4">
-                                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${order.status === 'Pending' || order.status === 'confirmed'
-                                            ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-                                            : order.status === 'Printing' || order.status === 'printing'
-                                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-                                                : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${order.status === 'confirmed'
+                                        ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                                        : order.status === 'printing'
+                                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                                            : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
                                         }`}>
                                         {order.status}
                                     </span>
@@ -253,8 +237,8 @@ const StatCard: React.FC<{
 );
 
 // Quick Action Component
-const QuickAction: React.FC<{ icon: string; label: string; color: string }> = ({ icon, label, color }) => (
-    <button className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group">
+const QuickAction: React.FC<{ icon: string; label: string; color: string; onClick?: () => void }> = ({ icon, label, color, onClick }) => (
+    <button onClick={onClick} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group">
         <div className={`size-10 rounded-xl ${color} flex items-center justify-center text-white group-hover:scale-105 transition-transform`}>
             <Icon name={icon} className="text-lg" />
         </div>

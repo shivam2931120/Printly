@@ -4,6 +4,7 @@ import { PrintOptions, PricingConfig, DEFAULT_PRICING, User, ShopConfig, DEFAULT
 import { StudentShop } from './student/StudentShop';
 import { initiatePayment } from '../services/razorpay';
 import { createOrder } from '../services/data';
+import { ordersStorage } from '../services/storage';
 import { OrderConfirmation, generateOrderToken } from './user/OrderConfirmation';
 
 // Order type for confirmation modal
@@ -75,7 +76,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
   // Calculate Print Price (for current configuration)
   const calculatePrintPrice = () => {
-    if (!file || pageCount < 1) return 0;
+    if (!file || isNaN(pageCount) || pageCount < 1 || isNaN(options.copies) || options.copies < 1) return 0;
     const baseRate = options.colorMode === 'color' ? pricing.perPageColor : pricing.perPageBW;
     const paperMultiplier = pricing.paperSizeMultiplier[options.paperSize];
     let cost = pageCount * baseRate * options.copies * paperMultiplier;
@@ -185,7 +186,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
           type: 'mixed',
           items: cart,
           totalAmount: cartTotal,
-          status: 'confirmed',
+          status: 'pending',
           paymentStatus: 'paid',
           paymentId: response.razorpay_payment_id,
           createdAt: new Date(),
@@ -203,11 +204,14 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               pageCount: 0,
               options: options,
               totalAmount: cartTotal,
-              status: 'confirmed',
+              status: 'pending',
               createdAt: new Date().toISOString(),
               estimatedReady: estimatedTime.toLocaleTimeString(),
               items: cart
             });
+
+            // order saved to DB.
+            // ordersStorage.add(newOrder); // Local storage disabled
 
             setCart([]);
             setIsCartOpen(false);
@@ -347,8 +351,9 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                       <input
                         type="number"
                         min="1"
-                        value={pageCount}
-                        onChange={(e) => setPageCount(Math.max(1, parseInt(e.target.value) || 1))}
+                        value={isNaN(pageCount) ? '' : pageCount}
+                        onChange={(e) => setPageCount(parseInt(e.target.value))}
+                        onBlur={() => setPageCount(prev => (isNaN(prev) || prev < 1 ? 1 : prev))}
                         className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg font-bold"
                       />
                     </div>
@@ -358,8 +363,9 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                       <input
                         type="number"
                         min="1"
-                        value={options.copies}
-                        onChange={(e) => updateOption('copies', Math.max(1, parseInt(e.target.value) || 1))}
+                        value={isNaN(options.copies) ? '' : options.copies}
+                        onChange={(e) => updateOption('copies', parseInt(e.target.value))}
+                        onBlur={() => updateOption('copies', (isNaN(options.copies) || options.copies < 1 ? 1 : options.copies))}
                         className="w-full px-4 py-3 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg font-bold"
                       />
                     </div>
@@ -411,7 +417,8 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                     </div>
                     <button
                       onClick={addToCartPrint}
-                      className="w-full py-3.5 bg-primary text-white font-bold rounded-xl shadow-lg hover:bg-primary-hover transition-all flex items-center justify-center gap-2"
+                      disabled={isNaN(pageCount) || pageCount < 1 || isNaN(options.copies) || options.copies < 1}
+                      className="w-full py-3.5 bg-primary text-white font-bold rounded-xl shadow-lg hover:bg-primary-hover transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Icon name="add_shopping_cart" />
                       Add to Cart
@@ -456,7 +463,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
                 cart.map(item => (
                   <div key={item.id} className="flex gap-4 p-3 bg-slate-50 dark:bg-surface-dark rounded-xl border border-slate-100 dark:border-border-dark">
                     <div className="size-16 bg-white dark:bg-slate-800 rounded-lg flex items-center justify-center text-2xl shrink-0">
-                      {item.type === 'product' ? (item.image || '📦') : <Icon name="description" className="text-red-500" />}
+                      {item.type === 'product' ? (item.image || <Icon name="inventory_2" />) : <Icon name="description" className="text-red-500" />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <h4 className="font-bold text-slate-900 dark:text-white line-clamp-1">{item.name}</h4>

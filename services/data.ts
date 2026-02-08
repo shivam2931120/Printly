@@ -24,11 +24,11 @@ export const createOrder = async (order: Order): Promise<{ success: boolean; err
         .from('Order')
         .insert({
             id: order.id,
-            orderToken: order.id.split('-')[2] || order.id, // simplified token logic
+            orderToken: order.id.split('-')[1] || order.id, // simplified token logic
             userId: order.userId,
             totalAmount: order.totalAmount,
-            status: order.status.toUpperCase(), // Prisma Enum is typically uppercase
-            paymentStatus: order.paymentStatus.toUpperCase(),
+            status: (['PENDING', 'PRINTING', 'READY', 'COMPLETED', 'CANCELLED'].includes(order.status.toUpperCase()) ? order.status.toUpperCase() : 'PENDING'),
+            paymentStatus: (['PAID', 'UNPAID', 'REFUNDED'].includes(order.paymentStatus.toUpperCase()) ? order.paymentStatus.toUpperCase() : 'UNPAID'),
             // Legacy fields for backward compatibility if needed, but primarily relying on Items now
             fileName: order.fileName,
             pageCount: order.pageCount,
@@ -37,7 +37,8 @@ export const createOrder = async (order: Order): Promise<{ success: boolean; err
             colorMode: order.options?.colorMode,
             sides: order.options?.sides,
             binding: order.options?.binding,
-            shopId: 'default' // Single shop for now
+            shopId: 'default', // Single shop for now
+            updatedAt: new Date().toISOString()
         })
         .select()
         .single();
@@ -49,6 +50,7 @@ export const createOrder = async (order: Order): Promise<{ success: boolean; err
 
     // 2. Create Order Items
     const itemsToInsert = order.items.map(item => ({
+        id: crypto.randomUUID(),
         orderId: order.id,
         type: item.type,
         productId: item.type === 'product' ? item.productId : null,
@@ -106,6 +108,7 @@ export const fetchOrders = async (userId?: string): Promise<Order[]> => {
         userName: dbOrder.user?.name || 'Unknown',
         type: 'mixed', // Defaulting to mixed for unified view
         totalAmount: dbOrder.totalAmount,
+        orderToken: dbOrder.orderToken,
         status: dbOrder.status.toLowerCase() as OrderStatus,
         paymentStatus: dbOrder.paymentStatus.toLowerCase() as PaymentStatus,
         createdAt: new Date(dbOrder.createdAt),

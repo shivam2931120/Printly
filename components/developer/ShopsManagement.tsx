@@ -202,29 +202,34 @@ export const ShopsManagement: React.FC<{ onSelectShop?: (shopId: string) => void
                                 <td className="py-4 px-4">
                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${shop.isActive
                                         ? 'bg-success/10 text-success'
-                                        : 'bg-surface-darker text-text-secondary'
+                                        : 'bg-red-500/10 text-red-500'
                                         }`}>
-                                        {shop.isActive ? 'Active' : 'Inactive'}
+                                        {shop.isActive ? 'Active' : 'Suspended'}
                                     </span>
                                 </td>
                                 <td className="py-4 px-4 text-right">
-                                    <div className="flex items-center justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                    <div className="flex items-center justify-end gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                                         <button
                                             onClick={() => onManageShop?.(shop.shopId)}
-                                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-darker border border-border-dark text-xs font-medium text-text-secondary hover:text-white hover:border-primary/50 transition-all mr-2"
+                                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-darker border border-border-dark text-xs font-medium text-text-secondary hover:text-white hover:border-primary/50 transition-all"
                                         >
                                             <Icon name="admin_panel_settings" className="text-sm" />
                                             Manage
                                         </button>
                                         <button
-                                            onClick={() => toggleShopStatus(shop.shopId)}
-                                            className={`p-2 rounded-lg transition-colors ${shop.isActive
-                                                ? 'text-text-secondary hover:text-error hover:bg-error/10'
-                                                : 'text-text-secondary hover:text-success hover:bg-success/10'
+                                            onClick={() => {
+                                                if (confirm(`Are you sure you want to ${shop.isActive ? 'suspend' : 'activate'} this shop?`)) {
+                                                    toggleShopStatus(shop.shopId);
+                                                }
+                                            }}
+                                            className={`flex items-center gap-1 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${shop.isActive
+                                                ? 'border-red-900/30 text-red-400 bg-red-900/10 hover:bg-red-900/20 hover:border-red-900/50'
+                                                : 'border-green-900/30 text-green-400 bg-green-900/10 hover:bg-green-900/20 hover:border-green-900/50'
                                                 }`}
-                                            title={shop.isActive ? 'Deactivate' : 'Activate'}
+                                            title={shop.isActive ? 'Suspend Shop' : 'Activate Shop'}
                                         >
-                                            <Icon name={shop.isActive ? 'toggle_on' : 'toggle_off'} className="text-lg" />
+                                            <Icon name={shop.isActive ? 'block' : 'check_circle'} className="text-sm" />
+                                            {shop.isActive ? 'Suspend' : 'Activate'}
                                         </button>
                                     </div>
                                 </td>

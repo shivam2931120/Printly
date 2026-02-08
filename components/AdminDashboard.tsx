@@ -26,9 +26,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onSignOut,
 }) => {
   const [activeSection, setActiveSection] = useState('dashboard');
-  const [adminAvatar, setAdminAvatar] = useState<string | null>(
-    localStorage.getItem('printwise_admin_avatar')
-  );
+  const [adminAvatar, setAdminAvatar] = useState<string | null>(null);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -37,7 +35,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       reader.onload = (event) => {
         const dataUrl = event.target?.result as string;
         setAdminAvatar(dataUrl);
-        localStorage.setItem('printwise_admin_avatar', dataUrl);
       };
       reader.readAsDataURL(file);
     }
@@ -46,7 +43,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const renderContent = () => {
     switch (activeSection) {
       case 'dashboard':
-        return <DashboardOverview />;
+        return <DashboardOverview onNavigate={(section) => setActiveSection(section)} />;
       case 'orders':
         return <OrdersPanel />;
       case 'products':
@@ -71,7 +68,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           />
         );
       default:
-        return <DashboardOverview />;
+        return <DashboardOverview onNavigate={setActiveSection} />;
     }
   };
 

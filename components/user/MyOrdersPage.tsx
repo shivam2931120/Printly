@@ -1,21 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '../ui/Icon';
+import { fetchOrders } from '../../services/data';
+import { userStorage, ordersStorage } from '../../services/storage';
 
-interface Order {
-    id: string;
-    tokenNumber?: string;
-    fileName: string;
-    pageCount: number;
-    totalAmount: number;
-    status: string;
-    createdAt: string;
-    options?: {
-        paperSize: string;
-        colorMode: string;
-        sides: string;
-        binding: string;
-    };
-}
+import { Order } from '../../types';
 
 interface MyOrdersPageProps {
     onBack: () => void;
@@ -33,18 +21,23 @@ export const MyOrdersPage: React.FC<MyOrdersPageProps> = ({ onBack }) => {
     const [orders, setOrders] = useState<Order[]>([]);
 
     useEffect(() => {
-        const stored = localStorage.getItem('printwise_orders');
-        if (stored) {
-            try {
-                setOrders(JSON.parse(stored));
-            } catch (e) {
-                console.error('Failed to parse orders:', e);
+        const loadOrders = async () => {
+            const user = userStorage.get();
+            if (user?.id) {
+                // Logged in user - fetch from API
+                const dbOrders = await fetchOrders(user.id);
+                setOrders(dbOrders);
+            } else {
+                // Guest user with no session - show empty or handle via cookie if implemented later
+                setOrders([]);
             }
-        }
+        };
+
+        loadOrders();
     }, []);
 
-    const formatDate = (dateStr: string) => {
-        return new Date(dateStr).toLocaleDateString('en-IN', {
+    const formatDate = (date: Date | string) => {
+        return new Date(date).toLocaleDateString('en-IN', {
             year: 'numeric',
             month: 'short',
             day: 'numeric',
@@ -100,9 +93,9 @@ export const MyOrdersPage: React.FC<MyOrdersPageProps> = ({ onBack }) => {
                                 <div className="flex items-start justify-between mb-3">
                                     <div>
                                         <div className="flex items-center gap-3 mb-1">
-                                            {order.tokenNumber && (
+                                            {order.orderToken && (
                                                 <span className="px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-mono font-bold">
-                                                    #{order.tokenNumber}
+                                                    #{order.orderToken}
                                                 </span>
                                             )}
                                             <span className="font-bold text-slate-900 dark:text-white">{order.id.split('-')[0]}-{order.id.split('-')[1]}</span>
@@ -119,7 +112,7 @@ export const MyOrdersPage: React.FC<MyOrdersPageProps> = ({ onBack }) => {
                                     <Icon name="picture_as_pdf" className="text-red-500 text-xl shrink-0" />
                                     <div className="flex-1 min-w-0">
                                         <p className="font-medium text-slate-900 dark:text-white text-sm truncate">
-                                            {order.fileName} ({order.pageCount} pages)
+                                            {order.fileName || 'Print Job'} ({order.pageCount || 0} pages)
                                         </p>
                                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{getSpecsString(order)}</p>
                                     </div>
@@ -129,7 +122,7 @@ export const MyOrdersPage: React.FC<MyOrdersPageProps> = ({ onBack }) => {
                                     <button className="flex-1 py-2 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
                                         View Details
                                     </button>
-                                    {order.status === 'Completed' && (
+                                    {order.status === 'completed' && (
                                         <button className="flex-1 py-2 rounded-lg text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 transition-colors">
                                             Reorder
                                         </button>
