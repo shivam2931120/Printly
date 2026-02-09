@@ -152,9 +152,37 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ order: initialOrder,
                                                         {item.type === 'print' ? (
                                                             <div className="text-sm text-slate-500 dark:text-slate-400 space-y-1 mt-1">
                                                                 <p>{item.pageCount} pages • {item.options.copies} copies</p>
-                                                                <p className="text-xs bg-slate-100 dark:bg-slate-800 inline-block px-2 py-0.5 rounded">
-                                                                    {item.options.colorMode} • {item.options.paperSize} • {item.options.sides}
-                                                                </p>
+                                                                <div className="flex flex-wrap gap-1 mt-1">
+                                                                    <span className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
+                                                                        {item.options.colorMode}
+                                                                    </span>
+                                                                    <span className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
+                                                                        {item.options.paperSize}
+                                                                    </span>
+                                                                    <span className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
+                                                                        {item.options.sides}
+                                                                    </span>
+                                                                    {item.options.binding !== 'none' && (
+                                                                        <span className="text-xs bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 px-2 py-0.5 rounded border border-orange-200 dark:border-orange-900/50">
+                                                                            Binding: {item.options.binding}
+                                                                        </span>
+                                                                    )}
+                                                                    {item.options.stapling !== 'none' && (
+                                                                        <span className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-900/50">
+                                                                            Staple: {item.options.stapling}
+                                                                        </span>
+                                                                    )}
+                                                                    {item.options.holePunch && (
+                                                                        <span className="text-xs bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400 px-2 py-0.5 rounded border border-purple-200 dark:border-purple-900/50">
+                                                                            Hole Punch
+                                                                        </span>
+                                                                    )}
+                                                                    {item.options.coverPage !== 'none' && (
+                                                                        <span className="text-xs bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400 px-2 py-0.5 rounded border border-teal-200 dark:border-teal-900/50">
+                                                                            Cover: {item.options.coverPage}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                         ) : (
                                                             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">

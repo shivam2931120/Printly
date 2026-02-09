@@ -161,6 +161,88 @@ export const PricingSettings: React.FC<PricingSettingsProps> = ({ pricing, onUpd
                 </div>
             </div>
 
+            {/* Paper Type Fees */}
+            <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-6">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                    <Icon name="layers" className="text-indigo-500" />
+                    Paper Type Extra Fees (Per Page)
+                </h3>
+                <div className="grid sm:grid-cols-3 gap-4">
+                    {(['normal', 'bond', 'glossy'] as const).map((type) => (
+                        <div key={type}>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 capitalize">
+                                {type} Paper (+₹)
+                            </label>
+                            <input
+                                type="number"
+                                step="0.5"
+                                min="0"
+                                value={localPricing.paperTypeFees?.[type] || 0}
+                                onChange={(e) => handleChange(`paperTypeFees.${type}`, parseFloat(e.target.value) || 0)}
+                                className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-primary"
+                            />
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Additional Services */}
+            <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-6">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                    <Icon name="construction" className="text-orange-500" />
+                    Finishing Options
+                </h3>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {/* Hole Punch */}
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                            Hole Punch (₹ per file)
+                        </label>
+                        <input
+                            type="number"
+                            step="1"
+                            min="0"
+                            value={localPricing.holePunchPrice}
+                            onChange={(e) => handleChange('holePunchPrice', parseFloat(e.target.value) || 0)}
+                            className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-primary"
+                        />
+                    </div>
+                    {/* Cover Page */}
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                            Cover Page (₹ per page)
+                        </label>
+                        <input
+                            type="number"
+                            step="1"
+                            min="0"
+                            value={localPricing.coverPagePrice}
+                            onChange={(e) => handleChange('coverPagePrice', parseFloat(e.target.value) || 0)}
+                            className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-primary"
+                        />
+                    </div>
+                </div>
+
+                <div className="mt-4 grid sm:grid-cols-3 gap-4">
+                    {/* Stapling */}
+                    {(['none', 'corner', 'side'] as const).map((type) => (
+                        <div key={type}>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 capitalize">
+                                {type === 'none' ? 'No Stapling' : `${type} Staple`} (₹)
+                            </label>
+                            <input
+                                type="number"
+                                step="1"
+                                min="0"
+                                value={localPricing.staplingPrices?.[type] || 0}
+                                onChange={(e) => handleChange(`staplingPrices.${type}`, parseFloat(e.target.value) || 0)}
+                                className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-primary"
+                            />
+                        </div>
+                    ))}
+                </div>
+            </div>
+
             {/* Paper Size Multipliers */}
             <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-6">
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">

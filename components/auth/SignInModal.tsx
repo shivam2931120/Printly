@@ -59,7 +59,7 @@ export const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onSig
                             email,
                             password, // Storing directly as per current requirement
                             name,
-                            role: 'USER', // Default role
+                            role: 'USER', // FORCE 'USER' role for all public signups. Admins/Devs must be promoted in DB.
                         }
                     ])
                     .select()

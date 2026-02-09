@@ -62,6 +62,43 @@ export const OrdersPanel: React.FC = () => {
         }
     };
 
+    const handleExport = () => {
+        if (filteredOrders.length === 0) {
+            setToastMessage({ message: 'No orders to export', type: 'warning' });
+            return;
+        }
+
+        const headers = ['Order ID', 'Date', 'Customer', 'Email', 'Items', 'Total Amount', 'Status', 'Payment'];
+        const csvContent = [
+            headers.join(','),
+            ...filteredOrders.map(order => {
+                const date = new Date(order.createdAt).toLocaleDateString();
+                const itemsCount = order.items ? order.items.length : (order.fileName ? 1 : 0);
+                const itemsDesc = order.items ? `${itemsCount} items` : order.fileName || 'N/A';
+
+                return [
+                    order.id,
+                    date,
+                    `"${order.userName}"`, // Quote to handle commas in names
+                    order.userEmail,
+                    `"${itemsDesc}"`,
+                    order.totalAmount,
+                    order.status,
+                    order.paymentStatus
+                ].join(',');
+            })
+        ].join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `orders_export_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     const statusColors: Record<string, string> = {
         'pending': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
         'confirmed': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
@@ -106,7 +143,10 @@ export const OrdersPanel: React.FC = () => {
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <button className="inline-flex items-center justify-center h-10 px-4 rounded-lg border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark text-slate-700 dark:text-slate-200 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm">
+                    <button
+                        onClick={handleExport}
+                        className="inline-flex items-center justify-center h-10 px-4 rounded-lg border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark text-slate-700 dark:text-slate-200 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm"
+                    >
                         <Icon name="download" className="text-lg mr-2" />
                         Export
                     </button>

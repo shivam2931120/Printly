@@ -17,27 +17,137 @@ export const fetchProducts = async (): Promise<Product[]> => {
     return data as Product[];
 };
 
+export const createProduct = async (product: Product): Promise<{ success: boolean; error?: any }> => {
+    const { error } = await supabase
+        .from('Product')
+        .insert({
+            id: product.id,
+            name: product.name,
+            description: product.description,
+            category: product.category,
+            price: product.price,
+            stock: product.stock,
+            image: product.image,
+            isActive: product.isActive
+        });
+
+    if (error) {
+        console.error('Error creating product:', error);
+        return { success: false, error };
+    }
+    return { success: true };
+};
+
+export const updateProduct = async (product: Product): Promise<{ success: boolean; error?: any }> => {
+    const { error } = await supabase
+        .from('Product')
+        .update({
+            name: product.name,
+            description: product.description,
+            category: product.category,
+            price: product.price,
+            stock: product.stock,
+            image: product.image,
+            isActive: product.isActive
+        })
+        .eq('id', product.id);
+
+    if (error) {
+        console.error('Error updating product:', error);
+        return { success: false, error };
+    }
+    return { success: true };
+};
+
+export const deleteProduct = async (productId: string): Promise<{ success: boolean; error?: any }> => {
+    const { error } = await supabase
+        .from('Product')
+        .delete()
+        .eq('id', productId);
+
+    if (error) {
+        console.error('Error deleting product:', error);
+        return { success: false, error };
+    }
+    return { success: true };
+};
+
 // ===== ORDERS =====
 export const createOrder = async (order: Order): Promise<{ success: boolean; error?: any }> => {
-    // 1. Create Order
+    // 1. Get Default Shop ID - Fix for "Key not present in table Shop"
+    let shopId = order.shopId;
+
+    // Attempt to fetch existing shop (limit 1)
+    if (!shopId || shopId === 'default') {
+        const { data: shop } = await supabase.from('Shop').select('id').limit(1).single();
+        if (shop) {
+            shopId = shop.id;
+        } else {
+            // CRITICAL: If no shop exists at all, CREATE one to unblock orders
+            const { data: newShop, error: createError } = await supabase.from('Shop').insert({
+                shopName: 'Default Shop',
+                tagline: 'Auto-created Shop',
+            }).select().single();
+
+            if (newShop) {
+                shopId = newShop.id;
+            } else {
+                console.error('Failed to auto-create shop:', createError);
+                return { success: false, error: 'Internal Error: Could not initialize shop.' };
+            }
+        }
+    }
+
+    // 2. Resolve User ID
+    // OLD LOGIC: Client generated temp IDs like "user_174..." were treated as guest.
+    // NEW LOGIC: Clerk IDs also start with "user_", so we MUST preserve them.
+    // We assume the frontend passes a valid ID if the user is logged in.
+    let finalUserId = order.userId;
+    // (Optional) We could add a check here if we wanted to support 'guest' vs 'clerk' specifically,
+    // but relying on StudentPortal to pass the correct ID is better.
+
+    // 3. Sync User to Supabase (Critical for FK constraints)
+    // Clerk IDs don't exist in our 'User' table by default, causing FK errors.
+    // We must upsert the user record to ensure it exists.
+    if (finalUserId && order.userEmail) {
+        const { error: userError } = await supabase
+            .from('User')
+            .upsert({
+                id: finalUserId,
+                email: order.userEmail,
+                name: order.userName || order.userEmail.split('@')[0],
+                // We default new Clerk users to non-admin/non-dev or let defaults handle it
+                // Assuming schema has defaults for isAdmin/isDeveloper if they are required
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            }, { onConflict: 'id' });
+
+        if (userError) {
+            console.error('Error syncing user to Supabase:', userError);
+            // We continue, hoping it might just be a permissions issue or existing user, 
+            // but if it fails completely, the order insert will likely fail too.
+        }
+    }
+
+    // 4. Create Order
     const { data: orderData, error: orderError } = await supabase
         .from('Order')
         .insert({
             id: order.id,
-            orderToken: order.id.split('-')[1] || order.id, // simplified token logic
-            userId: order.userId,
+            orderToken: order.orderToken || order.id.split('-')[1], // Use passed token or fallback
+            userId: finalUserId, // Use sanitized User ID
             totalAmount: order.totalAmount,
             status: (['PENDING', 'PRINTING', 'READY', 'COMPLETED', 'CANCELLED'].includes(order.status.toUpperCase()) ? order.status.toUpperCase() : 'PENDING'),
             paymentStatus: (['PAID', 'UNPAID', 'REFUNDED'].includes(order.paymentStatus.toUpperCase()) ? order.paymentStatus.toUpperCase() : 'UNPAID'),
-            // Legacy fields for backward compatibility if needed, but primarily relying on Items now
-            fileName: order.fileName,
-            pageCount: order.pageCount,
-            copies: order.options?.copies,
-            paperSize: order.options?.paperSize,
-            colorMode: order.options?.colorMode,
-            sides: order.options?.sides,
-            binding: order.options?.binding,
-            shopId: 'default', // Single shop for now
+            // Legacy fields
+            fileName: order.items.find(i => i.type === 'print')?.fileName || order.fileName,
+            pageCount: order.items.find(i => i.type === 'print')?.pageCount || order.pageCount,
+            copies: order.items.find(i => i.type === 'print')?.options?.copies,
+            paperSize: order.items.find(i => i.type === 'print')?.options?.paperSize,
+            colorMode: order.items.find(i => i.type === 'print')?.options?.colorMode,
+            sides: order.items.find(i => i.type === 'print')?.options?.sides,
+            binding: order.items.find(i => i.type === 'print')?.options?.binding,
+            shopId: shopId,
             updatedAt: new Date().toISOString()
         })
         .select()
@@ -48,7 +158,7 @@ export const createOrder = async (order: Order): Promise<{ success: boolean; err
         return { success: false, error: orderError };
     }
 
-    // 2. Create Order Items
+    // 4. Create Order Items
     const itemsToInsert = order.items.map(item => ({
         id: crypto.randomUUID(),
         orderId: order.id,
@@ -59,7 +169,7 @@ export const createOrder = async (order: Order): Promise<{ success: boolean; err
         // Print Details
         fileUrl: item.type === 'print' ? item.fileUrl : null,
         fileName: item.type === 'print' ? item.fileName : null,
-        printConfig: item.type === 'print' ? item.options : null, // Storing options JSON
+        printConfig: item.type === 'print' ? item.options : null, // Storing options JSON (includes paperType, pageRange)
         details: item.type === 'print' ? { pageCount: item.pageCount } : null
     }));
 
@@ -113,6 +223,10 @@ export const fetchOrders = async (userId?: string): Promise<Order[]> => {
         paymentStatus: dbOrder.paymentStatus.toLowerCase() as PaymentStatus,
         createdAt: new Date(dbOrder.createdAt),
         updatedAt: new Date(dbOrder.updatedAt),
+        // Legacy/Top-level fields for display
+        fileName: dbOrder.fileName,
+        pageCount: dbOrder.pageCount,
+        options: dbOrder.printConfig || dbOrder.options, // Handle different naming if consistent
         // Map Items
         items: dbOrder.items.map((dbItem: any) => {
             if (dbItem.type === 'product') {
@@ -140,4 +254,32 @@ export const fetchOrders = async (userId?: string): Promise<Order[]> => {
             }
         })
     }));
+};
+// ===== STORAGE =====
+export const uploadFile = async (file: File): Promise<string | null> => {
+    try {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+            .from('prints')
+            .upload(filePath, file);
+
+        if (uploadError) {
+            console.error('Error uploading file:', uploadError.message, uploadError);
+            alert(`Upload failed: ${uploadError.message}`);
+            return null;
+        }
+
+        const { data } = supabase.storage
+            .from('prints')
+            .getPublicUrl(filePath);
+
+        return data.publicUrl;
+    } catch (error: any) {
+        console.error('Unexpected error during file upload:', error);
+        alert(`Unexpected upload error: ${error.message || error}`);
+        return null;
+    }
 };

@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Icon } from '../ui/Icon';
 
-interface SupportPageProps {
-    onBack: () => void;
-}
+interface SupportPageProps { }
 
 const FORMSPREE_ENDPOINT = import.meta.env.VITE_FORMSPREE_ENDPOINT || 'https://formspree.io/f/YOUR_FORM_ID';
 
@@ -30,7 +29,8 @@ const faqs = [
     },
 ];
 
-export const SupportPage: React.FC<SupportPageProps> = ({ onBack }) => {
+export const SupportPage: React.FC<SupportPageProps> = () => {
+    const navigate = useNavigate();
     const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
     const [formData, setFormData] = useState({ name: '', email: '', message: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -75,7 +75,7 @@ export const SupportPage: React.FC<SupportPageProps> = ({ onBack }) => {
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-16">
                         <button
-                            onClick={onBack}
+                            onClick={() => navigate(-1)}
                             className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
                         >
                             <Icon name="arrow_back" className="text-xl" />

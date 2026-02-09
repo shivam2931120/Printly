@@ -48,6 +48,13 @@ export interface PrintOptions {
   colorMode: 'bw' | 'color';
   sides: 'single' | 'double';
   binding: 'none' | 'spiral' | 'soft' | 'hard';
+  paperType: 'normal' | 'bond' | 'glossy';
+  pageSelection: 'all' | 'custom';
+  pageRange?: { from: number; to: number };
+  // New Options
+  stapling: 'none' | 'corner' | 'side';
+  holePunch: boolean;
+  coverPage: 'none' | 'front' | 'front_back';
 }
 
 // ===== PRICING CONFIGURATION =====
@@ -68,6 +75,19 @@ export interface PricingConfig {
     letter: number;
     legal: number;
   };
+  paperTypeFees: {
+    normal: number;
+    bond: number;
+    glossy: number;
+  };
+  // New Pricing
+  staplingPrices: {
+    none: number;
+    corner: number;
+    side: number;
+  };
+  holePunchPrice: number; // per file/job
+  coverPagePrice: number; // per page (usually thicker paper)
 }
 
 export const DEFAULT_PRICING: PricingConfig = {
@@ -87,6 +107,18 @@ export const DEFAULT_PRICING: PricingConfig = {
     letter: 1,
     legal: 1.5,
   },
+  paperTypeFees: {
+    normal: 0,
+    bond: 2,
+    glossy: 5,
+  },
+  staplingPrices: {
+    none: 0,
+    corner: 10,
+    side: 15,
+  },
+  holePunchPrice: 10,
+  coverPagePrice: 15,
 };
 
 // ===== ORDER =====
@@ -142,6 +174,7 @@ export interface Order {
   paymentStatus: PaymentStatus;
   paymentId?: string;
   orderToken?: string;
+  shopId?: string;
   createdAt: Date;
   updatedAt: Date;
 }

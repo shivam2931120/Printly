@@ -1,13 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Icon } from '../ui/Icon';
 import { fetchOrders } from '../../services/data';
-import { userStorage, ordersStorage } from '../../services/storage';
+import { userStorage } from '../../services/storage';
 
 import { Order } from '../../types';
-
-interface MyOrdersPageProps {
-    onBack: () => void;
-}
 
 const statusColors: Record<string, string> = {
     confirmed: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
@@ -17,24 +14,27 @@ const statusColors: Record<string, string> = {
     Cancelled: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
 };
 
-export const MyOrdersPage: React.FC<MyOrdersPageProps> = ({ onBack }) => {
+import { useUser } from '@clerk/clerk-react';
+
+export const MyOrdersPage: React.FC = () => {
+    const { user, isLoaded } = useUser();
     const [orders, setOrders] = useState<Order[]>([]);
+    const navigate = useNavigate();
 
     useEffect(() => {
         const loadOrders = async () => {
-            const user = userStorage.get();
-            if (user?.id) {
+            if (isLoaded && user) {
                 // Logged in user - fetch from API
                 const dbOrders = await fetchOrders(user.id);
                 setOrders(dbOrders);
-            } else {
-                // Guest user with no session - show empty or handle via cookie if implemented later
+            } else if (isLoaded && !user) {
+                // Not logged in - should not happen due to DomainGuard, but handle safely
                 setOrders([]);
             }
         };
 
         loadOrders();
-    }, []);
+    }, [isLoaded, user]);
 
     const formatDate = (date: Date | string) => {
         return new Date(date).toLocaleDateString('en-IN', {
@@ -63,7 +63,7 @@ export const MyOrdersPage: React.FC<MyOrdersPageProps> = ({ onBack }) => {
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-16">
                         <button
-                            onClick={onBack}
+                            onClick={() => navigate('/')}
                             className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
                         >
                             <Icon name="arrow_back" className="text-xl" />
@@ -138,7 +138,7 @@ export const MyOrdersPage: React.FC<MyOrdersPageProps> = ({ onBack }) => {
                         <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">No orders yet</h3>
                         <p className="text-slate-500 dark:text-slate-400 mb-6">Start by uploading a document to print</p>
                         <button
-                            onClick={onBack}
+                            onClick={() => navigate('/')}
                             className="px-6 py-2.5 rounded-lg bg-primary text-white font-bold text-sm hover:bg-primary-hover transition-colors"
                         >
                             Upload Document

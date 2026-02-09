@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '../ui/Icon';
 import { Product, PRODUCT_CATEGORIES, ProductCategory } from '../../types';
+import { fetchProducts, createProduct, updateProduct, deleteProduct } from '../../services/data';
 
 interface ProductFormData {
     name: string;
@@ -24,24 +25,15 @@ export const ProductManagement: React.FC = () => {
         stock: 0,
     });
 
-    // Load from localStorage on mount
+    // Load products on mount
     useEffect(() => {
-        const stored = localStorage.getItem('printwise_products');
-        if (stored) {
-            try {
-                setProducts(JSON.parse(stored));
-            } catch (e) {
-                console.error('Failed to parse products:', e);
-            }
-        }
+        loadProducts();
     }, []);
 
-    // Save to localStorage when products change
-    useEffect(() => {
-        if (products.length > 0) {
-            localStorage.setItem('printwise_products', JSON.stringify(products));
-        }
-    }, [products]);
+    const loadProducts = async () => {
+        const data = await fetchProducts();
+        setProducts(data);
+    };
 
     const filteredProducts = products.filter(product => {
         const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
@@ -67,45 +59,74 @@ export const ProductManagement: React.FC = () => {
         setIsModalOpen(true);
     };
 
-    const handleSaveProduct = () => {
+    const handleSaveProduct = async () => {
         if (editingProduct) {
-            setProducts(prev => prev.map(p =>
-                p.id === editingProduct.id
-                    ? { ...p, ...formData }
-                    : p
-            ));
+            const updatedProduct = { ...editingProduct, ...formData };
+            const { success } = await updateProduct(updatedProduct);
+            if (success) {
+                setProducts(prev => prev.map(p => p.id === updatedProduct.id ? updatedProduct : p));
+                setIsModalOpen(false);
+            } else {
+                alert('Failed to update product');
+            }
         } else {
             const newProduct: Product = {
-                id: `P${String(products.length + 1).padStart(3, '0')}`,
+                id: `P${Date.now()}`, // Simple ID generation
                 ...formData,
                 image: '📦',
                 isActive: true,
             };
-            setProducts(prev => [...prev, newProduct]);
+            const { success } = await createProduct(newProduct);
+            if (success) {
+                setProducts(prev => [...prev, newProduct]);
+                setIsModalOpen(false);
+            } else {
+                alert('Failed to create product');
+            }
         }
-        setIsModalOpen(false);
     };
 
-    const handleDeleteProduct = (productId: string) => {
+    const handleDeleteProduct = async (productId: string) => {
         if (confirm('Are you sure you want to delete this product?')) {
-            setProducts(prev => prev.filter(p => p.id !== productId));
+            const { success } = await deleteProduct(productId);
+            if (success) {
+                setProducts(prev => prev.filter(p => p.id !== productId));
+            } else {
+                alert('Failed to delete product');
+            }
         }
     };
 
-    const handleStockChange = (productId: string, change: number) => {
-        setProducts(prev => prev.map(p =>
-            p.id === productId
-                ? { ...p, stock: Math.max(0, p.stock + change) }
-                : p
-        ));
+    const handleStockChange = async (productId: string, change: number) => {
+        const product = products.find(p => p.id === productId);
+        if (!product) return;
+
+        const updatedProduct = { ...product, stock: Math.max(0, product.stock + change) };
+        // Optimistic update
+        setProducts(prev => prev.map(p => p.id === productId ? updatedProduct : p));
+
+        const { success } = await updateProduct(updatedProduct);
+        if (!success) {
+            // Revert if failed
+            setProducts(prev => prev.map(p => p.id === productId ? product : p));
+            alert('Failed to update stock');
+        }
     };
 
-    const handleToggleActive = (productId: string) => {
-        setProducts(prev => prev.map(p =>
-            p.id === productId
-                ? { ...p, isActive: !p.isActive }
-                : p
-        ));
+    const handleToggleActive = async (productId: string) => {
+        const product = products.find(p => p.id === productId);
+        if (!product) return;
+
+        const updatedProduct = { ...product, isActive: !product.isActive };
+        // Optimistic update
+        setProducts(prev => prev.map(p => p.id === productId ? updatedProduct : p));
+
+        const { success } = await updateProduct(updatedProduct);
+        if (!success) {
+            // Revert if failed
+            setProducts(prev => prev.map(p => p.id === productId ? product : p));
+            alert('Failed to update status');
+        }
     };
 
     const lowStockCount = products.filter(p => p.stock < 20).length;
@@ -121,6 +142,26 @@ export const ProductManagement: React.FC = () => {
                         Manage inventory and product catalog
                     </p>
                 </div>
+                <button
+                    onClick={() => {
+                        const outOfStock = products.filter(p => p.stock === 0);
+                        if (outOfStock.length === 0) {
+                            alert('No out-of-stock products to delete.');
+                            return;
+                        }
+                        const confirmMsg = `Are you sure you want to delete ${outOfStock.length} out-of-stock products? This action cannot be undone.`;
+                        if (confirm(confirmMsg)) {
+                            // double confirmation for safety
+                            if (confirm("Please confirm again: Delete ALL out-of-stock products?")) {
+                                outOfStock.forEach(p => handleDeleteProduct(p.id));
+                            }
+                        }
+                    }}
+                    className="inline-flex items-center justify-center h-10 px-4 rounded-lg bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 text-sm font-bold hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors mr-2"
+                >
+                    <Icon name="delete_sweep" className="text-lg mr-2" />
+                    Clean Up
+                </button>
                 <button
                     onClick={handleAddProduct}
                     className="inline-flex items-center justify-center h-10 px-4 rounded-lg bg-primary text-white text-sm font-bold shadow-md hover:bg-primary-hover transition-colors"

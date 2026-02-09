@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Icon } from '../ui/Icon';
 import { PrintOptions } from '../../types';
 
@@ -14,15 +15,24 @@ interface OrderConfirmationProps {
         createdAt: string;
         estimatedReady?: string;
     };
-    onClose: () => void;
-    onViewOrders: () => void;
+    onClose: () => void; // Keeping onClose to clear state in parent, but might add nav
 }
 
 export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({
     order,
     onClose,
-    onViewOrders,
 }) => {
+    const navigate = useNavigate();
+
+    const handleViewOrders = () => {
+        onClose(); // Clear modal state first
+        navigate('/my-orders');
+    };
+
+    const handleClose = () => {
+        onClose(); // Just close modal, stay on page (or nav to home?)
+        // Usually "New Order" implies staying on dashboard/home
+    };
     const formatDateTime = (dateStr: string) => {
         const date = new Date(dateStr);
         return date.toLocaleString('en-IN', {
@@ -138,14 +148,14 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({
                 {/* Actions */}
                 <div className="flex gap-3 p-6 pt-0">
                     <button
-                        onClick={onClose}
+                        onClick={handleClose}
                         className="flex-1 py-3 rounded-xl border border-border-light dark:border-border-dark text-slate-700 dark:text-slate-300 font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                     >
                         New Order
                     </button>
                     <button
-                        onClick={onViewOrders}
-                        className="flex-1 py-3 rounded-xl bg-primary text-white font-bold hover:bg-primary-hover transition-colors flex items-center justify-center gap-2"
+                        onClick={handleViewOrders}
+                        className="flex-1 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold hover:shadow-lg hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
                     >
                         <Icon name="receipt_long" />
                         View My Orders

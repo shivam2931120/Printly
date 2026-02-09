@@ -1,145 +1,227 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { StudentPortal } from './components/StudentPortal';
 import { AdminDashboard } from './components/AdminDashboard';
 import { DeveloperDashboard } from './components/developer/DeveloperDashboard';
 import { MyOrdersPage } from './components/user/MyOrdersPage';
 import { SupportPage } from './components/user/SupportPage';
 import { SignInModal } from './components/auth/SignInModal';
-import { ViewMode, User, PricingConfig, DEFAULT_PRICING } from './types';
+import { User, PricingConfig, DEFAULT_PRICING } from './types';
 import { Icon } from './components/ui/Icon';
 
-type PageView = 'home' | 'orders' | 'support';
+// --- Protected Route Component ---
+const ProtectedRoute = ({
+  children,
+  user,
+  requiredRole,
+  onSignInRequired
+}: {
+  children: React.ReactNode;
+  user: User | null;
+  requiredRole?: 'admin' | 'developer';
+  onSignInRequired: () => void;
+}) => {
+  const location = useLocation();
 
-const App: React.FC = () => {
-  const [view, setView] = useState<ViewMode>('student');
-  const [currentPage, setCurrentPage] = useState<PageView>('home');
-  // Dark mode is globally enforced.
+  if (!user) {
+    onSignInRequired();
+    // Redirect to home or show sign-in, but better to keep them on the current URL structure
+    // and just show the modal. For now, we'll redirect to home if they try to access directly without auth.
+    return <Navigate to="/" state={{ from: location }} replace />;
+  }
 
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [showSignIn, setShowSignIn] = useState(false);
+  if (requiredRole === 'admin' && !user.isAdmin) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (requiredRole === 'developer' && !user.isDeveloper) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+};
+
+// --- App Content (Inside Router) ---
+import { useUser, useClerk } from '@clerk/clerk-react';
+import { CustomSignIn } from './components/auth/CustomSignIn';
+import { CustomSignUp } from './components/auth/CustomSignUp';
+import { DomainGuard } from './components/auth/DomainGuard';
+
+const AppContent: React.FC = () => {
+  const { user: clerkUser, isLoaded, isSignedIn } = useUser();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [pricing, setPricing] = useState<PricingConfig>(DEFAULT_PRICING);
 
-  // Removed localStorage loading effects.
-
-  const handleViewSwitch = () => {
-    if (view === 'student') {
-      if (!currentUser) {
-        setShowSignIn(true);
-        return;
-      }
-      if (!currentUser.isAdmin) {
-        alert('You need admin access to view this section.');
-        return;
-      }
-      setView('admin');
-    } else {
-      setView('student');
-      setCurrentPage('home');
-    }
-  };
-
-  const handleSignIn = (userData: { email: string; name: string; isAdmin: boolean; isDeveloper?: boolean }) => {
-    // Session-only auth for now
-    const user: User = {
-      id: `user_${Date.now()}`,
-      email: userData.email,
-      name: userData.name,
-      isAdmin: userData.isAdmin,
-      isDeveloper: userData.isDeveloper,
-    };
-    setCurrentUser(user);
-    setShowSignIn(false);
-
-    if (userData.isDeveloper) {
-      setView('developer');
-    } else if (userData.isAdmin && view === 'student') {
-      setView('admin');
-    }
-  };
-
-  const handleSignOut = () => {
-    setCurrentUser(null);
-    setView('student');
-    setCurrentPage('home');
-  };
-
-  const handlePageChange = (page: PageView) => {
-    setCurrentPage(page);
-  };
+  // Map Clerk User to App User
+  const currentUser: User | null = (isLoaded && isSignedIn && clerkUser) ? {
+    id: clerkUser.id,
+    email: clerkUser.primaryEmailAddress?.emailAddress || '',
+    name: clerkUser.fullName || '',
+    isAdmin: (clerkUser.publicMetadata.role === 'ADMIN' || clerkUser.publicMetadata.role === 'SUPERADMIN'),
+    isDeveloper: (clerkUser.publicMetadata.role === 'DEVELOPER' || clerkUser.publicMetadata.role === 'SUPERADMIN'),
+    avatar: clerkUser.imageUrl,
+  } : null;
 
   const handlePricingUpdate = (newPricing: PricingConfig) => {
     setPricing(newPricing);
   };
 
-  const renderStudentContent = () => {
-    switch (currentPage) {
-      case 'orders':
-        return <MyOrdersPage onBack={() => setCurrentPage('home')} />;
-      case 'support':
-        return <SupportPage onBack={() => setCurrentPage('home')} />;
-      default:
-        return (
-          <StudentPortal
-            onNavigate={handlePageChange}
-            currentUser={currentUser}
-            onSignInClick={() => setShowSignIn(true)}
-            pricing={pricing}
-          />
-        );
-    }
+  const { signOut } = useClerk();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
   };
 
-  return (
-    <div className="relative min-h-screen bg-slate-900 text-white">
-      <SignInModal
-        isOpen={showSignIn}
-        onClose={() => setShowSignIn(false)}
-        onSignIn={handleSignIn}
-      />
+  // Check if we are in a special view to hide global buttons
+  const isDeveloper = location.pathname.startsWith('/developer');
 
-      {view !== 'developer' && (
+  if (!isLoaded) {
+    return <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white">
+      Loading...
+    </div>;
+  }
+
+  return (
+    <div className="relative min-h-screen bg-slate-900 text-white font-display">
+
+      {/* Global Controls (Sign Out, Switch View) */}
+      {!isDeveloper && currentUser && (
         <div className="fixed bottom-6 right-6 z-[100] flex gap-2">
-          {currentUser && (
-            <button
-              onClick={handleSignOut}
-              className="p-3 bg-red-500 text-white rounded-full shadow-lg hover:scale-110 transition-transform"
-              title="Sign Out"
-            >
-              <Icon name="logout" className="text-xl" />
-            </button>
-          )}
+          <button
+            onClick={handleSignOut}
+            className="p-3 bg-red-500 text-white rounded-full shadow-lg hover:scale-110 transition-transform"
+            title="Sign Out"
+          >
+            <Icon name="logout" className="text-xl" />
+          </button>
 
           {currentUser?.isAdmin && (
             <button
-              onClick={handleViewSwitch}
+              onClick={() => navigate(location.pathname.startsWith('/admin') ? '/' : '/admin')}
               className="px-6 py-3 bg-primary text-white font-bold rounded-full shadow-lg shadow-primary/30 hover:bg-primary-hover hover:scale-105 transition-all flex items-center gap-2"
             >
               <Icon name="swap_horiz" />
-              Switch to {view === 'admin' ? 'Student' : 'Admin'}
+              Switch to {location.pathname.startsWith('/admin') ? 'Student' : 'Admin'}
             </button>
           )}
         </div>
       )}
 
-      {view === 'developer' ? (
-        <DeveloperDashboard
-          currentUser={currentUser}
-          onSignOut={handleSignOut}
-          darkMode={true}
-          onToggleDarkMode={() => { }}
-          onNavigate={(view) => setView(view)}
+      <Routes>
+        {/* Public Routes - Auth */}
+        <Route path="/sign-in/*" element={<CustomSignIn />} />
+        <Route path="/sign-up/*" element={<CustomSignUp />} />
+
+        {/* Student Routes - Protected by DomainGuard (except for public browsing depending on logic) */}
+        {/* User said "if a student tries to buy anything", assuming browsing is allowed. */}
+        {/* But we want to enforce domain check on login. DomainGuard checks this. */}
+        {/* So wrapping everything else in DomainGuard is safe. */}
+
+        <Route
+          path="/"
+          element={
+            <DomainGuard>
+              <StudentPortal
+                currentUser={currentUser}
+                onSignInClick={() => navigate('/sign-in')}
+                pricing={pricing}
+              />
+            </DomainGuard>
+          }
         />
-      ) : view === 'student' ? (
-        renderStudentContent()
-      ) : (
-        <AdminDashboard
-          currentUser={currentUser}
-          pricing={pricing}
-          onPricingUpdate={handlePricingUpdate}
-          onSignOut={handleSignOut}
+        <Route
+          path="/my-orders"
+          element={
+            <DomainGuard>
+              <MyOrdersPage />
+            </DomainGuard>
+          }
         />
-      )}
+        <Route
+          path="/support"
+          element={
+            <SupportPage />
+          }
+        />
+
+        {/* Admin Routes */}
+        <Route
+          path="/admin/*"
+          element={
+            <DomainGuard>
+              <ProtectedRoute
+                user={currentUser}
+                requiredRole="admin"
+                onSignInRequired={() => navigate('/sign-in')}
+              >
+                <AdminDashboard
+                  currentUser={currentUser}
+                  pricing={pricing}
+                  onPricingUpdate={handlePricingUpdate}
+                  onSignOut={handleSignOut}
+                />
+              </ProtectedRoute>
+            </DomainGuard>
+          }
+        />
+
+        {/* Developer Routes */}
+        <Route
+          path="/developer/*"
+          element={
+            <DomainGuard>
+              <ProtectedRoute
+                user={currentUser}
+                requiredRole="developer"
+                onSignInRequired={() => navigate('/sign-in')}
+              >
+                <DeveloperDashboard
+                  currentUser={currentUser}
+                  onSignOut={handleSignOut}
+                  darkMode={true}
+                  onToggleDarkMode={() => { }}
+                />
+              </ProtectedRoute>
+            </DomainGuard>
+          }
+        />
+
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </div>
+  );
+};
+
+import { ClerkProvider, SignedIn, SignedOut, RedirectToSignIn } from '@clerk/clerk-react';
+
+const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+
+if (!PUBLISHABLE_KEY) {
+  throw new Error("Missing Publishable Key");
+}
+
+const ClerkProviderWithRoutes: React.FC = () => {
+  const navigate = useNavigate();
+
+  return (
+    <ClerkProvider
+      publishableKey={PUBLISHABLE_KEY}
+      {...({ navigate: (to: string) => navigate(to) } as any)}
+    >
+      <AppContent />
+    </ClerkProvider>
+  );
+};
+
+// --- Main App Component ---
+const App: React.FC = () => {
+  return (
+    <Router>
+      <ClerkProviderWithRoutes />
+    </Router>
   );
 };
 

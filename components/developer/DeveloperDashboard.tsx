@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Icon } from '../ui/Icon';
 import { ShopsManagement } from './ShopsManagement';
 import { SalesOverview } from './SalesOverview';
@@ -9,7 +10,6 @@ interface DeveloperDashboardProps {
     onSignOut: () => void;
     darkMode?: boolean;
     onToggleDarkMode?: () => void;
-    onNavigate?: (view: ViewMode) => void;
 }
 
 type DevSection = 'shops' | 'sales';
@@ -24,14 +24,14 @@ export const DeveloperDashboard: React.FC<DeveloperDashboardProps> = ({
     onSignOut,
     darkMode,
     onToggleDarkMode,
-    onNavigate,
 }) => {
+    const navigate = useNavigate();
     const [activeSection, setActiveSection] = useState<DevSection>('shops');
 
     const renderContent = () => {
         switch (activeSection) {
             case 'shops':
-                return <ShopsManagement onManageShop={() => onNavigate?.('admin')} />;
+                return <ShopsManagement onManageShop={() => navigate('/admin')} />;
             case 'sales':
                 return <SalesOverview />;
             default:
@@ -59,14 +59,14 @@ export const DeveloperDashboard: React.FC<DeveloperDashboardProps> = ({
                             {/* Navigation Shortcuts */}
                             <div className="hidden md:flex items-center gap-2 mr-4 border-r border-border-dark pr-4">
                                 <button
-                                    onClick={() => onNavigate?.('student')}
+                                    onClick={() => navigate('/')}
                                     className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-text-secondary hover:text-white hover:bg-surface-dark transition-all"
                                 >
                                     <Icon name="school" className="text-lg" />
                                     Student Portal
                                 </button>
                                 <button
-                                    onClick={() => onNavigate?.('admin')}
+                                    onClick={() => navigate('/admin')}
                                     className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-text-secondary hover:text-white hover:bg-surface-dark transition-all"
                                 >
                                     <Icon name="admin_panel_settings" className="text-lg" />
