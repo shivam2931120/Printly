@@ -9,9 +9,10 @@ import {
     PenTool,
     Palette,
     FileQuestion,
+    Check,
+    Plus,
     Filter,
-    X,
-    Check
+    X
 } from 'lucide-react';
 import { Product, PRODUCT_CATEGORIES } from '../types';
 import { fetchProducts } from '../services/data';
@@ -27,6 +28,7 @@ export const StorePage: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+    const [maxPrice, setMaxPrice] = useState<number>(1000);
 
     useEffect(() => {
         const loadProducts = async () => {
@@ -48,7 +50,8 @@ export const StorePage: React.FC = () => {
     const filteredProducts = products.filter(p => {
         const matchesCategory = selectedCategory === 'all' || p.category === selectedCategory;
         const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
-        return matchesCategory && matchesSearch;
+        const matchesPrice = p.price <= maxPrice;
+        return matchesCategory && matchesSearch && matchesPrice;
     });
 
     const getCategoryIcon = (iconName: string) => {
@@ -84,15 +87,28 @@ export const StorePage: React.FC = () => {
                 </button>
             </div>
 
+            {/* Mobile Backdrop */}
+            {isMobileFilterOpen && (
+                <div
+                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[40] lg:hidden animate-fade-in"
+                    onClick={() => setIsMobileFilterOpen(false)}
+                />
+            )}
+
             {/* Sidebar Filters (Desktop & Mobile Drawer) */}
             <aside className={cn(
                 "fixed inset-y-0 left-0 z-50 w-64 bg-background-card border-r border-border transform transition-transform duration-300 lg:translate-x-0 lg:static lg:h-[calc(100vh-100px)] lg:w-64 lg:bg-transparent lg:border-none lg:z-0 lg:sticky lg:top-24",
                 isMobileFilterOpen ? "translate-x-0" : "-translate-x-full"
             )}>
-                <div className="h-full flex flex-col p-6 lg:p-0">
+                <div className="h-full flex flex-col p-6 lg:p-0 pt-20 lg:pt-0">
                     <div className="flex items-center justify-between mb-8 lg:hidden">
                         <span className="font-bold text-lg text-white font-display">Filters</span>
-                        <button onClick={() => setIsMobileFilterOpen(false)}><X size={20} className="text-text-muted" /></button>
+                        <button
+                            onClick={() => setIsMobileFilterOpen(false)}
+                            className="p-3 rounded-xl bg-white/5 text-white hover:bg-white/10 transition-colors"
+                        >
+                            <X size={24} />
+                        </button>
                     </div>
 
                     <div className="space-y-8">
@@ -148,25 +164,43 @@ export const StorePage: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Price Range (Placeholder) */}
-                        <div className="space-y-3">
-                            <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider">Price Range</h3>
-                            <div className="px-1">
-                                <div className="h-1 bg-border rounded-full overflow-hidden">
-                                    <div className="h-full bg-white w-2/3" />
-                                </div>
-                                <div className="flex justify-between mt-2 text-xs text-text-muted">
+                        {/* Price Range */}
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-center">
+                                <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider">Price Range</h3>
+                                <span className="text-xs font-bold text-white bg-white/10 px-2 py-1 rounded-md">
+                                    Up to ₹{maxPrice === 1000 ? '1000+' : maxPrice}
+                                </span>
+                            </div>
+                            <div className="px-1 space-y-3">
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="1000"
+                                    step="50"
+                                    value={maxPrice}
+                                    onChange={(e) => setMaxPrice(parseInt(e.target.value))}
+                                    className="w-full h-1.5 bg-border rounded-full appearance-none cursor-pointer accent-white hover:accent-primary transition-all"
+                                />
+                                <div className="flex justify-between text-[10px] text-text-muted font-bold uppercase tracking-tighter">
                                     <span>₹0</span>
+                                    <span>₹500</span>
                                     <span>₹1000+</span>
                                 </div>
                             </div>
                         </div>
+
+                        {/* Mobile Apply Button */}
+                        <div className="lg:hidden pt-4">
+                            <Button
+                                onClick={() => setIsMobileFilterOpen(false)}
+                                className="w-full bg-white text-black font-bold h-12 rounded-xl shadow-glow"
+                            >
+                                Apply Filters
+                            </Button>
+                        </div>
                     </div>
                 </div>
-                {/* Mobile Backdrop */}
-                {isMobileFilterOpen && (
-                    <div className="fixed inset-0 bg-black/80 z-[-1] lg:hidden" onClick={() => setIsMobileFilterOpen(false)} />
-                )}
             </aside>
 
             {/* Main Product Grid */}

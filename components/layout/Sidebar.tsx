@@ -29,9 +29,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ user }) => {
     const links = [
         { name: 'Upload', path: '/', icon: Upload },
         { name: 'Store', path: '/store', icon: Store },
-        { name: 'Orders', path: '/my-orders', icon: Receipt },
-        { name: 'Support', path: '/support', icon: UserCircle },
     ];
+
+    if (user) {
+        links.push(
+            { name: 'Orders', path: '/my-orders', icon: Receipt },
+            { name: 'Support', path: '/support', icon: UserCircle }
+        );
+    }
 
     if (user?.isAdmin) {
         links.push({ name: 'Admin', path: '/admin', icon: LayoutDashboard });
