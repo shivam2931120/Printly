@@ -1,13 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { useUser, useClerk, ClerkProvider } from '@clerk/clerk-react';
+
 import { StudentPortal } from './components/StudentPortal';
+import { StorePage } from './components/StorePage';
 import { AdminDashboard } from './components/AdminDashboard';
 import { DeveloperDashboard } from './components/developer/DeveloperDashboard';
 import { MyOrdersPage } from './components/user/MyOrdersPage';
 import { SupportPage } from './components/user/SupportPage';
-import { SignInModal } from './components/auth/SignInModal';
-import { User, PricingConfig, DEFAULT_PRICING } from './types';
+import { ProfilePage } from './components/user/ProfilePage';
+import { CustomSignIn } from './components/auth/CustomSignIn';
+import { CustomSignUp } from './components/auth/CustomSignUp';
+import { DomainGuard } from './components/auth/DomainGuard';
+import { MainLayout } from './components/layout/MainLayout';
+import { CartDrawer } from './components/layout/CartDrawer';
+// CartProvider removed - using Zustand
 import { Icon } from './components/ui/Icon';
+import { User, PricingConfig, DEFAULT_PRICING } from './types';
+import { AnimatePresence } from 'framer-motion';
+import { PageTransition } from './components/layout/PageTransition';
 
 // --- Protected Route Component ---
 const ProtectedRoute = ({
@@ -25,8 +36,6 @@ const ProtectedRoute = ({
 
   if (!user) {
     onSignInRequired();
-    // Redirect to home or show sign-in, but better to keep them on the current URL structure
-    // and just show the modal. For now, we'll redirect to home if they try to access directly without auth.
     return <Navigate to="/" state={{ from: location }} replace />;
   }
 
@@ -42,11 +51,6 @@ const ProtectedRoute = ({
 };
 
 // --- App Content (Inside Router) ---
-import { useUser, useClerk } from '@clerk/clerk-react';
-import { CustomSignIn } from './components/auth/CustomSignIn';
-import { CustomSignUp } from './components/auth/CustomSignUp';
-import { DomainGuard } from './components/auth/DomainGuard';
-
 const AppContent: React.FC = () => {
   const { user: clerkUser, isLoaded, isSignedIn } = useUser();
   const navigate = useNavigate();
@@ -74,33 +78,24 @@ const AppContent: React.FC = () => {
     navigate('/');
   };
 
-  // Check if we are in a special view to hide global buttons
   const isDeveloper = location.pathname.startsWith('/developer');
 
   if (!isLoaded) {
-    return <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white">
-      Loading...
+    return <div className="min-h-screen flex items-center justify-center bg-[#050505] text-white">
+      <div className="size-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
     </div>;
   }
 
   return (
-    <div className="relative min-h-screen bg-slate-900 text-white font-display">
+    <div className="relative min-h-screen bg-background text-white font-sans selection:bg-white/20">
 
       {/* Global Controls (Sign Out, Switch View) */}
       {!isDeveloper && currentUser && (
-        <div className="fixed bottom-6 right-6 z-[100] flex gap-2">
-          <button
-            onClick={handleSignOut}
-            className="p-3 bg-red-500 text-white rounded-full shadow-lg hover:scale-110 transition-transform"
-            title="Sign Out"
-          >
-            <Icon name="logout" className="text-xl" />
-          </button>
-
+        <div className="fixed bottom-20 lg:bottom-6 right-6 z-[40] flex gap-2">
           {currentUser?.isAdmin && (
             <button
               onClick={() => navigate(location.pathname.startsWith('/admin') ? '/' : '/admin')}
-              className="px-6 py-3 bg-primary text-white font-bold rounded-full shadow-lg shadow-primary/30 hover:bg-primary-hover hover:scale-105 transition-all flex items-center gap-2"
+              className="px-5 py-2.5 bg-white text-black font-bold rounded-full shadow-lg hover:scale-105 transition-all flex items-center gap-2 text-sm"
             >
               <Icon name="swap_horiz" />
               Switch to {location.pathname.startsWith('/admin') ? 'Student' : 'Admin'}
@@ -109,93 +104,130 @@ const AppContent: React.FC = () => {
         </div>
       )}
 
-      <Routes>
-        {/* Public Routes - Auth */}
-        <Route path="/sign-in/*" element={<CustomSignIn />} />
-        <Route path="/sign-up/*" element={<CustomSignUp />} />
+      <AnimatePresence mode="wait">
+        <Routes location={location} key={location.pathname}>
+          {/* Public Routes - Auth */}
+          <Route path="/sign-in/*" element={<CustomSignIn />} />
+          <Route path="/sign-up/*" element={<CustomSignUp />} />
 
-        {/* Student Routes - Protected by DomainGuard (except for public browsing depending on logic) */}
-        {/* User said "if a student tries to buy anything", assuming browsing is allowed. */}
-        {/* But we want to enforce domain check on login. DomainGuard checks this. */}
-        {/* So wrapping everything else in DomainGuard is safe. */}
+          {/* Student Routes */}
+          <Route
+            path="/"
+            element={
+              <DomainGuard>
+                <MainLayout user={currentUser}>
+                  <PageTransition>
+                    <StudentPortal
+                      pricing={pricing}
+                      currentUser={currentUser}
+                      onSignInClick={() => navigate('/sign-in')}
+                    />
+                  </PageTransition>
+                </MainLayout>
+              </DomainGuard>
+            }
+          />
+          <Route
+            path="/store"
+            element={
+              <DomainGuard>
+                <MainLayout user={currentUser}>
+                  <PageTransition>
+                    <StorePage />
+                  </PageTransition>
+                </MainLayout>
+              </DomainGuard>
+            }
+          />
+          <Route
+            path="/my-orders"
+            element={
+              <DomainGuard>
+                <MainLayout user={currentUser}>
+                  <PageTransition>
+                    <MyOrdersPage />
+                  </PageTransition>
+                </MainLayout>
+              </DomainGuard>
+            }
+          />
+          <Route
+            path="/support"
+            element={
+              <DomainGuard>
+                <MainLayout user={currentUser}>
+                  <PageTransition>
+                    <SupportPage />
+                  </PageTransition>
+                </MainLayout>
+              </DomainGuard>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <DomainGuard>
+                <MainLayout user={currentUser}>
+                  <PageTransition>
+                    <ProfilePage />
+                  </PageTransition>
+                </MainLayout>
+              </DomainGuard>
+            }
+          />
 
-        <Route
-          path="/"
-          element={
-            <DomainGuard>
-              <StudentPortal
-                currentUser={currentUser}
-                onSignInClick={() => navigate('/sign-in')}
-                pricing={pricing}
-              />
-            </DomainGuard>
-          }
-        />
-        <Route
-          path="/my-orders"
-          element={
-            <DomainGuard>
-              <MyOrdersPage />
-            </DomainGuard>
-          }
-        />
-        <Route
-          path="/support"
-          element={
-            <SupportPage />
-          }
-        />
+          {/* Admin Routes */}
+          <Route
+            path="/admin/*"
+            element={
+              <DomainGuard>
+                <ProtectedRoute
+                  user={currentUser}
+                  requiredRole="admin"
+                  onSignInRequired={() => navigate('/sign-in')}
+                >
+                  <AdminDashboard
+                    currentUser={currentUser}
+                    pricing={pricing}
+                    onPricingUpdate={handlePricingUpdate}
+                    onSignOut={handleSignOut}
+                  />
+                </ProtectedRoute>
+              </DomainGuard>
+            }
+          />
 
-        {/* Admin Routes */}
-        <Route
-          path="/admin/*"
-          element={
-            <DomainGuard>
-              <ProtectedRoute
-                user={currentUser}
-                requiredRole="admin"
-                onSignInRequired={() => navigate('/sign-in')}
-              >
-                <AdminDashboard
-                  currentUser={currentUser}
-                  pricing={pricing}
-                  onPricingUpdate={handlePricingUpdate}
-                  onSignOut={handleSignOut}
-                />
-              </ProtectedRoute>
-            </DomainGuard>
-          }
-        />
+          {/* Developer Routes */}
+          <Route
+            path="/developer/*"
+            element={
+              <DomainGuard>
+                <ProtectedRoute
+                  user={currentUser}
+                  requiredRole="developer"
+                  onSignInRequired={() => navigate('/sign-in')}
+                >
+                  <DeveloperDashboard
+                    currentUser={currentUser}
+                    onSignOut={handleSignOut}
+                    darkMode={true}
+                    onToggleDarkMode={() => { }}
+                  />
+                </ProtectedRoute>
+              </DomainGuard>
+            }
+          />
 
-        {/* Developer Routes */}
-        <Route
-          path="/developer/*"
-          element={
-            <DomainGuard>
-              <ProtectedRoute
-                user={currentUser}
-                requiredRole="developer"
-                onSignInRequired={() => navigate('/sign-in')}
-              >
-                <DeveloperDashboard
-                  currentUser={currentUser}
-                  onSignOut={handleSignOut}
-                  darkMode={true}
-                  onToggleDarkMode={() => { }}
-                />
-              </ProtectedRoute>
-            </DomainGuard>
-          }
-        />
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AnimatePresence>
 
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      {/* Global Cart Drawer */}
+      <CartDrawer />
     </div>
   );
 };
-
-import { ClerkProvider, SignedIn, SignedOut, RedirectToSignIn } from '@clerk/clerk-react';
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
@@ -203,7 +235,7 @@ if (!PUBLISHABLE_KEY) {
   throw new Error("Missing Publishable Key");
 }
 
-const ClerkProviderWithRoutes: React.FC = () => {
+const App: React.FC = () => {
   const navigate = useNavigate();
 
   return (
@@ -216,13 +248,10 @@ const ClerkProviderWithRoutes: React.FC = () => {
   );
 };
 
-// --- Main App Component ---
-const App: React.FC = () => {
+export default function AppWrapper() {
   return (
     <Router>
-      <ClerkProviderWithRoutes />
+      <App />
     </Router>
   );
-};
-
-export default App;
+}

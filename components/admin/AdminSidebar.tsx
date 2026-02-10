@@ -32,14 +32,14 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 }) => {
     return (
         <aside className={`
-      fixed left-0 top-0 z-40 h-screen
-      bg-surface-light dark:bg-surface-darker 
+      fixed left-0 top-0 z-40 h-screen flex flex-col
+      bg-surface-light/95 dark:bg-surface-darker/95 backdrop-blur-xl
       border-r border-border-light dark:border-border-dark
       transition-all duration-300 ease-in-out
       ${collapsed ? 'w-20' : 'w-64'}
     `}>
             {/* Logo Header */}
-            <div className="h-16 flex items-center justify-between px-4 border-b border-border-light dark:border-border-dark">
+            <div className="h-16 flex items-center justify-between px-4 border-b border-border-light dark:border-border-dark shrink-0">
                 <div className={`flex items-center gap-3 ${collapsed ? 'justify-center w-full' : ''}`}>
                     <div className="flex items-center justify-center size-10 rounded-xl bg-primary/10 text-primary flex-shrink-0">
                         <Icon name="print" className="text-2xl" />
@@ -61,7 +61,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             </div>
 
             {/* Navigation */}
-            <nav className="p-3 space-y-1">
+            <nav className="flex-1 overflow-y-auto p-3 space-y-1 no-scrollbar">
                 {navItems.map((item) => (
                     <button
                         key={item.id}
@@ -70,7 +70,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               w-full flex items-center gap-3 px-4 py-3 rounded-xl
               transition-all duration-200 group
               ${activeSection === item.id
-                                ? 'bg-primary/10 text-primary font-semibold'
+                                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-bold shadow-md'
                                 : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
                             }
               ${collapsed ? 'justify-center px-3' : ''}
@@ -88,7 +88,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
             {/* Collapse Toggle for collapsed state */}
             {collapsed && onToggle && (
-                <div className="absolute bottom-20 left-0 right-0 flex justify-center">
+                <div className="p-4 flex justify-center shrink-0">
                     <button
                         onClick={onToggle}
                         className="p-3 rounded-xl text-slate-400 hover:text-primary hover:bg-primary/10 transition-colors"
@@ -100,7 +100,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
             {/* User Section */}
             {!collapsed && (
-                <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border-light dark:border-border-dark">
+                <div className="p-4 border-t border-border-light dark:border-border-dark shrink-0">
                     <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50">
                         {adminAvatar ? (
                             <img

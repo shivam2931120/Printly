@@ -36,7 +36,7 @@ export const ShopSettings: React.FC<ShopSettingsProps> = ({ onSave }) => {
     };
 
     return (
-        <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-6">
+        <div className="bg-surface-light/80 dark:bg-surface-dark/80 backdrop-blur-xl rounded-xl border border-border-light dark:border-border-dark p-6">
             <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <Icon name="store" className="text-blue-500" />

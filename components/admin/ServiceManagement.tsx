@@ -61,7 +61,7 @@ export const ServiceManagement: React.FC = () => {
                         Manage binding, lamination, and other services
                     </p>
                 </div>
-                <button className="inline-flex items-center justify-center h-10 px-4 rounded-lg bg-primary text-white text-sm font-bold shadow-md hover:bg-primary-hover transition-colors">
+                <button className="inline-flex items-center justify-center h-10 px-4 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-sm font-bold shadow-md hover:opacity-90 transition-colors">
                     <Icon name="add" className="text-lg mr-2" />
                     Add Service
                 </button>
@@ -109,7 +109,7 @@ export const ServiceManagement: React.FC = () => {
                 <button
                     onClick={() => setSelectedCategory('all')}
                     className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${selectedCategory === 'all'
-                        ? 'bg-primary text-white'
+                        ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-md transform scale-105'
                         : 'bg-surface-light dark:bg-surface-dark text-slate-600 dark:text-slate-400 border border-border-light dark:border-border-dark hover:bg-slate-100 dark:hover:bg-slate-800'
                         }`}
                 >
@@ -120,7 +120,7 @@ export const ServiceManagement: React.FC = () => {
                         key={cat.id}
                         onClick={() => setSelectedCategory(cat.id)}
                         className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all flex items-center gap-2 ${selectedCategory === cat.id
-                            ? 'bg-primary text-white'
+                            ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-md transform scale-105'
                             : 'bg-surface-light dark:bg-surface-dark text-slate-600 dark:text-slate-400 border border-border-light dark:border-border-dark hover:bg-slate-100 dark:hover:bg-slate-800'
                             }`}
                     >
@@ -144,10 +144,10 @@ export const ServiceManagement: React.FC = () => {
                             onClick={() => setExpandedService(expandedService === service.id ? null : service.id)}
                         >
                             <div className="flex items-center gap-4">
-                                <div className="p-3 rounded-xl bg-primary/10">
+                                <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20">
                                     <Icon
                                         name={SERVICE_CATEGORIES.find(c => c.id === service.category)?.icon || 'build'}
-                                        className="text-2xl text-primary"
+                                        className="text-2xl text-blue-600 dark:text-blue-400"
                                     />
                                 </div>
                                 <div>
@@ -156,7 +156,7 @@ export const ServiceManagement: React.FC = () => {
                                 </div>
                             </div>
                             <div className="flex items-center gap-3">
-                                <span className="text-lg font-bold text-primary">
+                                <span className="text-lg font-bold text-slate-900 dark:text-white">
                                     From ₹{service.basePrice}
                                 </span>
                                 <button
@@ -205,7 +205,7 @@ export const ServiceManagement: React.FC = () => {
                                     ))}
                                 </div>
                                 <div className="flex gap-2 mt-4">
-                                    <button className="px-4 py-2 rounded-lg text-sm font-medium text-primary hover:bg-primary/10 transition-colors">
+                                    <button className="px-4 py-2 rounded-lg text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
                                         <Icon name="add" className="text-lg inline mr-1" />
                                         Add Variant
                                     </button>

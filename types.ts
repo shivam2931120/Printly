@@ -174,6 +174,7 @@ export interface Order {
   paymentStatus: PaymentStatus;
   paymentId?: string;
   orderToken?: string;
+  otp?: string; // Random 6-digit OTP for pickup
   shopId?: string;
   createdAt: Date;
   updatedAt: Date;

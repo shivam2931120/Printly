@@ -1,21 +1,31 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Icon } from '../ui/Icon';
+import {
+    CheckCircle2,
+    Info,
+    FileText,
+    Receipt,
+    Clock,
+    ArrowRight
+} from 'lucide-react';
 import { PrintOptions } from '../../types';
+import { Button } from '../ui/Button';
 
 interface OrderConfirmationProps {
     order: {
         id: string;
-        tokenNumber: string;
-        fileName: string;
-        pageCount: number;
-        options: PrintOptions;
+        tokenNumber?: string;
+        fileName?: string;
+        pageCount?: number;
+        options?: PrintOptions;
         totalAmount: number;
         status: string;
         createdAt: string;
         estimatedReady?: string;
+        // Compatibility with new Order structure if needed
+        items?: any[];
     };
-    onClose: () => void; // Keeping onClose to clear state in parent, but might add nav
+    onClose: () => void;
 }
 
 export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({
@@ -25,14 +35,14 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({
     const navigate = useNavigate();
 
     const handleViewOrders = () => {
-        onClose(); // Clear modal state first
+        onClose();
         navigate('/my-orders');
     };
 
     const handleClose = () => {
-        onClose(); // Just close modal, stay on page (or nav to home?)
-        // Usually "New Order" implies staying on dashboard/home
+        onClose();
     };
+
     const formatDateTime = (dateStr: string) => {
         const date = new Date(dateStr);
         return date.toLocaleString('en-IN', {
@@ -51,127 +61,111 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({
         return labels[binding] || binding;
     };
 
+    // Helper to get token (fallback)
+    const token = order.tokenNumber || order.id.slice(-6).toUpperCase();
+
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             {/* Backdrop */}
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in" onClick={handleClose} />
 
             {/* Modal */}
-            <div className="relative w-full max-w-lg bg-surface-light dark:bg-surface-dark rounded-2xl shadow-2xl border border-border-light dark:border-border-dark overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+            <div className="relative w-full max-w-lg bg-surface-dark border border-white/10 rounded-3xl shadow-2xl overflow-hidden animate-zoom-in">
                 {/* Success Header */}
-                <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-8 text-center text-white">
-                    <div className="inline-flex items-center justify-center size-20 rounded-full bg-white/20 backdrop-blur-sm mb-4">
-                        <Icon name="check_circle" className="text-5xl" />
+                <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-8 text-center text-white relative overflow-hidden">
+                    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
+                    <div className="relative z-10">
+                        <div className="inline-flex items-center justify-center size-20 rounded-full bg-white/20 backdrop-blur-md mb-4 shadow-lg">
+                            <CheckCircle2 className="w-10 h-10 text-white" />
+                        </div>
+                        <h2 className="text-3xl font-black mb-1 tracking-tight">Order Confirmed!</h2>
+                        <p className="text-white/90 font-medium">Your print job has been queued</p>
                     </div>
-                    <h2 className="text-2xl font-bold mb-1">Order Confirmed!</h2>
-                    <p className="text-white/80">Your print order has been placed successfully</p>
                 </div>
 
                 {/* Token Display */}
-                <div className="p-6 border-b border-border-light dark:border-border-dark bg-slate-50 dark:bg-slate-800/50">
-                    <p className="text-sm text-slate-500 dark:text-slate-400 text-center mb-2">Your Token Number</p>
-                    <div className="flex items-center justify-center gap-1">
-                        {order.tokenNumber.split('').map((char, idx) => (
-                            <span
+                <div className="p-6 border-b border-border-dark bg-background-dark/50">
+                    <p className="text-xs font-bold text-slate-400 text-center uppercase tracking-widest mb-3">Order Token</p>
+                    <div className="flex items-center justify-center gap-2">
+                        {token.split('').map((char, idx) => (
+                            <div
                                 key={idx}
-                                className="inline-flex items-center justify-center w-10 h-12 bg-white dark:bg-slate-700 rounded-lg border-2 border-primary text-2xl font-bold text-primary shadow-sm"
+                                className="w-10 h-12 bg-surface-dark rounded-xl border border-border-dark flex items-center justify-center text-2xl font-black text-primary shadow-inner"
                             >
                                 {char}
-                            </span>
+                            </div>
                         ))}
                     </div>
-                    <p className="text-xs text-slate-400 text-center mt-3">
-                        <Icon name="info" className="text-xs align-middle mr-1" />
-                        Show this token at the print shop to collect your order
+                    <p className="text-xs text-slate-500 text-center mt-4 flex items-center justify-center gap-1.5">
+                        <Info size={14} />
+                        Show this token at the store counter
                     </p>
                 </div>
 
                 {/* Order Details */}
-                <div className="p-6 space-y-4">
-                    <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-100 dark:bg-slate-800">
-                        <div className="size-10 rounded-lg bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
-                            <Icon name="picture_as_pdf" className="text-xl text-red-500" />
+                <div className="p-6 space-y-5">
+                    {/* Item Preview (First item or summary) */}
+                    <div className="flex items-center gap-4 p-4 rounded-2xl bg-surface-light/5 border border-white/5">
+                        <div className="size-12 rounded-xl bg-red-500/10 flex items-center justify-center text-red-500 shrink-0">
+                            <FileText size={24} />
                         </div>
                         <div className="flex-1 min-w-0">
-                            <p className="font-medium text-slate-900 dark:text-white truncate">{order.fileName}</p>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">
-                                {order.pageCount} pages • {order.options.copies} {order.options.copies > 1 ? 'copies' : 'copy'}
+                            <p className="font-bold text-white truncate text-lg">
+                                {order.fileName || 'Print Order'}
+                            </p>
+                            <p className="text-sm text-slate-400">
+                                {order.pageCount ? `${order.pageCount} pages • ` : ''}
+                                {order.options?.copies || 1} copies
                             </p>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div className="p-3 rounded-lg bg-slate-100 dark:bg-slate-800">
-                            <p className="text-slate-500 dark:text-slate-400">Paper Size</p>
-                            <p className="font-medium text-slate-900 dark:text-white">{order.options.paperSize.toUpperCase()}</p>
-                        </div>
-                        <div className="p-3 rounded-lg bg-slate-100 dark:bg-slate-800">
-                            <p className="text-slate-500 dark:text-slate-400">Print Type</p>
-                            <p className="font-medium text-slate-900 dark:text-white">
-                                {order.options.colorMode === 'color' ? 'Color' : 'Black & White'}
-                            </p>
-                        </div>
-                        <div className="p-3 rounded-lg bg-slate-100 dark:bg-slate-800">
-                            <p className="text-slate-500 dark:text-slate-400">Sides</p>
-                            <p className="font-medium text-slate-900 dark:text-white">
-                                {order.options.sides === 'single' ? 'Single-sided' : 'Double-sided'}
-                            </p>
-                        </div>
-                        <div className="p-3 rounded-lg bg-slate-100 dark:bg-slate-800">
-                            <p className="text-slate-500 dark:text-slate-400">Binding</p>
-                            <p className="font-medium text-slate-900 dark:text-white">{getBindingLabel(order.options.binding)}</p>
-                        </div>
-                    </div>
-
-                    {/* Total & Time */}
-                    <div className="flex items-center justify-between p-4 rounded-xl bg-primary/10 border border-primary/20">
-                        <div>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">Total Paid</p>
-                            <p className="text-2xl font-bold text-primary">₹{order.totalAmount.toFixed(2)}</p>
-                        </div>
-                        <div className="text-right">
-                            <p className="text-sm text-slate-600 dark:text-slate-400">Ordered On</p>
-                            <p className="text-sm font-medium text-slate-900 dark:text-white">{formatDateTime(order.createdAt)}</p>
-                        </div>
-                    </div>
-
-                    {order.estimatedReady && (
-                        <div className="flex items-center gap-2 p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
-                            <Icon name="schedule" className="text-yellow-600 dark:text-yellow-400" />
-                            <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                                Estimated ready by <strong>{order.estimatedReady}</strong>
-                            </p>
+                    {order.options && (
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div className="p-3 rounded-xl bg-background-dark border border-border-dark">
+                                <p className="text-xs text-slate-500 mb-1">Print Color</p>
+                                <p className="font-bold text-slate-200 capitalize">
+                                    {order.options.colorMode === 'color' ? 'Color' : 'Black & White'}
+                                </p>
+                            </div>
+                            <div className="p-3 rounded-xl bg-background-dark border border-border-dark">
+                                <p className="text-xs text-slate-500 mb-1">Paper Size</p>
+                                <p className="font-bold text-slate-200 uppercase">{order.options.paperSize}</p>
+                            </div>
                         </div>
                     )}
+
+                    {/* Total & Time */}
+                    <div className="flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-primary/10 to-transparent border border-primary/20">
+                        <div>
+                            <p className="text-xs text-slate-400 font-bold uppercase">Amount Paid</p>
+                            <p className="text-2xl font-black text-primary">₹{order.totalAmount.toFixed(2)}</p>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-xs text-slate-400 font-bold uppercase">Date</p>
+                            <p className="text-sm font-medium text-white">{formatDateTime(order.createdAt)}</p>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-3 p-6 pt-0">
-                    <button
+                <div className="p-6 pt-0 flex gap-3">
+                    <Button
+                        variant="ghost"
                         onClick={handleClose}
-                        className="flex-1 py-3 rounded-xl border border-border-light dark:border-border-dark text-slate-700 dark:text-slate-300 font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                        className="flex-1 text-slate-400 hover:text-white"
                     >
-                        New Order
-                    </button>
-                    <button
+                        Close
+                    </Button>
+                    <Button
                         onClick={handleViewOrders}
-                        className="flex-1 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold hover:shadow-lg hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
+                        className="flex-1 shadow-glow"
                     >
-                        <Icon name="receipt_long" />
-                        View My Orders
-                    </button>
+                        Track Order
+                        <ArrowRight size={18} className="ml-2" />
+                    </Button>
                 </div>
             </div>
         </div>
     );
-};
-
-// Generate a unique 6-character alphanumeric token
-export const generateOrderToken = (): string => {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Avoid confusing characters (0, O, I, 1)
-    let token = '';
-    for (let i = 0; i < 6; i++) {
-        token += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return token;
 };

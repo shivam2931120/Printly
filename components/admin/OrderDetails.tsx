@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '../ui/Icon';
-import { OrderTimeline, mockOrderEvents } from './OrderTimeline';
+import { OrderTimeline, generateOrderEvents } from './OrderTimeline';
+import { OrderTracker } from '../user/OrderTracker';
 import { Order, CartItem, OrderStatus } from '../../types';
 import { supabase } from '../../services/data';
 
@@ -61,12 +62,12 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ order: initialOrder,
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
             {/* Modal */}
-            <div className="relative w-full max-w-2xl max-h-[90vh] overflow-hidden bg-surface-light dark:bg-surface-dark rounded-2xl shadow-2xl">
+            <div className="relative w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden bg-surface-light/95 dark:bg-surface-dark/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl animate-zoom-in">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-border-light dark:border-border-dark">
                     <div className="flex items-center gap-4">
-                        <div className="size-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                            <Icon name="receipt_long" className="text-2xl text-primary" />
+                        <div className="size-12 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
+                            <Icon name="receipt_long" className="text-2xl text-blue-600 dark:text-blue-400" />
                         </div>
                         <div>
                             <h2 className="text-xl font-bold text-slate-900 dark:text-white truncate max-w-[200px]">{order.id}</h2>
@@ -96,7 +97,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ order: initialOrder,
                     <button
                         onClick={() => setActiveTab('details')}
                         className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'details'
-                            ? 'border-primary text-primary'
+                            ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
                             : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
                             }`}
                     >
@@ -105,7 +106,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ order: initialOrder,
                     <button
                         onClick={() => setActiveTab('timeline')}
                         className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'timeline'
-                            ? 'border-primary text-primary'
+                            ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
                             : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
                             }`}
                     >
@@ -114,20 +115,32 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ order: initialOrder,
                 </div>
 
                 {/* Content */}
-                <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+                <div className="flex-1 overflow-y-auto p-6 space-y-6 overscroll-contain">
                     {activeTab === 'details' ? (
                         <div className="space-y-6">
                             {/* Customer Info */}
                             <section>
                                 <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Customer</h3>
                                 <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50">
-                                    <div className="size-12 rounded-full bg-primary/20 flex items-center justify-center text-lg font-bold text-primary">
+                                    <div className="size-12 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-lg font-bold text-blue-600 dark:text-blue-400">
                                         {order.userName.charAt(0).toUpperCase()}
                                     </div>
                                     <div>
                                         <p className="font-semibold text-slate-900 dark:text-white">{order.userName}</p>
                                         <p className="text-sm text-slate-500 dark:text-slate-400">{order.userEmail}</p>
                                     </div>
+                                </div>
+                            </section>
+
+                            {/* Live Tracking Control */}
+                            <section>
+                                <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Live Order Status</h3>
+                                <p className="text-xs text-slate-400 dark:text-slate-500 mb-3">Click a step below to update the order status instantly.</p>
+                                <div className="p-4 rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-surface-darker">
+                                    <OrderTracker
+                                        status={order.status}
+                                        onStepClick={(newStatus) => onStatusChange?.(order.id, newStatus)}
+                                    />
                                 </div>
                             </section>
 
@@ -183,6 +196,28 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ order: initialOrder,
                                                                         </span>
                                                                     )}
                                                                 </div>
+                                                                {item.fileUrl && (
+                                                                    <div className="flex flex-wrap gap-2 mt-3 pt-2 border-t border-border-light dark:border-border-dark/50">
+                                                                        <a
+                                                                            href={item.fileUrl}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                                                                        >
+                                                                            <Icon name="visibility" className="text-base" />
+                                                                            View PDF
+                                                                        </a>
+                                                                        <a
+                                                                            href={item.fileUrl}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors"
+                                                                        >
+                                                                            <Icon name="print" className="text-base" />
+                                                                            Print File
+                                                                        </a>
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         ) : (
                                                             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
@@ -225,11 +260,24 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ order: initialOrder,
                                             ₹{order.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                         </span>
                                     </div>
+                                    {order.paymentId && (
+                                        <div className="mt-3 pt-3 border-t border-green-200 dark:border-green-800/30 flex items-center justify-between">
+                                            <span className="text-xs font-semibold text-green-800 dark:text-green-300 uppercase tracking-wider">Payment ID</span>
+                                            <button
+                                                onClick={() => navigator.clipboard.writeText(order.paymentId || '')}
+                                                className="flex items-center gap-2 text-xs font-mono bg-white dark:bg-black/20 px-2 py-1 rounded border border-green-200 dark:border-green-800/30 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+                                                title="Click to Copy"
+                                            >
+                                                {order.paymentId}
+                                                <Icon name="content_copy" className="text-[10px]" />
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             </section>
                         </div>
                     ) : (
-                        <OrderTimeline events={mockOrderEvents} />
+                        <OrderTimeline events={generateOrderEvents(order)} />
                     )}
                 </div>
 
@@ -240,7 +288,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ order: initialOrder,
                         {order.status === 'confirmed' && (
                             <button
                                 onClick={() => onStatusChange?.(order.id, 'printing')}
-                                className="px-4 py-2 rounded-lg bg-primary text-white font-medium text-sm hover:bg-primary-hover transition-colors flex items-center gap-2"
+                                className="px-4 py-2 rounded-lg bg-blue-600 text-white font-medium text-sm hover:bg-blue-700 transition-colors flex items-center gap-2"
                             >
                                 <Icon name="print" className="text-lg" />
                                 Start Printing

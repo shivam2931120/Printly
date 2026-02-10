@@ -21,7 +21,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     return (
-        <div className="min-h-screen bg-background-light dark:bg-background-dark font-display">
+        <div className="min-h-screen bg-background-light dark:bg-background-dark font-display overflow-x-hidden">
             {/* Desktop Sidebar */}
             <div className="hidden lg:block">
                 <AdminSidebar
@@ -37,14 +37,14 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
             {/* Mobile Menu Overlay */}
             {mobileMenuOpen && (
                 <div
-                    className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 lg:hidden animate-fade-in"
                     onClick={() => setMobileMenuOpen(false)}
                 />
             )}
 
             {/* Mobile Sidebar */}
             <div className={`
-        lg:hidden fixed inset-y-0 left-0 z-40 w-64 transform transition-transform duration-300
+        lg:hidden fixed inset-y-0 left-0 z-40 w-64 transform transition-transform duration-300 ease-out shadow-2xl
         ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
                 <AdminSidebar
@@ -90,7 +90,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
                                     <input
                                         type="text"
                                         placeholder="Search..."
-                                        className="w-64 pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-lg text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary"
+                                        className="w-64 pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-lg text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500"
                                     />
                                 </div>
                             </div>
@@ -110,8 +110,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
                                         className="size-9 rounded-full object-cover ring-2 ring-white dark:ring-slate-700"
                                     />
                                 ) : (
-                                    <div className="size-9 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-white dark:ring-slate-700">
-                                        <Icon name="person" className="text-primary" />
+                                    <div className="size-9 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center ring-2 ring-white dark:ring-slate-700">
+                                        <Icon name="person" className="text-blue-600 dark:text-blue-400" />
                                     </div>
                                 )}
                             </div>

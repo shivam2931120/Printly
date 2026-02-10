@@ -164,7 +164,7 @@ export const ProductManagement: React.FC = () => {
                 </button>
                 <button
                     onClick={handleAddProduct}
-                    className="inline-flex items-center justify-center h-10 px-4 rounded-lg bg-primary text-white text-sm font-bold shadow-md hover:bg-primary-hover transition-colors"
+                    className="inline-flex items-center justify-center h-10 px-4 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-sm font-bold shadow-md hover:opacity-90 transition-colors"
                 >
                     <Icon name="add" className="text-lg mr-2" />
                     Add Product
@@ -239,7 +239,7 @@ export const ProductManagement: React.FC = () => {
                     <button
                         onClick={() => setSelectedCategory('all')}
                         className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${selectedCategory === 'all'
-                            ? 'bg-primary text-white'
+                            ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-md transform scale-105'
                             : 'bg-surface-light dark:bg-surface-dark text-slate-600 dark:text-slate-400 border border-border-light dark:border-border-dark hover:bg-slate-100 dark:hover:bg-slate-800'
                             }`}
                     >
@@ -250,7 +250,7 @@ export const ProductManagement: React.FC = () => {
                             key={cat.id}
                             onClick={() => setSelectedCategory(cat.id)}
                             className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all flex items-center gap-2 ${selectedCategory === cat.id
-                                ? 'bg-primary text-white'
+                                ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-md transform scale-105'
                                 : 'bg-surface-light dark:bg-surface-dark text-slate-600 dark:text-slate-400 border border-border-light dark:border-border-dark hover:bg-slate-100 dark:hover:bg-slate-800'
                                 }`}
                         >
@@ -284,7 +284,7 @@ export const ProductManagement: React.FC = () => {
                                 </button>
                                 <button
                                     onClick={() => handleEditProduct(product)}
-                                    className="p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/10 transition-colors"
+                                    className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:text-blue-400 dark:hover:bg-blue-900/20 transition-colors"
                                     title="Edit"
                                 >
                                     <Icon name="edit" className="text-lg" />
@@ -307,7 +307,7 @@ export const ProductManagement: React.FC = () => {
                         </p>
 
                         <div className="flex items-center justify-between mb-3">
-                            <span className="text-lg font-bold text-primary">₹{product.price}</span>
+                            <span className="text-lg font-bold text-slate-900 dark:text-white">₹{product.price}</span>
                             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${PRODUCT_CATEGORIES.find(c => c.id === product.category)?.id === 'stationery'
                                 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
                                 : PRODUCT_CATEGORIES.find(c => c.id === product.category)?.id === 'writing'
@@ -342,7 +342,7 @@ export const ProductManagement: React.FC = () => {
                                 </button>
                                 <button
                                     onClick={() => handleStockChange(product.id, 10)}
-                                    className="size-8 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors flex items-center justify-center"
+                                    className="size-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors flex items-center justify-center"
                                 >
                                     <Icon name="add" className="text-lg" />
                                 </button>
@@ -454,7 +454,7 @@ export const ProductManagement: React.FC = () => {
                             </button>
                             <button
                                 onClick={handleSaveProduct}
-                                className="flex-1 py-2.5 rounded-lg bg-primary text-white font-bold hover:bg-primary-hover transition-colors"
+                                className="flex-1 py-2.5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold hover:opacity-90 transition-colors"
                             >
                                 {editingProduct ? 'Save Changes' : 'Add Product'}
                             </button>

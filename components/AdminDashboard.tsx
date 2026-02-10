@@ -108,7 +108,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
 
     <div className="grid gap-6">
       {/* Profile Settings */}
-      <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-6">
+      <div className="bg-surface-light/80 dark:bg-surface-dark/80 backdrop-blur-xl rounded-xl border border-border-light dark:border-border-dark p-6">
         <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
           <Icon name="person" className="text-primary" />
           Admin Profile
@@ -158,7 +158,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
       <ShopSettings />
 
       {/* Notifications */}
-      <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-6">
+      <div className="bg-surface-light/80 dark:bg-surface-dark/80 backdrop-blur-xl rounded-xl border border-border-light dark:border-border-dark p-6">
         <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
           <Icon name="notifications" className="text-amber-500" />
           Notifications
@@ -180,7 +180,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
       </div>
 
       {/* Danger Zone */}
-      <div className="bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-200 dark:border-red-900/30 p-6">
+      <div className="bg-red-50/50 dark:bg-red-900/10 backdrop-blur-sm rounded-xl border border-red-200 dark:border-red-900/30 p-6">
         <h3 className="text-lg font-bold text-red-700 dark:text-red-400 mb-4 flex items-center gap-2">
           <Icon name="warning" className="text-red-600 dark:text-red-400" />
           Danger Zone
@@ -246,11 +246,11 @@ const ToggleSetting: React.FC<{
       </div>
       <button
         onClick={() => setEnabled(!enabled)}
-        className={`relative w-12 h-6 rounded-full transition-colors ${enabled ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-600'
+        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-slate-900 ${enabled ? 'bg-primary' : 'bg-slate-200 dark:bg-slate-700'
           }`}
       >
         <span
-          className={`absolute top-0.5 size-5 rounded-full bg-white shadow-md transition-transform ${enabled ? 'translate-x-6' : 'translate-x-0.5'
+          className={`absolute left-0.5 top-0.5 bg-white rounded-full h-5 w-5 shadow transform transition-transform duration-200 ease-in-out ${enabled ? 'translate-x-5' : 'translate-x-0'
             }`}
         />
       </button>

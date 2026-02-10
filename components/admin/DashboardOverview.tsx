@@ -72,7 +72,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
                     </button>
                     <button
                         onClick={() => onNavigate('orders')}
-                        className="inline-flex items-center justify-center h-10 px-4 rounded-lg bg-primary text-white text-sm font-bold shadow-md hover:bg-primary-hover transition-colors"
+                        className="inline-flex items-center justify-center h-10 px-4 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-sm font-bold shadow-md hover:opacity-90 transition-colors"
                     >
                         <Icon name="add" className="text-lg mr-2" />
                         Manage Orders
@@ -159,7 +159,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
                     <h3 className="text-lg font-bold text-slate-900 dark:text-white">Recent Orders</h3>
                     <button
                         onClick={() => onNavigate('orders')}
-                        className="text-sm text-primary font-medium hover:underline"
+                        className="text-sm text-blue-600 dark:text-blue-400 font-medium hover:underline"
                     >
                         View All
                     </button>
@@ -174,7 +174,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
                         orders.slice(0, 4).map((order) => (
                             <div key={order.id} className="flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
                                 <div className="flex items-center gap-4">
-                                    <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">
+                                    <div className="size-10 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center font-bold text-blue-600 dark:text-blue-400">
                                         {(order.userName || 'C').charAt(0).toUpperCase()}
                                     </div>
                                     <div>

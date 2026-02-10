@@ -186,6 +186,41 @@ export const createOrder = async (order: Order): Promise<{ success: boolean; err
     return { success: true };
 };
 
+export const cancelOrder = async (orderId: string, userId: string): Promise<{ success: boolean; error?: string }> => {
+    // 1. Fetch Order to verify ownership and status
+    const { data: order, error: fetchError } = await supabase
+        .from('Order')
+        .select('userId, status')
+        .eq('id', orderId)
+        .single();
+
+    if (fetchError || !order) {
+        return { success: false, error: 'Order not found.' };
+    }
+
+    // 2. Verify Ownership
+    if (order.userId !== userId) {
+        return { success: false, error: 'Unauthorized.' };
+    }
+
+    // 3. Verify Status
+    if (order.status.toUpperCase() !== 'PENDING') {
+        return { success: false, error: 'Cannot cancel order. It may have already been processed.' };
+    }
+
+    // 4. Update Status
+    const { error: updateError } = await supabase
+        .from('Order')
+        .update({ status: 'CANCELLED' })
+        .eq('id', orderId);
+
+    if (updateError) {
+        return { success: false, error: updateError.message };
+    }
+
+    return { success: true };
+};
+
 export const fetchOrders = async (userId?: string): Promise<Order[]> => {
     let query = supabase
         .from('Order')

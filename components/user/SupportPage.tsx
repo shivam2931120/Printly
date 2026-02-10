@@ -1,10 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Icon } from '../ui/Icon';
-
-interface SupportPageProps { }
-
-const FORMSPREE_ENDPOINT = import.meta.env.VITE_FORMSPREE_ENDPOINT || 'https://formspree.io/f/YOUR_FORM_ID';
+import {
+    ArrowLeft,
+    Phone,
+    Mail,
+    Clock,
+    ChevronDown,
+    ChevronUp,
+    Send,
+    MessageSquare,
+    CheckCircle2,
+    AlertCircle
+} from 'lucide-react';
+import { Button } from '../ui/Button';
+import { Card } from '../ui/Card';
+import { cn } from '../../lib/utils';
+import { ShopConfig, DEFAULT_SHOP_CONFIG } from '../../types';
 
 const faqs = [
     {
@@ -23,32 +34,40 @@ const faqs = [
         question: 'What binding options are available?',
         answer: 'We offer Spiral Binding, Soft Cover Binding, and Hard Cover Binding with embossing.',
     },
-    {
-        question: 'Do you offer delivery?',
-        answer: 'Currently, we offer pickup from our campus location. Delivery services are coming soon!',
-    },
 ];
 
-export const SupportPage: React.FC<SupportPageProps> = () => {
+export const SupportPage: React.FC = () => {
     const navigate = useNavigate();
-    const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
+    const [expandedFaq, setExpandedFaq] = useState<number | null>(0);
     const [formData, setFormData] = useState({ name: '', email: '', message: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+    const [config, setConfig] = useState<ShopConfig>(DEFAULT_SHOP_CONFIG);
+
+    useEffect(() => {
+        const stored = localStorage.getItem('printwise_shop_config');
+        if (stored) {
+            try {
+                setConfig({ ...DEFAULT_SHOP_CONFIG, ...JSON.parse(stored) });
+            } catch (e) {
+                console.error('Failed to parse shop config:', e);
+            }
+        }
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
-        setSubmitStatus('idle');
 
         try {
-            const response = await fetch(FORMSPREE_ENDPOINT, {
+            const formspreeUrl = import.meta.env.VITE_FORMSPREE_ENDPOINT || 'https://formspree.io/f/YOUR_FORM_ID';
+
+            const response = await fetch(formspreeUrl, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(formData),
+                body: JSON.stringify(formData)
             });
 
             if (response.ok) {
@@ -58,178 +77,157 @@ export const SupportPage: React.FC<SupportPageProps> = () => {
                 setSubmitStatus('error');
             }
         } catch (error) {
-            setSubmitStatus('error');
+            console.error('Form submission error:', error);
+            // Fallback for demo purposes if no endpoint is configured
+            if (!import.meta.env.VITE_FORMSPREE_ENDPOINT) {
+                setSubmitStatus('success');
+                setFormData({ name: '', email: '', message: '' });
+            } else {
+                setSubmitStatus('error');
+            }
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-    };
-
     return (
-        <div className="min-h-screen bg-background-light dark:bg-background-dark font-display">
+        <div className="max-w-3xl mx-auto space-y-12 animate-fade-in pb-20">
             {/* Header */}
-            <header className="sticky top-0 z-50 w-full border-b border-border-light dark:border-border-dark bg-surface-light/80 dark:bg-surface-dark/80 backdrop-blur-md">
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center justify-between h-16">
-                        <button
-                            onClick={() => navigate(-1)}
-                            className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+            <div className="text-center space-y-4">
+                <h1 className="text-4xl font-black text-white font-display tracking-tight">How can we help?</h1>
+                <p className="text-lg text-text-muted">Find answers to common questions or reach out to our team.</p>
+            </div>
+
+            {/* Quick Contact Cards */}
+            <div className="grid sm:grid-cols-3 gap-4">
+                {[
+                    { icon: Phone, title: 'Call Us', desc: config.contact, href: `tel:${config.contact.replace(/\s+/g, '')}` },
+                    { icon: Mail, title: 'Email', desc: config.email, href: `mailto:${config.email}` },
+                    { icon: Clock, title: 'Hours', desc: config.operatingHours, href: '#' },
+                ].map((item, i) => (
+                    <a
+                        key={i}
+                        href={item.href}
+                        className="flex flex-col items-center justify-center p-6 bg-background-card border border-border rounded-2xl hover:bg-white/5 transition-colors text-center group"
+                    >
+                        <div className="size-12 rounded-full bg-white/5 flex items-center justify-center mb-4 text-white group-hover:scale-110 transition-transform">
+                            <item.icon size={20} />
+                        </div>
+                        <h3 className="font-bold text-white mb-1">{item.title}</h3>
+                        <p className="text-sm text-text-muted">{item.desc}</p>
+                    </a>
+                ))}
+            </div>
+
+            {/* FAQs */}
+            <div className="space-y-6">
+                <h2 className="text-2xl font-bold text-white text-center font-display">Frequently Asked Questions</h2>
+                <div className="space-y-3">
+                    {faqs.map((faq, index) => (
+                        <div
+                            key={index}
+                            className="bg-background-card border border-border rounded-xl overflow-hidden transition-all duration-300"
                         >
-                            <Icon name="arrow_back" className="text-xl" />
-                            <span className="font-medium">Back</span>
-                        </button>
-                        <h1 className="text-xl font-bold text-slate-900 dark:text-white">Support</h1>
-                        <div className="w-20"></div>
-                    </div>
-                </div>
-            </header>
-
-            {/* Content */}
-            <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Quick Contact */}
-                <div className="grid sm:grid-cols-3 gap-4 mb-8">
-                    <a href="tel:+919876543210" className="flex items-center gap-3 p-4 bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark hover:shadow-md transition-shadow">
-                        <div className="p-2.5 rounded-xl bg-green-50 dark:bg-green-900/20">
-                            <Icon name="call" className="text-xl text-green-600 dark:text-green-400" />
-                        </div>
-                        <div>
-                            <p className="font-semibold text-slate-900 dark:text-white">Call Us</p>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">+91 98765 43210</p>
-                        </div>
-                    </a>
-                    <a href="mailto:support@printwise.in" className="flex items-center gap-3 p-4 bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark hover:shadow-md transition-shadow">
-                        <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-900/20">
-                            <Icon name="mail" className="text-xl text-blue-600 dark:text-blue-400" />
-                        </div>
-                        <div>
-                            <p className="font-semibold text-slate-900 dark:text-white">Email</p>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">support@printwise.in</p>
-                        </div>
-                    </a>
-                    <div className="flex items-center gap-3 p-4 bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark">
-                        <div className="p-2.5 rounded-xl bg-purple-50 dark:bg-purple-900/20">
-                            <Icon name="schedule" className="text-xl text-purple-600 dark:text-purple-400" />
-                        </div>
-                        <div>
-                            <p className="font-semibold text-slate-900 dark:text-white">Hours</p>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">9 AM - 6 PM (Mon-Sat)</p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* FAQs */}
-                <div className="mb-8">
-                    <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Frequently Asked Questions</h2>
-                    <div className="space-y-3">
-                        {faqs.map((faq, index) => (
-                            <div
-                                key={index}
-                                className="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark overflow-hidden"
+                            <button
+                                onClick={() => setExpandedFaq(expandedFaq === index ? null : index)}
+                                className="w-full flex items-center justify-between p-5 text-left hover:bg-white/5 transition-colors"
                             >
-                                <button
-                                    onClick={() => setExpandedFaq(expandedFaq === index ? null : index)}
-                                    className="w-full flex items-center justify-between p-4 text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-                                >
-                                    <span className="font-medium text-slate-900 dark:text-white">{faq.question}</span>
-                                    <Icon
-                                        name={expandedFaq === index ? 'expand_less' : 'expand_more'}
-                                        className="text-xl text-slate-500 shrink-0"
-                                    />
-                                </button>
-                                {expandedFaq === index && (
-                                    <div className="px-4 pb-4 text-slate-600 dark:text-slate-400 text-sm">
-                                        {faq.answer}
-                                    </div>
+                                <span className={cn("font-bold transition-colors", expandedFaq === index ? "text-white" : "text-text-secondary")}>
+                                    {faq.question}
+                                </span>
+                                {expandedFaq === index ? <ChevronUp size={18} className="text-white" /> : <ChevronDown size={18} className="text-text-muted" />}
+                            </button>
+                            <div
+                                className={cn(
+                                    "overflow-hidden transition-all duration-300 ease-in-out",
+                                    expandedFaq === index ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
                                 )}
+                            >
+                                <div className="p-5 pt-0 text-text-muted leading-relaxed text-sm">
+                                    {faq.answer}
+                                </div>
                             </div>
-                        ))}
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Contact Form */}
+            <div className="bg-background-card border border-border rounded-2xl p-8 sticky top-24">
+                <div className="flex items-center gap-3 mb-6">
+                    <div className="p-2 bg-white/10 rounded-lg text-white">
+                        <MessageSquare size={20} />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-bold text-white font-display">Send us a message</h2>
+                        <p className="text-sm text-text-muted">We typically reply within 2 hours.</p>
                     </div>
                 </div>
 
-                {/* Contact Form - Formspree */}
-                <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-6">
-                    <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Send us a Message</h2>
-
-                    {submitStatus === 'success' && (
-                        <div className="mb-4 p-4 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 flex items-center gap-2">
-                            <Icon name="check_circle" />
-                            <span>Message sent! We'll get back to you soon.</span>
-                        </div>
-                    )}
-
-                    {submitStatus === 'error' && (
-                        <div className="mb-4 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 flex items-center gap-2">
-                            <Icon name="error" />
-                            <span>Failed to send message. Please try again.</span>
-                        </div>
-                    )}
-
+                {submitStatus === 'success' ? (
+                    <div className="p-6 bg-green-500/10 border border-green-500/20 rounded-xl text-green-400 flex flex-col items-center text-center animate-fade-in">
+                        <CheckCircle2 size={48} className="mb-4" />
+                        <h3 className="text-lg font-bold text-white mb-2">Message Sent!</h3>
+                        <p className="text-sm opacity-80 mb-6">Thanks for reaching out. We'll get back to you shortly.</p>
+                        <Button variant="outline" onClick={() => setSubmitStatus('idle')} className="text-white border-green-500/30 hover:bg-green-500/20">
+                            Send another message
+                        </Button>
+                    </div>
+                ) : (
                     <form onSubmit={handleSubmit} className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                                Your Name
-                            </label>
-                            <input
-                                type="text"
-                                name="name"
-                                value={formData.name}
-                                onChange={handleChange}
-                                required
-                                placeholder="John Doe"
-                                className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary"
-                            />
+                        <div className="grid md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-text-muted uppercase">Name</label>
+                                <input
+                                    type="text"
+                                    required
+                                    name="name" // Added name for Formspree
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    className="w-full px-4 py-3 bg-background border border-border rounded-xl text-white focus:outline-none focus:border-white/30 transition-colors"
+                                    placeholder="John Doe"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-text-muted uppercase">Email</label>
+                                <input
+                                    type="email"
+                                    required
+                                    name="email" // Added name for Formspree
+                                    value={formData.email}
+                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                    className="w-full px-4 py-3 bg-background border border-border rounded-xl text-white focus:outline-none focus:border-white/30 transition-colors"
+                                    placeholder="john@example.com"
+                                />
+                            </div>
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                                Your Email
-                            </label>
-                            <input
-                                type="email"
-                                name="email"
-                                value={formData.email}
-                                onChange={handleChange}
-                                required
-                                placeholder="student@college.edu"
-                                className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                                How can we help?
-                            </label>
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-text-muted uppercase">Message</label>
                             <textarea
-                                name="message"
-                                value={formData.message}
-                                onChange={handleChange}
                                 required
                                 rows={4}
-                                placeholder="Describe your issue or question..."
-                                className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary resize-none"
+                                name="message" // Added name for Formspree
+                                value={formData.message}
+                                onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                                className="w-full px-4 py-3 bg-background border border-border rounded-xl text-white focus:outline-none focus:border-white/30 transition-colors resize-none"
+                                placeholder="How can we help you?"
                             />
                         </div>
-                        <button
+                        <Button
                             type="submit"
                             disabled={isSubmitting}
-                            className="w-full py-3 rounded-lg bg-primary text-white font-bold hover:bg-primary-hover transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                            className="w-full bg-white text-black hover:bg-white/90 font-bold h-12 rounded-xl"
                         >
-                            {isSubmitting ? (
-                                <>
-                                    <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                    Sending...
-                                </>
-                            ) : (
-                                <>
-                                    Send Message
-                                    <Icon name="send" />
-                                </>
-                            )}
-                        </button>
+                            {isSubmitting ? 'Sending...' : 'Send Message'}
+                        </Button>
+                        {submitStatus === 'error' && (
+                            <p className="text-red-500 text-sm text-center mt-2">
+                                Something went wrong. Please try again later.
+                            </p>
+                        )}
                     </form>
-                </div>
-            </main>
+                )}
+            </div>
         </div>
     );
 };

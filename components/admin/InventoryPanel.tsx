@@ -83,7 +83,7 @@ export const InventoryPanel: React.FC = () => {
                         Track paper stock, ink levels, and supplies
                     </p>
                 </div>
-                <button className="inline-flex items-center justify-center h-10 px-4 rounded-lg bg-primary text-white text-sm font-bold shadow-md hover:bg-primary-hover transition-colors">
+                <button className="inline-flex items-center justify-center h-10 px-4 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-sm font-bold shadow-md hover:opacity-90 transition-colors">
                     <Icon name="add" className="text-lg mr-2" />
                     Add Stock
                 </button>
@@ -149,7 +149,7 @@ export const InventoryPanel: React.FC = () => {
                             </div>
 
                             <div className="flex gap-2 mt-4">
-                                <button className="flex-1 py-2 px-3 rounded-lg text-sm font-medium text-primary hover:bg-primary/10 transition-colors">
+                                <button className="flex-1 py-2 px-3 rounded-lg text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
                                     <Icon name="add" className="text-lg inline mr-1" />
                                     Add
                                 </button>

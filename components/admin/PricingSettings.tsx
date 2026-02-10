@@ -56,7 +56,7 @@ export const PricingSettings: React.FC<PricingSettingsProps> = ({ pricing, onUpd
                     </button>
                     <button
                         onClick={handleSave}
-                        className="px-6 py-2 rounded-lg bg-primary text-white font-medium hover:bg-primary-hover transition-colors flex items-center gap-2"
+                        className="px-6 py-2 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-medium hover:opacity-90 transition-colors flex items-center gap-2"
                     >
                         {saved ? <Icon name="check" /> : <Icon name="save" />}
                         {saved ? 'Saved!' : 'Save Changes'}
@@ -67,7 +67,7 @@ export const PricingSettings: React.FC<PricingSettingsProps> = ({ pricing, onUpd
             {/* Per Page Pricing */}
             <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-6">
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                    <Icon name="description" className="text-primary" />
+                    <Icon name="description" className="text-blue-600 dark:text-blue-400" />
                     Per Page Pricing
                 </h3>
                 <div className="grid sm:grid-cols-2 gap-4">
@@ -81,7 +81,7 @@ export const PricingSettings: React.FC<PricingSettingsProps> = ({ pricing, onUpd
                             min="0"
                             value={localPricing.perPageBW}
                             onChange={(e) => handleChange('perPageBW', parseFloat(e.target.value) || 0)}
-                            className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-primary"
+                            className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                         />
                     </div>
                     <div>

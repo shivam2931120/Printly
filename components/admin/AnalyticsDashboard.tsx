@@ -208,7 +208,7 @@ export const AnalyticsDashboard: React.FC = () => {
                         </div>
                         <div className="flex items-center gap-4 text-sm">
                             <div className="flex items-center gap-2">
-                                <div className="size-3 rounded-full bg-primary" />
+                                <div className="size-3 rounded-full bg-blue-600 dark:bg-blue-400" />
                                 <span className="text-slate-600 dark:text-slate-400">Revenue</span>
                             </div>
                         </div>
