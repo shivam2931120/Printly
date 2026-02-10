@@ -4,6 +4,7 @@ import {
     LayoutDashboard,
     Upload,
     LogOut,
+    LogIn,
     UserCircle,
     Store,
     Receipt,
@@ -53,9 +54,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ user }) => {
             {/* Logo Area */}
             <div className="h-16 flex items-center justify-center border-b border-border/50 truncate">
                 <div className="flex items-center gap-3 px-4 w-full">
-                    <div className="size-8 rounded-lg bg-white flex items-center justify-center shrink-0">
-                        <span className="text-black font-bold text-xl font-display">P</span>
-                    </div>
+                    <img src="/Printly.png" alt="Printly Logo" className="size-8 object-contain shrink-0" />
                     <span className={cn(
                         "font-bold text-lg text-white font-display tracking-tight transition-opacity duration-200",
                         isSidebarExpanded ? "opacity-100" : "opacity-0 hidden"
@@ -95,42 +94,61 @@ export const Sidebar: React.FC<SidebarProps> = ({ user }) => {
 
             {/* Bottom Actions */}
             <div className="p-3 border-t border-border/50 bg-background">
-                {user && (
-                    <div className={cn(
-                        "flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-white/5 transition-colors cursor-pointer mb-2",
-                        !isSidebarExpanded && "justify-center"
-                    )}>
-                        <img
-                            src={user.avatar || `https://ui-avatars.com/api/?name=${user.name}&background=random`}
-                            alt="Profile"
-                            className="size-8 rounded-full border border-white/10 shrink-0"
-                        />
+                {user ? (
+                    <>
                         <div className={cn(
-                            "flex-1 min-w-0 transition-all duration-200",
+                            "flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-white/5 transition-colors cursor-pointer mb-2",
+                            !isSidebarExpanded && "justify-center"
+                        )}>
+                            <img
+                                src={user.avatar || `https://ui-avatars.com/api/?name=${user.name}&background=random`}
+                                alt="Profile"
+                                className="size-8 rounded-full border border-white/10 shrink-0"
+                            />
+                            <div className={cn(
+                                "flex-1 min-w-0 transition-all duration-200",
+                                isSidebarExpanded ? "opacity-100" : "opacity-0 hidden"
+                            )}>
+                                <p className="text-sm font-medium text-white truncate">{user.name}</p>
+                                <p className="text-[11px] text-text-muted truncate">Free Plan</p>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={handleSignOut}
+                            className={cn(
+                                "flex items-center gap-4 px-3 py-3 rounded-xl text-text-muted hover:text-red-400 hover:bg-red-500/10 transition-all w-full",
+                                !isSidebarExpanded && "justify-center"
+                            )}
+                            title="Sign Out"
+                        >
+                            <LogOut size={20} className="shrink-0" />
+                            <span className={cn(
+                                "font-medium text-sm whitespace-nowrap transition-all duration-200",
+                                isSidebarExpanded ? "opacity-100" : "opacity-0 hidden"
+                            )}>
+                                Sign Out
+                            </span>
+                        </button>
+                    </>
+                ) : (
+                    <button
+                        onClick={() => navigate('/sign-in')}
+                        className={cn(
+                            "flex items-center gap-4 px-3 py-3 rounded-xl text-text-muted hover:text-white hover:bg-white/10 transition-all w-full",
+                            !isSidebarExpanded && "justify-center"
+                        )}
+                        title="Sign In"
+                    >
+                        <LogIn size={20} className="shrink-0" />
+                        <span className={cn(
+                            "font-medium text-sm whitespace-nowrap transition-all duration-200",
                             isSidebarExpanded ? "opacity-100" : "opacity-0 hidden"
                         )}>
-                            <p className="text-sm font-medium text-white truncate">{user.name}</p>
-                            <p className="text-[11px] text-text-muted truncate">Free Plan</p>
-                        </div>
-                    </div>
+                            Sign In
+                        </span>
+                    </button>
                 )}
-
-                <button
-                    onClick={handleSignOut}
-                    className={cn(
-                        "flex items-center gap-4 px-3 py-3 rounded-xl text-text-muted hover:text-red-400 hover:bg-red-500/10 transition-all w-full",
-                        !isSidebarExpanded && "justify-center"
-                    )}
-                    title="Sign Out"
-                >
-                    <LogOut size={20} className="shrink-0" />
-                    <span className={cn(
-                        "font-medium text-sm whitespace-nowrap transition-all duration-200",
-                        isSidebarExpanded ? "opacity-100" : "opacity-0 hidden"
-                    )}>
-                        Sign Out
-                    </span>
-                </button>
             </div>
         </aside>
     );

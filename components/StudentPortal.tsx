@@ -63,6 +63,11 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
   // Handlers
   const handleFilesAdded = async (newFiles: File[]) => {
+    if (!currentUser) {
+      onSignInClick();
+      return;
+    }
+
     // Initialize files with 0 page count. PreviewStep will parse and update this.
     const processed = newFiles.map((file) => ({
       id: Math.random().toString(36).substr(2, 9),

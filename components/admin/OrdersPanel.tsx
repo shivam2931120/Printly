@@ -40,9 +40,33 @@ export const OrdersPanel: React.FC = () => {
 
     useEffect(() => {
         loadOrders();
-        // Poll for updates every 10 seconds
-        const interval = setInterval(loadOrders, 10000);
-        return () => clearInterval(interval);
+
+        // Polling fallback every 30 seconds (slower since we have realtime)
+        const interval = setInterval(loadOrders, 30000);
+
+        // Real-time subscription for instant updates
+        const channel = supabase
+            .channel('admin-orders-sync')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*', // Listen for ALL changes (INSERT, UPDATE, DELETE)
+                    schema: 'public',
+                    table: 'Order'
+                },
+                (payload) => {
+                    console.log('Real-time order update received:', payload);
+                    loadOrders(); // Refresh the list
+                }
+            )
+            .subscribe((status) => {
+                console.log('Real-time subscription status:', status);
+            });
+
+        return () => {
+            clearInterval(interval);
+            supabase.removeChannel(channel);
+        };
     }, []);
 
     const updateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {

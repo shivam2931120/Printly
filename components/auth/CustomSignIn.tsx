@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useSignIn } from '@clerk/clerk-react';
 import { useNavigate } from 'react-router-dom';
-import { Lock, Mail, ArrowRight, Loader2 } from 'lucide-react';
+import { Lock, Mail, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '../ui/Button';
 
 export const CustomSignIn = () => {
@@ -58,17 +58,28 @@ export const CustomSignIn = () => {
             <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-primary/20 rounded-full blur-[120px] pointer-events-none opacity-50" />
             <div className="absolute bottom-[-20%] left-[-10%] w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[100px] pointer-events-none opacity-30" />
 
-            <div className="w-full max-w-sm relative z-10 animate-fade-in">
-                <div className="bg-surface-dark border border-white/5 rounded-3xl shadow-2xl p-8 backdrop-blur-xl">
-                    <div className="text-center mb-8">
-                        <div className="inline-flex items-center justify-center size-14 rounded-2xl bg-gradient-to-br from-primary to-blue-600 text-white mb-6 shadow-glow">
-                            <Lock className="w-6 h-6" />
+            <div className="w-full max-w-sm relative z-10 animate-fade-in flex flex-col items-center">
+                {/* Back to Home Button */}
+                <div className="w-full flex justify-start mb-8">
+                    <button
+                        onClick={() => navigate('/')}
+                        className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors text-sm font-medium group"
+                    >
+                        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                        Back to Home
+                    </button>
+                </div>
+
+                <div className="w-full">
+                    <div className="text-center mb-10">
+                        <div className="flex items-center justify-center mb-6">
+                            <img src="/Printly.png" alt="Printly Logo" className="size-16 object-contain drop-shadow-glow" />
                         </div>
                         <h1 className="text-3xl font-black text-white tracking-tight mb-2">Welcome Back</h1>
                         <p className="text-slate-400 text-sm">Sign in to manage your campus prints</p>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-5">
+                    <form onSubmit={handleSubmit} className="space-y-6">
                         {error && (
                             <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm text-center flex items-center justify-center gap-2">
                                 <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
@@ -76,7 +87,7 @@ export const CustomSignIn = () => {
                             </div>
                         )}
 
-                        <div className="space-y-1.5">
+                        <div className="space-y-2">
                             <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Email Address</label>
                             <div className="relative group">
                                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary transition-colors w-5 h-5" />
@@ -84,14 +95,14 @@ export const CustomSignIn = () => {
                                     type="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full pl-12 pr-4 py-3.5 bg-background-dark border border-border-dark rounded-xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-white placeholder-slate-600"
+                                    className="w-full pl-12 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-white placeholder-slate-600"
                                     placeholder="student@university.edu"
                                     required
                                 />
                             </div>
                         </div>
 
-                        <div className="space-y-1.5">
+                        <div className="space-y-2">
                             <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Password</label>
                             <div className="relative group">
                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary transition-colors w-5 h-5" />
@@ -99,7 +110,7 @@ export const CustomSignIn = () => {
                                     type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full pl-12 pr-4 py-3.5 bg-background-dark border border-border-dark rounded-xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-white placeholder-slate-600"
+                                    className="w-full pl-12 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-white placeholder-slate-600"
                                     placeholder="••••••••"
                                     required
                                 />
@@ -128,7 +139,7 @@ export const CustomSignIn = () => {
 
                         <div className="relative my-8">
                             <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/5"></div></div>
-                            <div className="relative flex justify-center text-xs uppercase tracking-wider"><span className="bg-surface-dark px-4 text-slate-500 font-bold">Or continue with</span></div>
+                            <div className="relative flex justify-center text-xs uppercase tracking-wider"><span className="bg-background-darker px-4 text-slate-500 font-bold">Or continue with</span></div>
                         </div>
 
                         <button

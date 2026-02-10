@@ -8,6 +8,7 @@ interface AdminSidebarProps {
     onToggle?: () => void;
     adminAvatar?: string | null;
     adminName?: string;
+    onSignOut?: () => void;
 }
 
 const navItems = [
@@ -28,7 +29,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
     collapsed = false,
     onToggle,
     adminAvatar,
-    adminName = 'Admin'
+    adminName = 'Admin',
+    onSignOut
 }) => {
     return (
         <aside className={`
@@ -41,9 +43,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             {/* Logo Header */}
             <div className="h-16 flex items-center justify-between px-4 border-b border-border-light dark:border-border-dark shrink-0">
                 <div className={`flex items-center gap-3 ${collapsed ? 'justify-center w-full' : ''}`}>
-                    <div className="flex items-center justify-center size-10 rounded-xl bg-primary/10 text-primary flex-shrink-0">
-                        <Icon name="print" className="text-2xl" />
-                    </div>
+                    <img src="/Printly.png" alt="Printly Logo" className="size-8 object-contain shrink-0" />
                     {!collapsed && (
                         <span className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
                             Printly Admin
@@ -99,9 +99,9 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             )}
 
             {/* User Section */}
-            {!collapsed && (
-                <div className="p-4 border-t border-border-light dark:border-border-dark shrink-0">
-                    <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+            <div className="mt-auto p-4 border-t border-border-light dark:border-border-dark shrink-0">
+                {!collapsed && (
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 mb-2">
                         {adminAvatar ? (
                             <img
                                 src={adminAvatar}
@@ -120,8 +120,22 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                             <p className="text-xs text-slate-500 dark:text-slate-400">Administrator</p>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
+
+                <button
+                    onClick={onSignOut}
+                    className={`
+                        w-full flex items-center gap-3 px-4 py-3 rounded-xl
+                        text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 
+                        transition-all duration-200
+                        ${collapsed ? 'justify-center px-3' : ''}
+                    `}
+                    title="Sign Out"
+                >
+                    <Icon name="logout" className="text-xl shrink-0" />
+                    {!collapsed && <span className="text-sm font-bold">Sign Out</span>}
+                </button>
+            </div>
         </aside>
     );
 };

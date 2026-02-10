@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useSignUp } from '@clerk/clerk-react';
 import { useNavigate } from 'react-router-dom';
-import { UserPlus, Mail, Lock, User, ArrowRight, Loader2, CheckCircle2 } from 'lucide-react';
+import { UserPlus, Mail, Lock, User, ArrowRight, ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
 import { Button } from '../ui/Button';
 
 export const CustomSignUp = () => {
@@ -72,8 +72,8 @@ export const CustomSignUp = () => {
                 <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-primary/20 rounded-full blur-[120px] pointer-events-none opacity-50" />
 
                 <div className="w-full max-w-sm relative z-10 animate-fade-in">
-                    <div className="bg-surface-dark border border-white/5 rounded-3xl shadow-2xl p-8 backdrop-blur-xl">
-                        <div className="text-center mb-8">
+                    <div className="w-full">
+                        <div className="text-center mb-10">
                             <div className="inline-flex items-center justify-center size-14 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 text-white mb-6 shadow-glow">
                                 <Mail className="w-6 h-6" />
                             </div>
@@ -91,13 +91,13 @@ export const CustomSignUp = () => {
                                 </div>
                             )}
 
-                            <div className="space-y-1.5">
+                            <div className="space-y-2">
                                 <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Verification Code</label>
                                 <input
                                     type="text"
                                     value={code}
                                     onChange={(e) => setCode(e.target.value)}
-                                    className="w-full px-4 py-4 bg-background-dark border border-border-dark rounded-xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-white text-center tracking-[1em] text-2xl font-mono"
+                                    className="w-full px-4 py-4 bg-white/5 border border-white/10 rounded-xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-white text-center tracking-[1em] text-2xl font-mono"
                                     placeholder="000000"
                                     maxLength={6}
                                     required
@@ -142,11 +142,22 @@ export const CustomSignUp = () => {
             <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-primary/20 rounded-full blur-[120px] pointer-events-none opacity-50" />
             <div className="absolute bottom-[-20%] left-[-10%] w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[100px] pointer-events-none opacity-30" />
 
-            <div className="w-full max-w-sm relative z-10 animate-fade-in">
-                <div className="bg-surface-dark border border-white/5 rounded-3xl shadow-2xl p-8 backdrop-blur-xl">
-                    <div className="text-center mb-8">
-                        <div className="inline-flex items-center justify-center size-14 rounded-2xl bg-gradient-to-br from-primary to-purple-600 text-white mb-6 shadow-glow">
-                            <UserPlus className="w-6 h-6" />
+            <div className="w-full max-w-sm relative z-10 animate-fade-in flex flex-col items-center">
+                {/* Back to Home Button */}
+                <div className="w-full flex justify-start mb-8">
+                    <button
+                        onClick={() => navigate('/')}
+                        className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors text-sm font-medium group"
+                    >
+                        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                        Back to Home
+                    </button>
+                </div>
+
+                <div className="w-full">
+                    <div className="text-center mb-10">
+                        <div className="flex items-center justify-center mb-6">
+                            <img src="/Printly.png" alt="Printly Logo" className="size-16 object-contain drop-shadow-glow" />
                         </div>
                         <h1 className="text-3xl font-black text-white tracking-tight mb-2">Create Account</h1>
                         <p className="text-slate-400 text-sm">Join the Printly campus community</p>
@@ -161,7 +172,7 @@ export const CustomSignUp = () => {
                         )}
 
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
+                            <div className="space-y-2">
                                 <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">First Name</label>
                                 <div className="relative group">
                                     <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary transition-colors w-4 h-4" />
@@ -169,13 +180,13 @@ export const CustomSignUp = () => {
                                         type="text"
                                         value={firstName}
                                         onChange={(e) => setFirstName(e.target.value)}
-                                        className="w-full pl-9 pr-3 py-3 bg-background-dark border border-border-dark rounded-xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-white placeholder-slate-600 text-sm"
+                                        className="w-full pl-9 pr-3 py-3 bg-white/5 border border-white/10 rounded-xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-white placeholder-slate-600 text-sm"
                                         placeholder="John"
                                         required
                                     />
                                 </div>
                             </div>
-                            <div className="space-y-1.5">
+                            <div className="space-y-2">
                                 <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Last Name</label>
                                 <div className="relative group">
                                     <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary transition-colors w-4 h-4" />
@@ -183,7 +194,7 @@ export const CustomSignUp = () => {
                                         type="text"
                                         value={lastName}
                                         onChange={(e) => setLastName(e.target.value)}
-                                        className="w-full pl-9 pr-3 py-3 bg-background-dark border border-border-dark rounded-xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-white placeholder-slate-600 text-sm"
+                                        className="w-full pl-9 pr-3 py-3 bg-white/5 border border-white/10 rounded-xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-white placeholder-slate-600 text-sm"
                                         placeholder="Doe"
                                         required
                                     />
@@ -191,7 +202,7 @@ export const CustomSignUp = () => {
                             </div>
                         </div>
 
-                        <div className="space-y-1.5">
+                        <div className="space-y-2">
                             <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Email Address</label>
                             <div className="relative group">
                                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary transition-colors w-5 h-5" />
@@ -199,14 +210,14 @@ export const CustomSignUp = () => {
                                     type="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full pl-12 pr-4 py-3 bg-background-dark border border-border-dark rounded-xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-white placeholder-slate-600 text-sm"
+                                    className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-white placeholder-slate-600 text-sm"
                                     placeholder="student@university.edu"
                                     required
                                 />
                             </div>
                         </div>
 
-                        <div className="space-y-1.5">
+                        <div className="space-y-2">
                             <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Password</label>
                             <div className="relative group">
                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-primary transition-colors w-5 h-5" />
@@ -214,7 +225,7 @@ export const CustomSignUp = () => {
                                     type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full pl-12 pr-4 py-3 bg-background-dark border border-border-dark rounded-xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-white placeholder-slate-600 text-sm"
+                                    className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-white placeholder-slate-600 text-sm"
                                     placeholder="••••••••"
                                     required
                                 />

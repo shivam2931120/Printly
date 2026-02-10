@@ -67,6 +67,13 @@ const AppContent: React.FC = () => {
     avatar: clerkUser.imageUrl,
   } : null;
 
+  // Auto-redirect Admin to Admin Panel
+  React.useEffect(() => {
+    if (isLoaded && currentUser?.isAdmin && location.pathname === '/') {
+      navigate('/admin', { replace: true });
+    }
+  }, [isLoaded, currentUser, location.pathname, navigate]);
+
   const handlePricingUpdate = (newPricing: PricingConfig) => {
     setPricing(newPricing);
   };
@@ -89,20 +96,7 @@ const AppContent: React.FC = () => {
   return (
     <div className="relative min-h-screen bg-background text-white font-sans selection:bg-white/20">
 
-      {/* Global Controls (Sign Out, Switch View) */}
-      {!isDeveloper && currentUser && (
-        <div className="fixed bottom-20 lg:bottom-6 right-6 z-[40] flex gap-2">
-          {currentUser?.isAdmin && (
-            <button
-              onClick={() => navigate(location.pathname.startsWith('/admin') ? '/' : '/admin')}
-              className="px-5 py-2.5 bg-white text-black font-bold rounded-full shadow-lg hover:scale-105 transition-all flex items-center gap-2 text-sm"
-            >
-              <Icon name="swap_horiz" />
-              Switch to {location.pathname.startsWith('/admin') ? 'Student' : 'Admin'}
-            </button>
-          )}
-        </div>
-      )}
+      {/* Global Controls removed per user request */}
 
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
