@@ -34,7 +34,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children, user }) => {
                 </main>
 
                 {/* Mobile Bottom Nav */}
-                <BottomNav />
+                <BottomNav user={user} />
             </div>
         </div>
     );

@@ -4,16 +4,28 @@ import { Upload, Store, Receipt, UserCircle, ShoppingBag } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useCartStore } from '../../store/useCartStore';
 
-export const BottomNav = () => {
+import { User } from '../../types';
+
+interface BottomNavProps {
+    user: User | null;
+}
+
+export const BottomNav: React.FC<BottomNavProps> = ({ user }) => {
     const totalItems = useCartStore((state) => state.getItemCount());
     const toggleCart = useCartStore((state) => state.toggleCart);
 
     const links = [
         { name: 'Home', path: '/', icon: Upload },
         { name: 'Store', path: '/store', icon: Store },
-        { name: 'Orders', path: '/my-orders', icon: Receipt },
-        { name: 'Profile', path: '/profile', icon: UserCircle },
     ];
+
+    // Only show private links if logged in
+    if (user) {
+        links.push(
+            { name: 'Orders', path: '/my-orders', icon: Receipt },
+            { name: 'Profile', path: '/profile', icon: UserCircle }
+        );
+    }
 
     return (
         <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-t border-border lg:hidden pb-safe">
@@ -35,21 +47,23 @@ export const BottomNav = () => {
                     );
                 })}
 
-                {/* Floating Cart Trigger for Mobile */}
-                <button
-                    onClick={() => toggleCart(true)}
-                    className="flex flex-col items-center gap-1 p-2 rounded-xl text-text-muted hover:text-white relative group"
-                >
-                    <div className="relative">
-                        <ShoppingBag size={22} strokeWidth={2} />
-                        {totalItems > 0 && (
-                            <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-white text-black text-[9px] font-bold border border-black ring-2 ring-background">
-                                {totalItems}
-                            </span>
-                        )}
-                    </div>
-                    <span className="text-[10px] font-medium">Cart</span>
-                </button>
+                {/* Floating Cart Trigger - Logged in only */}
+                {user && (
+                    <button
+                        onClick={() => toggleCart(true)}
+                        className="flex flex-col items-center gap-1 p-2 rounded-xl text-text-muted hover:text-white relative group"
+                    >
+                        <div className="relative">
+                            <ShoppingBag size={22} strokeWidth={2} />
+                            {totalItems > 0 && (
+                                <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-white text-black text-[9px] font-bold border border-black ring-2 ring-background">
+                                    {totalItems}
+                                </span>
+                            )}
+                        </div>
+                        <span className="text-[10px] font-medium">Cart</span>
+                    </button>
+                )}
             </nav>
         </div>
     );
