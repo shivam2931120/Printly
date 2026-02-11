@@ -45,7 +45,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       case 'dashboard':
         return <DashboardOverview onNavigate={(section) => setActiveSection(section)} />;
       case 'orders':
-        return <OrdersPanel />;
+        return <OrdersPanel currentUserId={currentUser?.id || ''} />;
       case 'products':
         return <ProductManagement />;
       case 'services':

@@ -71,19 +71,36 @@ export const CartDrawer: React.FC = () => {
             currency: "INR",
             name: "Printly",
             description: "Print Order Payment",
-            image: "https://via.placeholder.com/150",
-            handler: (response: any) => {
+            image: window.location.origin + "/Printly.png",
+            handler: async (response: any) => {
                 console.log(response);
 
                 const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-                // Create Order Object
+                // Upload Files
+                console.log('Uploading files...');
+                const processedCart = await Promise.all(cart.map(async (item) => {
+                    if (item.type === 'print' && (item as any).file) {
+                        try {
+                            const { uploadFile } = await import('../../services/data');
+                            const publicUrl = await uploadFile((item as any).file);
+                            if (publicUrl) {
+                                return { ...item, fileUrl: publicUrl };
+                            }
+                        } catch (err) {
+                            console.error('Upload failed for item', item.name, err);
+                        }
+                    }
+                    return item;
+                }));
+
                 const newOrder: Order = {
                     id: response.razorpay_payment_id || Math.random().toString(36).substr(2, 9),
+                    orderToken: Math.random().toString(36).substr(2, 9).toUpperCase(),
                     userId: user?.id,
                     userEmail: user?.primaryEmailAddress?.emailAddress || 'guest@example.com',
                     userName: user?.fullName || 'Guest',
-                    items: [...cart],
+                    items: processedCart,
                     type: 'mixed',
                     totalAmount: parseFloat(totalAmount),
                     status: 'pending',
@@ -94,7 +111,18 @@ export const CartDrawer: React.FC = () => {
                     updatedAt: new Date()
                 };
 
-                addOrder(newOrder);
+                // Saving Order to DB
+                console.log('Saving order to DB...');
+                const userRole = (user?.publicMetadata?.role as string) || 'USER';
+                const { success, error } = await import('../../services/data').then(m => m.createOrder(newOrder, userRole));
+
+                if (!success) {
+                    console.error('Failed to save order to DB:', error);
+                    alert('Payment successful but failed to save order. Please contact support.');
+                    return;
+                }
+
+                addOrder(newOrder); // Update local store too
                 clearCart();
                 toggleCart(false);
                 navigate('/profile');

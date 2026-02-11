@@ -56,6 +56,10 @@ export const MyOrdersPage: React.FC = () => {
 
         if (isLoaded) {
             loadOrders();
+
+            // Auto-reload every 10 seconds
+            const interval = setInterval(loadOrders, 10000);
+            return () => clearInterval(interval);
         }
     }, [isLoaded, user?.id, setOrders]);
 
@@ -110,6 +114,26 @@ export const MyOrdersPage: React.FC = () => {
             alert('Failed to cancel order. Please try again.');
         } finally {
             setCancellingId(null);
+        }
+    };
+
+    const handleMarkCollected = async (orderId: string) => {
+        if (!confirm('Have you collected this order? This will mark it as completed.')) return;
+
+        try {
+            const { markOrderCollected } = await import('../../services/data');
+            const result = await markOrderCollected(orderId);
+
+            if (!result.success) {
+                alert('Failed to update order. Please try again.');
+                return;
+            }
+
+            // Optimistic update
+            setOrders(storeOrders.map(o => o.id === orderId ? { ...o, status: 'completed' } : o));
+        } catch (error) {
+            console.error('Failed to mark collected:', error);
+            alert('An error occurred.');
         }
     };
 
@@ -268,12 +292,23 @@ export const MyOrdersPage: React.FC = () => {
                                                         Cancel
                                                     </button>
                                                 )}
-                                                <button className="text-sm text-text-muted hover:text-white flex items-center gap-1 transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5">
-                                                    View Details <ChevronRight size={14} />
-                                                </button>
+
                                             </div>
+                                            {/* Mark Collected Action */}
+                                            {order.status === 'ready' && (
+                                                <div className="mt-2">
+                                                    <button
+                                                        onClick={() => handleMarkCollected(order.id)}
+                                                        className="w-full text-sm px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg shadow-green-900/20"
+                                                    >
+                                                        <CheckCircle2 size={16} />
+                                                        I have Collected this Order
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
+
 
                                     {/* Order Tracker */}
                                     <div className="mt-6 pt-6 border-t border-border">
@@ -295,7 +330,8 @@ export const MyOrdersPage: React.FC = () => {
                         </Button>
                     )}
                 </div>
-            )}
-        </div>
+            )
+            }
+        </div >
     );
 };

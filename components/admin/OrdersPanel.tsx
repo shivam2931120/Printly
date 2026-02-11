@@ -3,10 +3,14 @@ import { Icon } from '../ui/Icon';
 import { Toast } from '../ui/Toast';
 import { OrderDetails } from './OrderDetails';
 import { Order, OrderStatus } from '../../types';
-import { fetchOrders, supabase } from '../../services/data';
+import { fetchOrders, fetchAdminOrders, supabase } from '../../services/data';
 import { Skeleton } from '../ui/Skeleton'; // Added Skeleton import
 
-export const OrdersPanel: React.FC = () => {
+interface OrdersPanelProps {
+    currentUserId: string;
+}
+
+export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [orders, setOrders] = useState<Order[]>([]);
     const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -18,7 +22,14 @@ export const OrdersPanel: React.FC = () => {
     const loadOrders = async () => {
         setLoading(true); // Set loading to true before fetching
         try {
-            const data = await fetchOrders();
+            let data;
+            if (currentUserId) {
+                // Admin specific fetch (bypassing RLS via RPC)
+                data = await fetchAdminOrders(currentUserId);
+            } else {
+                // Fallback to regular fetch (though this component is admin-only)
+                data = await fetchOrders();
+            }
             setOrders(data);
 
             // Check for new orders

@@ -73,7 +73,7 @@ export const deleteProduct = async (productId: string): Promise<{ success: boole
 };
 
 // ===== ORDERS =====
-export const createOrder = async (order: Order): Promise<{ success: boolean; error?: any }> => {
+export const createOrder = async (order: Order, userRole?: string): Promise<{ success: boolean; error?: any }> => {
     // 1. Get Default Shop ID - Fix for "Key not present in table Shop"
     let shopId = order.shopId;
 
@@ -116,11 +116,15 @@ export const createOrder = async (order: Order): Promise<{ success: boolean; err
                 id: finalUserId,
                 email: order.userEmail,
                 name: order.userName || order.userEmail.split('@')[0],
-                // We default new Clerk users to non-admin/non-dev or let defaults handle it
-                // Assuming schema has defaults for isAdmin/isDeveloper if they are required
+                // Sync User Role from Clerk
+                role: (userRole === 'ADMIN' || userRole === 'DEVELOPER') ? userRole : 'USER',
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             }, { onConflict: 'id' });
+
+        // 3. Create Sync User in Supabase (if needed) - Already done by trigger usually, but ensures role
+        // ... (existing logic)
+
 
         if (userError) {
             console.error('Error syncing user to Supabase:', userError);
@@ -221,6 +225,17 @@ export const cancelOrder = async (orderId: string, userId: string): Promise<{ su
     return { success: true };
 };
 
+
+
+export const markOrderCollected = async (orderId: string): Promise<{ success: boolean; error?: any }> => {
+    const { error } = await supabase.rpc('mark_order_collected', { order_id: orderId });
+    if (error) {
+        console.error('Error marking order collected:', error);
+        return { success: false, error };
+    }
+    return { success: true };
+};
+
 export const fetchOrders = async (userId?: string): Promise<Order[]> => {
     let query = supabase
         .from('Order')
@@ -245,7 +260,31 @@ export const fetchOrders = async (userId?: string): Promise<Order[]> => {
         return [];
     }
 
-    // Map DB result to Client Order type
+    return mapOrderData(data);
+};
+
+export const fetchAdminOrders = async (adminId: string): Promise<Order[]> => {
+    const { data, error } = await supabase
+        .rpc('get_admin_orders', { requesting_user_id: adminId })
+        .select(`
+            *,
+            user:User(name, email, avatar),
+            items:OrderItem(
+                *,
+                product:Product(name, image)
+            )
+        `)
+        .order('createdAt', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching admin orders:', error);
+        return [];
+    }
+
+    return mapOrderData(data);
+};
+
+const mapOrderData = (data: any[]): Order[] => {
     return data.map((dbOrder: any) => ({
         id: dbOrder.id,
         userId: dbOrder.userId || '',

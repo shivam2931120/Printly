@@ -36,11 +36,11 @@ export const OrderTracker: React.FC<OrderTrackerProps> = ({ status, className, o
         <div className={cn("w-full py-4", className)}>
             <div className="relative flex items-center justify-between">
                 {/* Progress Bar Background */}
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-slate-100 dark:bg-slate-800 rounded-full -z-10" />
+                <div className="absolute left-0 top-4 -translate-y-1/2 w-full h-0.5 bg-slate-100 dark:bg-zinc-800 rounded-full -z-10" />
 
                 {/* Active Progress Bar */}
                 <div
-                    className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-black dark:bg-white rounded-full -z-10 transition-all duration-500"
+                    className="absolute left-0 top-4 -translate-y-1/2 h-0.5 bg-black dark:bg-white rounded-full -z-10 transition-all duration-500"
                     style={{
                         width: `${(currentStepIndex / (steps.length - 1)) * 100}%`
                     }}

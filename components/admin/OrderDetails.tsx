@@ -62,7 +62,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ order: initialOrder,
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
             {/* Modal */}
-            <div className="relative w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden bg-surface-light/95 dark:bg-surface-dark/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl animate-zoom-in">
+            <div className="relative w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden glass rounded-2xl shadow-2xl animate-zoom-in">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-border-light dark:border-border-dark">
                     <div className="flex items-center gap-4">
@@ -115,34 +115,36 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ order: initialOrder,
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-6 overscroll-contain">
+                <div className="flex-1 overflow-y-auto p-4 space-y-4 overscroll-contain no-scrollbar">
                     {activeTab === 'details' ? (
-                        <div className="space-y-6">
-                            {/* Customer Info */}
-                            <section>
-                                <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Customer</h3>
-                                <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50">
-                                    <div className="size-12 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-lg font-bold text-blue-600 dark:text-blue-400">
-                                        {order.userName.charAt(0).toUpperCase()}
+                        <div className="space-y-4">
+                            {/* Customer & Status Grid */}
+                            <div className="space-y-4">
+                                {/* Status - Full Width for better visibility */}
+                                <section>
+                                    <div className="p-4 rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm">
+                                        <OrderTracker
+                                            status={order.status}
+                                            onStepClick={(newStatus) => onStatusChange?.(order.id, newStatus)}
+                                            className="w-full"
+                                        />
                                     </div>
-                                    <div>
-                                        <p className="font-semibold text-slate-900 dark:text-white">{order.userName}</p>
-                                        <p className="text-sm text-slate-500 dark:text-slate-400">{order.userEmail}</p>
-                                    </div>
-                                </div>
-                            </section>
+                                </section>
 
-                            {/* Live Tracking Control */}
-                            <section>
-                                <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Live Order Status</h3>
-                                <p className="text-xs text-slate-400 dark:text-slate-500 mb-3">Click a step below to update the order status instantly.</p>
-                                <div className="p-4 rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-surface-darker">
-                                    <OrderTracker
-                                        status={order.status}
-                                        onStepClick={(newStatus) => onStatusChange?.(order.id, newStatus)}
-                                    />
-                                </div>
-                            </section>
+                                {/* Customer Info */}
+                                <section>
+                                    <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Customer Details</h3>
+                                    <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-white/10 backdrop-blur-sm">
+                                        <div className="size-10 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-sm font-bold text-blue-600 dark:text-blue-400">
+                                            {order.userName.charAt(0).toUpperCase()}
+                                        </div>
+                                        <div>
+                                            <p className="font-semibold text-sm text-slate-900 dark:text-white">{order.userName}</p>
+                                            <p className="text-sm text-slate-500 dark:text-slate-400">{order.userEmail}</p>
+                                        </div>
+                                    </div>
+                                </section>
+                            </div>
 
                             {/* Order Items */}
                             <section>
@@ -202,19 +204,10 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ order: initialOrder,
                                                                             href={item.fileUrl}
                                                                             target="_blank"
                                                                             rel="noopener noreferrer"
-                                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-                                                                        >
-                                                                            <Icon name="visibility" className="text-base" />
-                                                                            View PDF
-                                                                        </a>
-                                                                        <a
-                                                                            href={item.fileUrl}
-                                                                            target="_blank"
-                                                                            rel="noopener noreferrer"
-                                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors"
+                                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-primary text-black hover:bg-primary/90 transition-colors shadow-sm"
                                                                         >
                                                                             <Icon name="print" className="text-base" />
-                                                                            Print File
+                                                                            Print
                                                                         </a>
                                                                     </div>
                                                                 )}
