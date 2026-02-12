@@ -15,30 +15,44 @@ export default defineConfig(({ mode }) => {
       react(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+        includeAssets: ['favicon.svg', 'Printly.png'],
+        workbox: {
+          maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
+        },
         manifest: {
           name: 'Printly - College Print Shop',
           short_name: 'Printly',
           description: 'Your campus print shop in your pocket.',
           theme_color: '#0f172a',
-          background_color: '#0f172a',
+          background_color: '#ffffff',
           display: 'standalone',
           icons: [
             {
-              src: 'pwa-192x192.png',
+              src: 'Printly.png',
+              sizes: '1024x1024',
+              type: 'image/png'
+            },
+            {
+              src: 'Printly.png',
+              sizes: '512x512',
+              type: 'image/png'
+            },
+            {
+              src: 'Printly.png',
               sizes: '192x192',
               type: 'image/png'
             },
             {
-              src: 'pwa-512x512.png',
-              sizes: '512x512',
-              type: 'image/png'
-            },
-            {
-              src: 'pwa-512x512.png',
+              src: 'Printly.png',
               sizes: '512x512',
               type: 'image/png',
-              purpose: 'any maskable'
+              purpose: 'any'
+            },
+            {
+              src: 'Printly.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'maskable'
             }
           ]
         }
@@ -52,6 +66,9 @@ export default defineConfig(({ mode }) => {
       alias: {
         '@': path.resolve(__dirname, '.'),
       }
+    },
+    build: {
+      chunkSizeWarningLimit: 2500,
     }
   };
 });

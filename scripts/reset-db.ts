@@ -28,17 +28,12 @@ const supabase = createClient(supabaseUrl, serviceKey || supabaseKey!);
 async function resetDb() {
     console.log("Starting DB Wipe...");
 
-    // 1. Delete Order Items (Child of Order)
-    const { error: itemsError } = await supabase.from('OrderItem').delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all != dummy ID
-    if (itemsError) console.error("Error deleting OrderItem:", itemsError);
-    else console.log("Deleted OrderItems.");
-
-    // 2. Delete Orders
+    // 1. Delete Orders (items are now embedded JSONB, no separate table)
     const { error: ordersError } = await supabase.from('Order').delete().neq('id', 'dummy');
     if (ordersError) console.error("Error deleting Order:", ordersError);
     else console.log("Deleted Orders.");
 
-    // 3. Delete Users (Local Cache)
+    // 2. Delete Users (Local Cache)
     // Be careful not to delete ALL properly if using anon key (only self).
     // If service role, deletes all.
     const { error: usersError } = await supabase.from('User').delete().neq('id', 'dummy');

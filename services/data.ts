@@ -73,159 +73,127 @@ export const deleteProduct = async (productId: string): Promise<{ success: boole
 };
 
 // ===== ORDERS =====
-export const createOrder = async (order: Order, userRole?: string): Promise<{ success: boolean; error?: any }> => {
-    // 1. Get Default Shop ID - Fix for "Key not present in table Shop"
+export const createOrder = async (order: Order, _userRole?: string): Promise<{ success: boolean; error?: any }> => {
+    // 1. Resolve Shop ID (read-only lookup)
     let shopId = order.shopId;
-
-    // Attempt to fetch existing shop (limit 1)
     if (!shopId || shopId === 'default') {
-        const { data: shop } = await supabase.from('Shop').select('id').limit(1).single();
-        if (shop) {
-            shopId = shop.id;
-        } else {
-            // CRITICAL: If no shop exists at all, CREATE one to unblock orders
-            const { data: newShop, error: createError } = await supabase.from('Shop').insert({
-                shopName: 'Default Shop',
-                tagline: 'Auto-created Shop',
-            }).select().single();
+        const { data: shop } = await supabase
+            .from('Shop')
+            .select('id')
+            .eq('isActive', true)
+            .limit(1)
+            .maybeSingle();
+        shopId = shop?.id || undefined;
+    }
 
-            if (newShop) {
-                shopId = newShop.id;
-            } else {
-                console.error('Failed to auto-create shop:', createError);
-                return { success: false, error: 'Internal Error: Could not initialize shop.' };
+    // 2. Resolve User ID via active auth session
+    let finalUserId = order.userId;
+    const { data: authData } = await supabase.auth.getUser();
+    const authUser = authData?.user;
+
+    if (!finalUserId || finalUserId.startsWith('temp_')) {
+        if (authUser?.id) {
+            const { data: dbUser } = await supabase
+                .from('User')
+                .select('id')
+                .eq('authId', authUser.id)
+                .maybeSingle();
+            if (dbUser?.id) finalUserId = dbUser.id;
+        }
+    }
+
+    // Fallback: find by email and backfill authId
+    if ((!finalUserId || finalUserId.startsWith('temp_')) && authUser?.email) {
+        const { data: dbUser } = await supabase
+            .from('User')
+            .select('id, authId')
+            .eq('email', authUser.email.trim().toLowerCase())
+            .maybeSingle();
+        if (dbUser?.id) {
+            finalUserId = dbUser.id;
+            if (!dbUser.authId) {
+                await supabase.from('User').update({ authId: authUser.id }).eq('id', dbUser.id);
             }
         }
     }
 
-    // 2. Resolve User ID
-    // OLD LOGIC: Client generated temp IDs like "user_174..." were treated as guest.
-    // NEW LOGIC: Clerk IDs also start with "user_", so we MUST preserve them.
-    // We assume the frontend passes a valid ID if the user is logged in.
-    let finalUserId = order.userId;
-    // (Optional) We could add a check here if we wanted to support 'guest' vs 'clerk' specifically,
-    // but relying on StudentPortal to pass the correct ID is better.
+    if (finalUserId?.startsWith('temp_')) finalUserId = undefined;
 
-    // 3. Sync User to Supabase (Critical for FK constraints)
-    // Clerk IDs don't exist in our 'User' table by default, causing FK errors.
-    // We must upsert the user record to ensure it exists.
-    if (finalUserId && order.userEmail) {
-        const { error: userError } = await supabase
-            .from('User')
-            .upsert({
-                id: finalUserId,
-                email: order.userEmail,
-                name: order.userName || order.userEmail.split('@')[0],
-                // Sync User Role from Clerk
-                role: (userRole === 'ADMIN' || userRole === 'DEVELOPER') ? userRole : 'USER',
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-            }, { onConflict: 'id' });
+    const resolvedEmail = authUser?.email || order.userEmail || 'guest@example.com';
+    const resolvedName = order.userName || authUser?.user_metadata?.name || resolvedEmail.split('@')[0] || 'Guest';
 
-        // 3. Create Sync User in Supabase (if needed) - Already done by trigger usually, but ensures role
-        // ... (existing logic)
-
-
-        if (userError) {
-            console.error('Error syncing user to Supabase:', userError);
-            // We continue, hoping it might just be a permissions issue or existing user, 
-            // but if it fails completely, the order insert will likely fail too.
+    // 3. Serialize cart items to JSONB (inline in Order — no separate table)
+    const itemsJson = order.items.map(item => {
+        if (item.type === 'product') {
+            return {
+                id: crypto.randomUUID(),
+                type: 'product',
+                productId: (item as any).productId,
+                name: item.name,
+                image: (item as any).image || '',
+                quantity: item.quantity,
+                price: item.price,
+            };
+        } else {
+            return {
+                id: crypto.randomUUID(),
+                type: 'print',
+                name: item.name,
+                fileUrl: (item as any).fileUrl || '',
+                fileName: (item as any).fileName || '',
+                printConfig: (item as any).options || null,
+                pageCount: (item as any).pageCount || 0,
+                quantity: item.quantity,
+                price: item.price,
+            };
         }
-    }
+    });
 
-    // 4. Create Order
-    const { data: orderData, error: orderError } = await supabase
+    // 4. Single INSERT into Order (items embedded as JSONB)
+    const { error: orderError } = await supabase
         .from('Order')
         .insert({
             id: order.id,
-            orderToken: order.orderToken || order.id.split('-')[1], // Use passed token or fallback
-            userId: finalUserId, // Use sanitized User ID
+            orderToken: order.orderToken || order.id.split('-')[1],
+            userId: finalUserId || null,
+            userEmail: resolvedEmail,
+            userName: resolvedName,
             totalAmount: order.totalAmount,
             status: (['PENDING', 'PRINTING', 'READY', 'COMPLETED', 'CANCELLED'].includes(order.status.toUpperCase()) ? order.status.toUpperCase() : 'PENDING'),
             paymentStatus: (['PAID', 'UNPAID', 'REFUNDED'].includes(order.paymentStatus.toUpperCase()) ? order.paymentStatus.toUpperCase() : 'UNPAID'),
-            // Legacy fields
-            fileName: order.items.find(i => i.type === 'print')?.fileName || order.fileName,
-            pageCount: order.items.find(i => i.type === 'print')?.pageCount || order.pageCount,
-            copies: order.items.find(i => i.type === 'print')?.options?.copies,
-            paperSize: order.items.find(i => i.type === 'print')?.options?.paperSize,
-            colorMode: order.items.find(i => i.type === 'print')?.options?.colorMode,
-            sides: order.items.find(i => i.type === 'print')?.options?.sides,
-            binding: order.items.find(i => i.type === 'print')?.options?.binding,
-            shopId: shopId,
+            shopId: shopId || null,
+            items: itemsJson,
+            createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
-        })
-        .select()
-        .single();
+        });
 
     if (orderError) {
         console.error('Error creating order:', orderError);
         return { success: false, error: orderError };
     }
 
-    // 4. Create Order Items
-    const itemsToInsert = order.items.map(item => ({
-        id: crypto.randomUUID(),
-        orderId: order.id,
-        type: item.type,
-        productId: item.type === 'product' ? item.productId : null,
-        quantity: item.quantity,
-        price: item.price,
-        // Print Details
-        fileUrl: item.type === 'print' ? item.fileUrl : null,
-        fileName: item.type === 'print' ? item.fileName : null,
-        printConfig: item.type === 'print' ? item.options : null, // Storing options JSON (includes paperType, pageRange)
-        details: item.type === 'print' ? { pageCount: item.pageCount } : null
-    }));
-
-    const { error: itemsError } = await supabase
-        .from('OrderItem')
-        .insert(itemsToInsert);
-
-    if (itemsError) {
-        console.error('Error creating order items:', itemsError);
-        // Ideally rollback order here, but for now just report error
-        return { success: false, error: itemsError };
-    }
-
     return { success: true };
 };
 
 export const cancelOrder = async (orderId: string, userId: string): Promise<{ success: boolean; error?: string }> => {
-    // 1. Fetch Order to verify ownership and status
     const { data: order, error: fetchError } = await supabase
         .from('Order')
         .select('userId, status')
         .eq('id', orderId)
         .single();
 
-    if (fetchError || !order) {
-        return { success: false, error: 'Order not found.' };
-    }
+    if (fetchError || !order) return { success: false, error: 'Order not found.' };
+    if (order.userId !== userId) return { success: false, error: 'Unauthorized.' };
+    if (order.status.toUpperCase() !== 'PENDING') return { success: false, error: 'Cannot cancel order. It may have already been processed.' };
 
-    // 2. Verify Ownership
-    if (order.userId !== userId) {
-        return { success: false, error: 'Unauthorized.' };
-    }
-
-    // 3. Verify Status
-    if (order.status.toUpperCase() !== 'PENDING') {
-        return { success: false, error: 'Cannot cancel order. It may have already been processed.' };
-    }
-
-    // 4. Update Status
     const { error: updateError } = await supabase
         .from('Order')
-        .update({ status: 'CANCELLED' })
+        .update({ status: 'CANCELLED', updatedAt: new Date().toISOString() })
         .eq('id', orderId);
 
-    if (updateError) {
-        return { success: false, error: updateError.message };
-    }
-
+    if (updateError) return { success: false, error: updateError.message };
     return { success: true };
 };
-
-
 
 export const markOrderCollected = async (orderId: string): Promise<{ success: boolean; error?: any }> => {
     const { error } = await supabase.rpc('mark_order_collected', { order_id: orderId });
@@ -239,19 +207,11 @@ export const markOrderCollected = async (orderId: string): Promise<{ success: bo
 export const fetchOrders = async (userId?: string): Promise<Order[]> => {
     let query = supabase
         .from('Order')
-        .select(`
-            *,
-            user:User(name, email, avatar),
-            items:OrderItem(
-                *,
-                product:Product(name, image)
-            )
-        `)
+        .select('*, user:User(name, email, avatar)')
+        .eq('isDeleted', false)
         .order('createdAt', { ascending: false });
 
-    if (userId) {
-        query = query.eq('userId', userId);
-    }
+    if (userId) query = query.eq('userId', userId);
 
     const { data, error } = await query;
 
@@ -266,14 +226,8 @@ export const fetchOrders = async (userId?: string): Promise<Order[]> => {
 export const fetchAdminOrders = async (adminId: string): Promise<Order[]> => {
     const { data, error } = await supabase
         .rpc('get_admin_orders', { requesting_user_id: adminId })
-        .select(`
-            *,
-            user:User(name, email, avatar),
-            items:OrderItem(
-                *,
-                product:Product(name, image)
-            )
-        `)
+        .select('*, user:User(name, email, avatar)')
+        .eq('isDeleted', false)
         .order('createdAt', { ascending: false });
 
     if (error) {
@@ -284,51 +238,208 @@ export const fetchAdminOrders = async (adminId: string): Promise<Order[]> => {
     return mapOrderData(data);
 };
 
+export const fetchAllOrdersForAnalytics = async (): Promise<Order[]> => {
+    const { data, error } = await supabase
+        .from('Order')
+        .select('*, user:User(name, email, avatar)')
+        .order('createdAt', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching analytics orders:', error);
+        return [];
+    }
+
+    return mapOrderData(data);
+};
+
+// Map DB rows to frontend Order type — items come from JSONB column now
 const mapOrderData = (data: any[]): Order[] => {
-    return data.map((dbOrder: any) => ({
-        id: dbOrder.id,
-        userId: dbOrder.userId || '',
-        userEmail: dbOrder.user?.email || '',
-        userName: dbOrder.user?.name || 'Unknown',
-        type: 'mixed', // Defaulting to mixed for unified view
-        totalAmount: dbOrder.totalAmount,
-        orderToken: dbOrder.orderToken,
-        status: dbOrder.status.toLowerCase() as OrderStatus,
-        paymentStatus: dbOrder.paymentStatus.toLowerCase() as PaymentStatus,
-        createdAt: new Date(dbOrder.createdAt),
-        updatedAt: new Date(dbOrder.updatedAt),
-        // Legacy/Top-level fields for display
-        fileName: dbOrder.fileName,
-        pageCount: dbOrder.pageCount,
-        options: dbOrder.printConfig || dbOrder.options, // Handle different naming if consistent
-        // Map Items
-        items: dbOrder.items.map((dbItem: any) => {
-            if (dbItem.type === 'product') {
+    return (data || []).map((row) => {
+        // Parse items from JSONB
+        const rawItems: any[] = Array.isArray(row.items) ? row.items : [];
+
+        const items: CartItem[] = rawItems.map((item: any) => {
+            if (item.type === 'product') {
                 return {
-                    id: dbItem.id,
-                    type: 'product',
-                    productId: dbItem.productId,
-                    name: dbItem.product?.name || 'Unknown Product',
-                    price: dbItem.price,
-                    quantity: dbItem.quantity,
-                    image: dbItem.product?.image
-                } as CartItem;
+                    id: item.id,
+                    type: 'product' as const,
+                    productId: item.productId || '',
+                    name: item.name || item.productName || 'Unknown Product',
+                    price: item.price,
+                    quantity: item.quantity,
+                    image: item.image || item.productImage || '',
+                };
             } else {
                 return {
-                    id: dbItem.id,
-                    type: 'print',
-                    name: dbItem.fileName || 'Print Job',
-                    price: dbItem.price,
-                    quantity: dbItem.quantity,
-                    fileUrl: dbItem.fileUrl,
-                    fileName: dbItem.fileName,
-                    options: dbItem.printConfig,
-                    pageCount: dbItem.details?.pageCount || 0
-                } as CartItem;
+                    id: item.id,
+                    type: 'print' as const,
+                    name: item.fileName || item.name || 'Print Job',
+                    price: item.price,
+                    quantity: item.quantity,
+                    fileUrl: item.fileUrl || '',
+                    fileName: item.fileName || item.name || '',
+                    options: item.printConfig || {},
+                    pageCount: item.pageCount || item.details?.pageCount || 0,
+                };
             }
-        })
-    }));
+        });
+
+        return {
+            id: row.id,
+            userId: row.userId || '',
+            userEmail: row.user?.email || row.userEmail || '',
+            userName: row.user?.name || row.userName || 'Unknown',
+            type: 'mixed',
+            totalAmount: row.totalAmount,
+            orderToken: row.orderToken,
+            status: (row.status || 'pending').toLowerCase() as OrderStatus,
+            paymentStatus: (row.paymentStatus || 'unpaid').toLowerCase() as PaymentStatus,
+            createdAt: new Date(row.createdAt),
+            updatedAt: new Date(row.updatedAt),
+            items,
+        };
+    });
 };
+import { toast } from 'sonner';
+
+// ===== INVENTORY =====
+
+export interface InventoryRow {
+    id: string;
+    name: string;
+    stock: number;
+    unit: string;
+    threshold: number;
+    shopId: string | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface StockLogRow {
+    id: string;
+    inventoryId: string;
+    amount: number;
+    note: string;
+    createdBy: string;
+    createdAt: string;
+}
+
+export const fetchInventory = async (): Promise<InventoryRow[]> => {
+    const { data, error } = await supabase
+        .from('Inventory')
+        .select('*')
+        .order('name');
+
+    if (error) {
+        // Silently return empty if table doesn't exist yet (migration not run)
+        if (error.code === 'PGRST205' || error.message?.includes('schema cache')) return [];
+        console.error('Error fetching inventory:', error);
+        return [];
+    }
+    return data as InventoryRow[];
+};
+
+export const addInventoryItem = async (item: {
+    name: string;
+    stock: number;
+    unit: string;
+    threshold: number;
+}): Promise<{ success: boolean; data?: InventoryRow; error?: any }> => {
+    const { data, error } = await supabase
+        .from('Inventory')
+        .insert({
+            name: item.name,
+            stock: item.stock,
+            unit: item.unit,
+            threshold: item.threshold,
+            updatedAt: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+    if (error) {
+        if (error.code !== 'PGRST205') console.error('Error adding inventory item:', error);
+        return { success: false, error };
+    }
+    return { success: true, data: data as InventoryRow };
+};
+
+export const updateInventoryStock = async (
+    inventoryId: string,
+    amount: number,
+    note: string = '',
+    createdBy: string = ''
+): Promise<{ success: boolean; error?: any }> => {
+    // 1. Get current stock
+    const { data: item, error: fetchErr } = await supabase
+        .from('Inventory')
+        .select('stock')
+        .eq('id', inventoryId)
+        .single();
+
+    if (fetchErr || !item) {
+        return { success: false, error: fetchErr || 'Item not found' };
+    }
+
+    const newStock = Math.max(0, item.stock + amount);
+
+    // 2. Update stock
+    const { error: updateErr } = await supabase
+        .from('Inventory')
+        .update({ stock: newStock, updatedAt: new Date().toISOString() })
+        .eq('id', inventoryId);
+
+    if (updateErr) {
+        if (updateErr.code !== 'PGRST205') console.error('Error updating inventory stock:', updateErr);
+        return { success: false, error: updateErr };
+    }
+
+    // 3. Log the change
+    const { error: logErr } = await supabase
+        .from('StockLog')
+        .insert({
+            inventoryId,
+            amount,
+            note: note || (amount > 0 ? 'Stock added' : 'Stock removed'),
+            createdBy,
+        });
+
+    if (logErr) {
+        if (logErr.code !== 'PGRST205') console.error('Error logging stock change:', logErr);
+        // Don't fail — stock was updated, just log failed
+    }
+
+    return { success: true };
+};
+
+export const deleteInventoryItem = async (inventoryId: string): Promise<{ success: boolean; error?: any }> => {
+    const { error } = await supabase
+        .from('Inventory')
+        .delete()
+        .eq('id', inventoryId);
+
+    if (error) {
+        if (error.code !== 'PGRST205') console.error('Error deleting inventory item:', error);
+        return { success: false, error };
+    }
+    return { success: true };
+};
+
+export const fetchStockHistory = async (inventoryId: string): Promise<StockLogRow[]> => {
+    const { data, error } = await supabase
+        .from('StockLog')
+        .select('*')
+        .eq('inventoryId', inventoryId)
+        .order('createdAt', { ascending: false })
+        .limit(50);
+
+    if (error) {
+        if (error.code !== 'PGRST205') console.error('Error fetching stock history:', error);
+        return [];
+    }
+    return data as StockLogRow[];
+};
+
 // ===== STORAGE =====
 export const uploadFile = async (file: File): Promise<string | null> => {
     try {
@@ -342,7 +453,7 @@ export const uploadFile = async (file: File): Promise<string | null> => {
 
         if (uploadError) {
             console.error('Error uploading file:', uploadError.message, uploadError);
-            alert(`Upload failed: ${uploadError.message}`);
+            toast.error(`Upload failed: ${uploadError.message}`);
             return null;
         }
 
@@ -353,7 +464,7 @@ export const uploadFile = async (file: File): Promise<string | null> => {
         return data.publicUrl;
     } catch (error: any) {
         console.error('Unexpected error during file upload:', error);
-        alert(`Unexpected upload error: ${error.message || error}`);
+        toast.error(`Unexpected upload error: ${error.message || error}`);
         return null;
     }
 };

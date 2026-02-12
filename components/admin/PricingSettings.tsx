@@ -56,7 +56,7 @@ export const PricingSettings: React.FC<PricingSettingsProps> = ({ pricing, onUpd
                     </button>
                     <button
                         onClick={handleSave}
-                        className="px-6 py-2 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-medium hover:opacity-90 transition-colors flex items-center gap-2"
+                        className="glass-btn glass-btn-primary"
                     >
                         {saved ? <Icon name="check" /> : <Icon name="save" />}
                         {saved ? 'Saved!' : 'Save Changes'}

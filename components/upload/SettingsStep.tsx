@@ -2,14 +2,14 @@ import React from 'react';
 import {
     Check,
     Layers,
-    Smartphone,
     Book,
     File as FileIcon,
-    Palette
+    Palette,
+    X,
+    Copy
 } from 'lucide-react';
 import { PrintOptions, PricingConfig } from '../../types';
 import { cn } from '../../lib/utils';
-import { calculatePrintPrice } from '../../lib/pricing';
 import { Button } from '../ui/Button';
 
 interface SettingsStepProps {
@@ -29,88 +29,79 @@ export const SettingsStep: React.FC<SettingsStepProps> = ({
         onChange({ ...options, [key]: value });
     };
 
+    const optionBtnClass = (selected: boolean) => cn(
+        "relative flex items-center justify-center gap-2 p-3 rounded-xl border text-sm font-bold transition-all duration-200",
+        selected
+            ? "bg-white text-black border-white shadow-glow-primary"
+            : "bg-background-card border-border text-text-muted hover:border-white/20 hover:text-white"
+    );
+
     return (
-        <div className="space-y-8 animate-fade-in pb-24">
-            <div className="text-center space-y-2">
-                <h2 className="text-2xl font-bold text-white font-display">Print Settings</h2>
+        <div className="space-y-6 animate-fade-in pb-24">
+            <div className="text-center lg:text-left space-y-2">
+                <h2 className="text-3xl font-black text-white font-display">Print Settings</h2>
                 <p className="text-text-muted">Customize how your documents should look.</p>
             </div>
 
-            <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
                 {/* Color Mode */}
-                <div className="space-y-3">
-                    <label className="text-xs font-bold text-text-muted uppercase tracking-wider block">Color Mode</label>
-                    <div className="grid grid-cols-3 gap-2">
+                <div className="glass rounded-2xl p-4 lg:p-5 space-y-3">
+                    <label className="text-xs font-black text-text-muted uppercase tracking-[0.16em] block">Color Mode</label>
+                    <div className="grid grid-cols-2 gap-2">
                         {(['bw', 'color'] as const).map((mode) => (
                             <button
                                 key={mode}
                                 onClick={() => updateOption('colorMode', mode)}
-                                className={cn(
-                                    "flex flex-col items-center justify-center p-2 rounded-lg border-2 transition-all duration-200",
-                                    options.colorMode === mode
-                                        ? "bg-white text-black border-white"
-                                        : "bg-background-card border-border text-text-muted hover:border-white/20 hover:text-white"
-                                )}
+                                className={optionBtnClass(options.colorMode === mode)}
                             >
-                                <Palette size={18} className="mb-1" />
-                                <span className="text-xs font-bold capitalize">{mode === 'bw' ? 'Black & White' : 'Full Color'}</span>
+                                <Palette size={16} />
+                                <span>{mode === 'bw' ? 'Black & White' : 'Full Color'}</span>
+                                {options.colorMode === mode && <Check size={13} className="absolute top-2 right-2" />}
                             </button>
                         ))}
                     </div>
                 </div>
 
                 {/* Sides */}
-                <div className="space-y-3">
-                    <label className="text-xs font-bold text-text-muted uppercase tracking-wider block">Sides</label>
-                    <div className="grid grid-cols-3 gap-2">
+                <div className="glass rounded-2xl p-4 lg:p-5 space-y-3">
+                    <label className="text-xs font-black text-text-muted uppercase tracking-[0.16em] block">Sides</label>
+                    <div className="grid grid-cols-2 gap-2">
                         {(['single', 'double'] as const).map((side) => (
                             <button
                                 key={side}
                                 onClick={() => updateOption('sides', side)}
-                                className={cn(
-                                    "flex flex-col items-center justify-center p-2 rounded-lg border-2 transition-all duration-200",
-                                    options.sides === side
-                                        ? "bg-white text-black border-white"
-                                        : "bg-background-card border-border text-text-muted hover:border-white/20 hover:text-white"
-                                )}
+                                className={optionBtnClass(options.sides === side)}
                             >
-                                <FileIcon size={18} className="mb-1" />
-                                <span className="text-xs font-bold capitalize">{side === 'single' ? 'Single Sided' : 'Double Sided'}</span>
+                                <FileIcon size={16} />
+                                <span>{side === 'single' ? 'Single Sided' : 'Double Sided'}</span>
+                                {options.sides === side && <Check size={13} className="absolute top-2 right-2" />}
                             </button>
                         ))}
                     </div>
                 </div>
 
                 {/* Binding */}
-                <div className="space-y-3">
-                    <label className="text-xs font-bold text-text-muted uppercase tracking-wider block">Binding</label>
-                    <div className="grid grid-cols-3 gap-2">
+                <div className="glass rounded-2xl p-4 lg:p-5 space-y-3 lg:col-span-2">
+                    <label className="text-xs font-black text-text-muted uppercase tracking-[0.16em] block">Binding</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         {[
-                            { id: 'none', label: 'None', icon: XIcon },
+                            { id: 'none', label: 'None', icon: X },
                             { id: 'spiral', label: 'Spiral', icon: Layers },
                             { id: 'soft', label: 'Soft', icon: Book },
                             { id: 'hard', label: 'Hard', icon: Book },
                         ].map((bind) => {
-                            // Correct type casting for mapping
-                            const bindId = bind.id as any;
+                            const bindId = bind.id as PrintOptions['binding'];
                             const isSelected = options.binding === bindId;
 
                             return (
                                 <button
                                     key={bind.id}
                                     onClick={() => updateOption('binding', bindId)}
-                                    className={cn(
-                                        "flex flex-col items-center justify-center p-2 rounded-lg border-2 transition-all duration-200 relative overflow-hidden",
-                                        isSelected
-                                            ? "bg-white text-black border-white"
-                                            : "bg-background-card border-border text-text-muted hover:border-white/20 hover:text-white"
-                                    )}
+                                    className={optionBtnClass(isSelected)}
                                 >
-                                    <div className="z-10 flex flex-col items-center">
-                                        <bind.icon size={18} className="mb-1" />
-                                        <span className="text-[10px] font-bold">{bind.label}</span>
-                                    </div>
-                                    {isSelected && <div className="absolute top-1 right-1 text-black"><Check size={10} /></div>}
+                                    <bind.icon size={16} />
+                                    <span>{bind.label}</span>
+                                    {isSelected && <Check size={13} className="absolute top-2 right-2" />}
                                 </button>
                             );
                         })}
@@ -118,21 +109,24 @@ export const SettingsStep: React.FC<SettingsStepProps> = ({
                 </div>
 
                 {/* Copies Stepper */}
-                <div className="space-y-3">
-                    <label className="text-sm font-bold text-text-muted uppercase tracking-wider block">Number of Copies</label>
+                <div className="glass rounded-2xl p-4 lg:p-5 space-y-3 lg:col-span-2">
+                    <label className="text-xs font-black text-text-muted uppercase tracking-[0.16em] block">Number of Copies</label>
                     <div className="flex items-center justify-between p-4 bg-background-card border border-border rounded-xl">
-                        <span className="text-white font-medium">Copies per document</span>
+                        <div className="flex items-center gap-2">
+                            <Copy size={16} className="text-text-muted" />
+                            <span className="text-white font-semibold">Copies per document</span>
+                        </div>
                         <div className="flex items-center gap-6">
                             <button
                                 onClick={() => updateOption('copies', Math.max(1, options.copies - 1))}
-                                className="size-8 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20"
+                                className="size-9 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
                             >
                                 -
                             </button>
                             <span className="text-xl font-bold text-white w-6 text-center">{options.copies}</span>
                             <button
                                 onClick={() => updateOption('copies', options.copies + 1)}
-                                className="size-8 rounded-full bg-white flex items-center justify-center text-black hover:bg-white/90"
+                                className="size-9 rounded-full bg-white flex items-center justify-center text-black hover:bg-white/90 transition-colors"
                             >
                                 +
                             </button>
@@ -150,7 +144,7 @@ export const SettingsStep: React.FC<SettingsStepProps> = ({
                     </div>
                     <Button
                         onClick={onNext}
-                        className="flex-[2] h-14 text-lg font-bold bg-white text-black hover:bg-white/90 shadow-[0_0_20px_rgba(255,255,255,0.1)] rounded-2xl"
+                        className="flex-[2] h-14 text-lg font-bold glass-btn glass-btn-primary"
                     >
                         Preview
                     </Button>
@@ -159,22 +153,3 @@ export const SettingsStep: React.FC<SettingsStepProps> = ({
         </div>
     );
 };
-
-// Helper Icon
-const XIcon = ({ size, className }: { size?: number, className?: string }) => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width={size || 24}
-        height={size || 24}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className={className}
-    >
-        <line x1="18" y1="6" x2="6" y2="18"></line>
-        <line x1="6" y1="6" x2="18" y2="18"></line>
-    </svg>
-);

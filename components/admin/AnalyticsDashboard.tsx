@@ -16,11 +16,14 @@ import {
 } from 'recharts';
 import { Icon } from '../ui/Icon';
 
+import { fetchAllOrdersForAnalytics } from '../../services/data';
+
 type TimePeriod = 'today' | 'week' | 'month' | 'year';
 
-interface Order {
+interface AnalyticsOrder {
     totalAmount: number;
     createdAt: string;
+    userEmail?: string;
     options?: {
         colorMode?: string;
         paperSize?: string;
@@ -29,17 +32,24 @@ interface Order {
 
 export const AnalyticsDashboard: React.FC = () => {
     const [period, setPeriod] = useState<TimePeriod>('week');
-    const [orders, setOrders] = useState<Order[]>([]);
+    const [orders, setOrders] = useState<AnalyticsOrder[]>([]);
 
     useEffect(() => {
-        const stored = localStorage.getItem('printwise_orders');
-        if (stored) {
+        const loadAnalytics = async () => {
             try {
-                setOrders(JSON.parse(stored));
+                const data = await fetchAllOrdersForAnalytics();
+                // Map Order[] to AnalyticsOrder[] format
+                setOrders(data.map(o => ({
+                    totalAmount: o.totalAmount,
+                    createdAt: typeof o.createdAt === 'string' ? o.createdAt : new Date(o.createdAt).toISOString(),
+                    userEmail: o.userEmail,
+                    options: o.options as any,
+                })));
             } catch (e) {
-                console.error('Failed to parse orders:', e);
+                console.error('Failed to load analytics:', e);
             }
-        }
+        };
+        loadAnalytics();
     }, []);
 
     // Calculate stats from real orders
@@ -49,7 +59,7 @@ export const AnalyticsDashboard: React.FC = () => {
         const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
         // Count unique customers (simplified)
-        const uniqueEmails = new Set(orders.map((o: Order & { userEmail?: string }) => o.userEmail));
+        const uniqueEmails = new Set(orders.map((o) => o.userEmail));
 
         return {
             totalRevenue: `₹${totalRevenue.toLocaleString()}`,

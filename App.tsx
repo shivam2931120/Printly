@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { Toaster } from 'sonner';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { useUser, useClerk, ClerkProvider } from '@clerk/clerk-react';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 import { StudentPortal } from './components/StudentPortal';
 import { StorePage } from './components/StorePage';
@@ -11,39 +12,48 @@ import { SupportPage } from './components/user/SupportPage';
 import { ProfilePage } from './components/user/ProfilePage';
 import { CustomSignIn } from './components/auth/CustomSignIn';
 import { CustomSignUp } from './components/auth/CustomSignUp';
-import { DomainGuard } from './components/auth/DomainGuard';
+import { ForgotPassword } from './components/auth/ForgotPassword';
+import { ResetPassword } from './components/auth/ResetPassword';
 import { MainLayout } from './components/layout/MainLayout';
 import { CartDrawer } from './components/layout/CartDrawer';
-// CartProvider removed - using Zustand
-import { Icon } from './components/ui/Icon';
 import { User, PricingConfig, DEFAULT_PRICING } from './types';
 import { AnimatePresence } from 'framer-motion';
 import { PageTransition } from './components/layout/PageTransition';
+import { NotFound } from './components/NotFound';
 
 // --- Protected Route Component ---
 const ProtectedRoute = ({
   children,
   user,
-  requiredRole,
-  onSignInRequired
+  isLoaded,
+  requiredRole
 }: {
   children: React.ReactNode;
   user: User | null;
+  isLoaded: boolean;
   requiredRole?: 'admin' | 'developer';
-  onSignInRequired: () => void;
 }) => {
   const location = useLocation();
 
+  if (!isLoaded) return null; // Wait for auth to settle
+
   if (!user) {
-    onSignInRequired();
-    return <Navigate to="/" state={{ from: location }} replace />;
+    return <Navigate to="/sign-in" state={{ from: location }} replace />;
   }
 
   if (requiredRole === 'admin' && !user.isAdmin) {
+    if (user.isDeveloper) {
+      return <Navigate to="/developer" replace />;
+    }
+
     return <Navigate to="/" replace />;
   }
 
   if (requiredRole === 'developer' && !user.isDeveloper) {
+    if (user.isAdmin) {
+      return <Navigate to="/admin" replace />;
+    }
+
     return <Navigate to="/" replace />;
   }
 
@@ -52,25 +62,50 @@ const ProtectedRoute = ({
 
 // --- App Content (Inside Router) ---
 const AppContent: React.FC = () => {
-  const { user: clerkUser, isLoaded, isSignedIn } = useUser();
+  const { user: currentUser, isLoaded, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [pricing, setPricing] = useState<PricingConfig>(DEFAULT_PRICING);
 
-  // Map Clerk User to App User
-  const currentUser: User | null = (isLoaded && isSignedIn && clerkUser) ? {
-    id: clerkUser.id,
-    email: clerkUser.primaryEmailAddress?.emailAddress || '',
-    name: clerkUser.fullName || '',
-    isAdmin: (clerkUser.publicMetadata.role === 'ADMIN' || clerkUser.publicMetadata.role === 'SUPERADMIN'),
-    isDeveloper: (clerkUser.publicMetadata.role === 'DEVELOPER' || clerkUser.publicMetadata.role === 'SUPERADMIN'),
-    avatar: clerkUser.imageUrl,
-  } : null;
-
-  // Auto-redirect Admin to Admin Panel
+  // Global Redirects
   React.useEffect(() => {
-    if (isLoaded && currentUser?.isAdmin && location.pathname === '/') {
-      navigate('/admin', { replace: true });
+    if (!isLoaded) return;
+
+    const isAuthPage = location.pathname.startsWith('/sign-in') ||
+      location.pathname.startsWith('/sign-up') ||
+      location.pathname === '/forgot-password' ||
+      location.pathname === '/reset-password' ||
+      location.pathname === '/auth/callback';
+
+    // 1. If signed in, manage redirects based on role
+    if (currentUser) {
+      // Keep away from auth pages
+      if (isAuthPage) {
+        if (currentUser.isDeveloper) {
+          navigate('/developer', { replace: true });
+        } else if (currentUser.isAdmin) {
+          navigate('/admin', { replace: true });
+        } else {
+          navigate('/', { replace: true });
+        }
+        return;
+      }
+
+      // Auto-redirect to respective dashboards from Home
+      if (location.pathname === '/') {
+        if (currentUser.isDeveloper) {
+          console.log('[App] Developer detected, redirecting to /developer');
+          navigate('/developer', { replace: true });
+        } else if (currentUser.isAdmin) {
+          console.log('[App] Admin detected, redirecting to /admin');
+          navigate('/admin', { replace: true });
+        }
+        return;
+      }
+
+      if (location.pathname.startsWith('/developer') && !currentUser.isDeveloper && currentUser.isAdmin) {
+        navigate('/admin', { replace: true });
+      }
     }
   }, [isLoaded, currentUser, location.pathname, navigate]);
 
@@ -78,14 +113,10 @@ const AppContent: React.FC = () => {
     setPricing(newPricing);
   };
 
-  const { signOut } = useClerk();
-
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
   };
-
-  const isDeveloper = location.pathname.startsWith('/developer');
 
   if (!isLoaded) {
     return <div className="min-h-screen flex items-center justify-center bg-[#050505] text-white">
@@ -96,77 +127,68 @@ const AppContent: React.FC = () => {
   return (
     <div className="relative min-h-screen bg-background text-white font-sans selection:bg-white/20">
 
-      {/* Global Controls removed per user request */}
-
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
-          {/* Public Routes - Auth */}
+          {/* Public Routes - Student Auth */}
           <Route path="/sign-in/*" element={<CustomSignIn />} />
           <Route path="/sign-up/*" element={<CustomSignUp />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/auth/callback" element={<Navigate to="/" replace />} />
 
           {/* Student Routes */}
           <Route
             path="/"
             element={
-              <DomainGuard>
-                <MainLayout user={currentUser}>
-                  <PageTransition>
-                    <StudentPortal
-                      pricing={pricing}
-                      currentUser={currentUser}
-                      onSignInClick={() => navigate('/sign-in')}
-                    />
-                  </PageTransition>
-                </MainLayout>
-              </DomainGuard>
+              <MainLayout user={currentUser}>
+                <PageTransition>
+                  <StudentPortal
+                    pricing={pricing}
+                    currentUser={currentUser}
+                    onSignInClick={() => navigate('/sign-in')}
+                  />
+                </PageTransition>
+              </MainLayout>
             }
           />
           <Route
             path="/store"
             element={
-              <DomainGuard>
-                <MainLayout user={currentUser}>
-                  <PageTransition>
-                    <StorePage />
-                  </PageTransition>
-                </MainLayout>
-              </DomainGuard>
+              <MainLayout user={currentUser}>
+                <PageTransition>
+                  <StorePage />
+                </PageTransition>
+              </MainLayout>
             }
           />
           <Route
             path="/my-orders"
             element={
-              <DomainGuard>
-                <MainLayout user={currentUser}>
-                  <PageTransition>
-                    <MyOrdersPage />
-                  </PageTransition>
-                </MainLayout>
-              </DomainGuard>
+              <MainLayout user={currentUser}>
+                <PageTransition>
+                  <MyOrdersPage />
+                </PageTransition>
+              </MainLayout>
             }
           />
           <Route
             path="/support"
             element={
-              <DomainGuard>
-                <MainLayout user={currentUser}>
-                  <PageTransition>
-                    <SupportPage />
-                  </PageTransition>
-                </MainLayout>
-              </DomainGuard>
+              <MainLayout user={currentUser}>
+                <PageTransition>
+                  <SupportPage />
+                </PageTransition>
+              </MainLayout>
             }
           />
           <Route
             path="/profile"
             element={
-              <DomainGuard>
-                <MainLayout user={currentUser}>
-                  <PageTransition>
-                    <ProfilePage />
-                  </PageTransition>
-                </MainLayout>
-              </DomainGuard>
+              <MainLayout user={currentUser}>
+                <PageTransition>
+                  <ProfilePage />
+                </PageTransition>
+              </MainLayout>
             }
           />
 
@@ -174,20 +196,18 @@ const AppContent: React.FC = () => {
           <Route
             path="/admin/*"
             element={
-              <DomainGuard>
-                <ProtectedRoute
-                  user={currentUser}
-                  requiredRole="admin"
-                  onSignInRequired={() => navigate('/sign-in')}
-                >
-                  <AdminDashboard
-                    currentUser={currentUser}
-                    pricing={pricing}
-                    onPricingUpdate={handlePricingUpdate}
-                    onSignOut={handleSignOut}
-                  />
-                </ProtectedRoute>
-              </DomainGuard>
+              <ProtectedRoute
+                user={currentUser}
+                isLoaded={isLoaded}
+                requiredRole="admin"
+              >
+                <AdminDashboard
+                  currentUser={currentUser}
+                  pricing={pricing}
+                  onPricingUpdate={handlePricingUpdate}
+                  onSignOut={handleSignOut}
+                />
+              </ProtectedRoute>
             }
           />
 
@@ -195,25 +215,23 @@ const AppContent: React.FC = () => {
           <Route
             path="/developer/*"
             element={
-              <DomainGuard>
-                <ProtectedRoute
-                  user={currentUser}
-                  requiredRole="developer"
-                  onSignInRequired={() => navigate('/sign-in')}
-                >
-                  <DeveloperDashboard
-                    currentUser={currentUser}
-                    onSignOut={handleSignOut}
-                    darkMode={true}
-                    onToggleDarkMode={() => { }}
-                  />
-                </ProtectedRoute>
-              </DomainGuard>
+              <ProtectedRoute
+                user={currentUser}
+                isLoaded={isLoaded}
+                requiredRole="developer"
+              >
+                <DeveloperDashboard
+                  currentUser={currentUser}
+                  onSignOut={handleSignOut}
+                  darkMode={true}
+                  onToggleDarkMode={() => { }}
+                />
+              </ProtectedRoute>
             }
           />
 
           {/* Fallback */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </AnimatePresence>
 
@@ -223,29 +241,17 @@ const AppContent: React.FC = () => {
   );
 };
 
-const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
-
-if (!PUBLISHABLE_KEY) {
-  throw new Error("Missing Publishable Key");
-}
-
-const App: React.FC = () => {
-  const navigate = useNavigate();
-
-  return (
-    <ClerkProvider
-      publishableKey={PUBLISHABLE_KEY}
-      {...({ navigate: (to: string) => navigate(to) } as any)}
-    >
-      <AppContent />
-    </ClerkProvider>
-  );
-};
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 export default function AppWrapper() {
   return (
-    <Router>
-      <App />
-    </Router>
+    <ErrorBoundary>
+      <Router>
+        <AuthProvider>
+          <Toaster position="top-right" richColors />
+          <AppContent />
+        </AuthProvider>
+      </Router>
+    </ErrorBoundary>
   );
 }

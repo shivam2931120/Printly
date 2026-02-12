@@ -15,10 +15,7 @@ const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
     { id: 'orders', label: 'Orders', icon: 'receipt_long' },
     { id: 'products', label: 'Products', icon: 'inventory_2' },
-    { id: 'services', label: 'Services', icon: 'build' },
     { id: 'pricing', label: 'Pricing', icon: 'attach_money' },
-    { id: 'analytics', label: 'Analytics', icon: 'analytics' },
-    { id: 'customers', label: 'Customers', icon: 'people' },
     { id: 'inventory', label: 'Inventory', icon: 'warehouse' },
     { id: 'settings', label: 'Settings', icon: 'settings' },
 ];
@@ -101,7 +98,11 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             {/* User Section */}
             <div className="mt-auto p-4 border-t border-border-light dark:border-border-dark shrink-0">
                 {!collapsed && (
-                    <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 mb-2">
+                    <div
+                        onClick={() => onSectionChange('settings')}
+                        className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 mb-2 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                        title="Go to Settings"
+                    >
                         {adminAvatar ? (
                             <img
                                 src={adminAvatar}
@@ -123,11 +124,11 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                 )}
 
                 <button
-                    onClick={onSignOut}
+                    onClick={() => onSignOut?.()}
+                    disabled={!onSignOut}
                     className={`
-                        w-full flex items-center gap-3 px-4 py-3 rounded-xl
-                        text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 
-                        transition-all duration-200
+                        w-full flex items-center gap-3 px-4 py-3 rounded-xl glass-btn glass-btn-danger
+                        transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed
                         ${collapsed ? 'justify-center px-3' : ''}
                     `}
                     title="Sign Out"

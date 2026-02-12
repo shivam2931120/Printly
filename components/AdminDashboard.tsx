@@ -1,12 +1,9 @@
 import React, { useState } from 'react';
 import { AdminLayout } from './admin/AdminLayout';
 import { DashboardOverview } from './admin/DashboardOverview';
-import { AnalyticsDashboard } from './admin/AnalyticsDashboard';
 import { OrdersPanel } from './admin/OrdersPanel';
-import { CustomerList } from './admin/CustomerList';
 import { InventoryPanel } from './admin/InventoryPanel';
 import { ProductManagement } from './admin/ProductManagement';
-import { ServiceManagement } from './admin/ServiceManagement';
 import { PricingSettings } from './admin/PricingSettings';
 import { ShopSettings } from './admin/ShopSettings';
 import { Icon } from './ui/Icon';
@@ -48,14 +45,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         return <OrdersPanel currentUserId={currentUser?.id || ''} />;
       case 'products':
         return <ProductManagement />;
-      case 'services':
-        return <ServiceManagement />;
       case 'pricing':
         return <PricingSettings pricing={pricing} onUpdate={onPricingUpdate} />;
-      case 'analytics':
-        return <AnalyticsDashboard />;
-      case 'customers':
-        return <CustomerList />;
       case 'inventory':
         return <InventoryPanel />;
       case 'settings':
@@ -78,6 +69,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       onSectionChange={setActiveSection}
       adminAvatar={adminAvatar}
       adminName={currentUser?.name || 'Admin'}
+      onSignOut={onSignOut}
     >
       {renderContent()}
     </AdminLayout>
@@ -145,7 +137,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
             </p>
             <button
               onClick={onSignOut}
-              className="mt-3 px-4 py-2 text-sm font-medium text-red-600 bg-red-50 dark:bg-red-900/20 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors flex items-center gap-2"
+              className="mt-3 glass-btn glass-btn-danger text-sm"
             >
               <Icon name="logout" className="text-sm" />
               Sign Out
@@ -186,21 +178,19 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
           Danger Zone
         </h3>
         <p className="text-sm text-red-600 dark:text-red-300 mb-4">
-          Irreversible actions. Please be certain.
+          Clears cached preferences and UI state. Database data is not affected.
         </p>
         <button
           onClick={() => {
-            if (confirm('CRITICAL WARNING: This will PERMANENTLY DELETE all products, orders, inventory, and settings. This cannot be undone. Are you sure?')) {
-              if (confirm('Are you really sure? Everything will be reset.')) {
-                localStorage.clear();
-                window.location.reload();
-              }
+            if (confirm('Clear all locally cached data? This does NOT delete database records — it only resets local preferences and cached UI state.')) {
+              localStorage.clear();
+              window.location.reload();
             }
           }}
           className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold text-sm transition-colors flex items-center gap-2 shadow-sm"
         >
           <Icon name="delete_forever" />
-          Factory Reset Data
+          Clear Local Cache
         </button>
       </div>
     </div>

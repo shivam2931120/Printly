@@ -52,9 +52,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ order: initialOrder,
         'failed': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
     };
 
-    const formatDate = (date: Date | string) => {
-        return new Date(date).toLocaleString();
-    };
+
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -77,9 +75,6 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ order: initialOrder,
                                 </span>
                                 <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${paymentColors[order.paymentStatus] || 'bg-slate-100'}`}>
                                     {order.paymentStatus}
-                                </span>
-                                <span className="text-xs text-slate-500 dark:text-slate-400 ml-2">
-                                    {formatDate(order.createdAt)}
                                 </span>
                             </div>
                         </div>

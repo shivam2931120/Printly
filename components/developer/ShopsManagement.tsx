@@ -70,6 +70,13 @@ export const ShopsManagement: React.FC<{ onSelectShop?: (shopId: string) => void
         localStorage.setItem('printwise_all_shops', JSON.stringify(updated));
     };
 
+    const handleManageShop = (shop: Shop) => {
+        localStorage.setItem('printwise_active_shop_id', shop.shopId);
+        localStorage.setItem('printwise_shop_config', JSON.stringify(shop));
+        onSelectShop?.(shop.shopId);
+        onManageShop?.(shop.shopId);
+    };
+
     const totalRevenue = shops.reduce((sum, s) => sum + s.totalRevenue, 0);
     const totalOrders = shops.reduce((sum, s) => sum + s.totalOrders, 0);
     const activeShops = shops.filter(s => s.isActive).length;
@@ -86,7 +93,7 @@ export const ShopsManagement: React.FC<{ onSelectShop?: (shopId: string) => void
                 </div>
                 <button
                     onClick={() => setIsAddingShop(true)}
-                    className="inline-flex items-center justify-center h-10 px-4 rounded-lg bg-primary text-white text-sm font-bold shadow-md hover:bg-primary-hover transition-colors"
+                    className="glass-btn glass-btn-primary h-10 px-4 text-sm"
                 >
                     <Icon name="add_business" className="text-lg mr-2" />
                     Add Shop
@@ -95,47 +102,47 @@ export const ShopsManagement: React.FC<{ onSelectShop?: (shopId: string) => void
 
             {/* Stats Overview */}
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-5">
+                <div className="bg-white/[0.02] rounded-2xl border border-white/[0.06] p-5 transition-colors duration-200">
                     <div className="flex items-center gap-3">
-                        <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-900/20">
-                            <Icon name="store" className="text-xl text-blue-600 dark:text-blue-400" />
+                        <div className="p-2.5 rounded-xl bg-blue-500/10">
+                            <Icon name="store" className="text-xl text-blue-400" />
                         </div>
                         <div>
-                            <p className="text-2xl font-bold text-slate-900 dark:text-white">{shops.length}</p>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">Total Shops</p>
+                            <p className="text-2xl font-bold text-white">{shops.length}</p>
+                            <p className="text-sm text-text-secondary">Total Shops</p>
                         </div>
                     </div>
                 </div>
-                <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-5">
+                <div className="bg-white/[0.02] rounded-2xl border border-white/[0.06] p-5 transition-colors duration-200">
                     <div className="flex items-center gap-3">
-                        <div className="p-2.5 rounded-xl bg-green-50 dark:bg-green-900/20">
-                            <Icon name="check_circle" className="text-xl text-green-600 dark:text-green-400" />
+                        <div className="p-2.5 rounded-xl bg-green-500/10">
+                            <Icon name="check_circle" className="text-xl text-green-400" />
                         </div>
                         <div>
-                            <p className="text-2xl font-bold text-slate-900 dark:text-white">{activeShops}</p>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">Active</p>
+                            <p className="text-2xl font-bold text-white">{activeShops}</p>
+                            <p className="text-sm text-text-secondary">Active</p>
                         </div>
                     </div>
                 </div>
-                <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-5">
+                <div className="bg-white/[0.02] rounded-2xl border border-white/[0.06] p-5 transition-colors duration-200">
                     <div className="flex items-center gap-3">
-                        <div className="p-2.5 rounded-xl bg-purple-50 dark:bg-purple-900/20">
-                            <Icon name="receipt_long" className="text-xl text-purple-600 dark:text-purple-400" />
+                        <div className="p-2.5 rounded-xl bg-purple-500/10">
+                            <Icon name="receipt_long" className="text-xl text-purple-400" />
                         </div>
                         <div>
-                            <p className="text-2xl font-bold text-slate-900 dark:text-white">{totalOrders}</p>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">Total Orders</p>
+                            <p className="text-2xl font-bold text-white">{totalOrders}</p>
+                            <p className="text-sm text-text-secondary">Total Orders</p>
                         </div>
                     </div>
                 </div>
-                <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-5">
+                <div className="bg-white/[0.02] rounded-2xl border border-white/[0.06] p-5 transition-colors duration-200">
                     <div className="flex items-center gap-3">
-                        <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-900/20">
-                            <Icon name="payments" className="text-xl text-amber-600 dark:text-amber-400" />
+                        <div className="p-2.5 rounded-xl bg-amber-500/10">
+                            <Icon name="payments" className="text-xl text-amber-400" />
                         </div>
                         <div>
-                            <p className="text-2xl font-bold text-slate-900 dark:text-white">₹{totalRevenue.toLocaleString()}</p>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">Total Revenue</p>
+                            <p className="text-2xl font-bold text-white">₹{totalRevenue.toLocaleString()}</p>
+                            <p className="text-sm text-text-secondary">Total Revenue</p>
                         </div>
                     </div>
                 </div>
@@ -143,25 +150,25 @@ export const ShopsManagement: React.FC<{ onSelectShop?: (shopId: string) => void
 
             {/* Add Shop Modal */}
             {isAddingShop && (
-                <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-6">
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Add New Shop</h3>
+                <div className="bg-white/[0.03] rounded-2xl border border-white/[0.08] p-6">
+                    <h3 className="text-lg font-bold text-white mb-4">Add New Shop</h3>
                     <div className="flex gap-3">
                         <input
                             type="text"
                             placeholder="Shop Name"
                             value={newShopName}
                             onChange={(e) => setNewShopName(e.target.value)}
-                            className="flex-1 px-4 py-2 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg text-slate-900 dark:text-white"
+                            className="flex-1 px-4 py-2 bg-white/[0.04] border border-white/10 rounded-xl text-white placeholder:text-text-muted focus:outline-none focus:border-white/30"
                         />
                         <button
                             onClick={addShop}
-                            className="px-4 py-2 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600"
+                            className="px-4 py-2 bg-green-500/90 text-black rounded-xl font-semibold hover:bg-green-400 transition-colors"
                         >
                             Create
                         </button>
                         <button
                             onClick={() => setIsAddingShop(false)}
-                            className="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg font-medium"
+                            className="px-4 py-2 bg-white/[0.06] border border-white/10 text-text-secondary rounded-xl font-medium hover:text-white hover:bg-white/[0.1] transition-colors"
                         >
                             Cancel
                         </button>
@@ -210,8 +217,8 @@ export const ShopsManagement: React.FC<{ onSelectShop?: (shopId: string) => void
                                 <td className="py-4 px-4 text-right">
                                     <div className="flex items-center justify-end gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                                         <button
-                                            onClick={() => onManageShop?.(shop.shopId)}
-                                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-darker border border-border-dark text-xs font-medium text-text-secondary hover:text-white hover:border-primary/50 transition-all"
+                                            onClick={() => handleManageShop(shop)}
+                                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/10 text-xs font-medium text-text-secondary hover:text-white hover:bg-white/[0.08] hover:border-white/20 transition-all duration-200"
                                         >
                                             <Icon name="admin_panel_settings" className="text-sm" />
                                             Manage

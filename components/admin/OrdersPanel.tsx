@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { Icon } from '../ui/Icon';
 import { Toast } from '../ui/Toast';
 import { OrderDetails } from './OrderDetails';
@@ -17,7 +18,9 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [toastMessage, setToastMessage] = useState<{ message: string, type: 'info' | 'success' | 'warning' | 'error' } | null>(null);
     const prevOrdersCountRef = useRef<number>(0);
-    const [loading, setLoading] = useState(true); // Added loading state
+    const [loading, setLoading] = useState(true);
+
+
 
     const loadOrders = async () => {
         setLoading(true); // Set loading to true before fetching
@@ -52,8 +55,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
     useEffect(() => {
         loadOrders();
 
-        // Polling fallback every 30 seconds (slower since we have realtime)
-        const interval = setInterval(loadOrders, 30000);
+        // Real-time subscription for instant updates (no polling)
 
         // Real-time subscription for instant updates
         const channel = supabase
@@ -75,38 +77,38 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
             });
 
         return () => {
-            clearInterval(interval);
             supabase.removeChannel(channel);
         };
     }, []);
 
     const updateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {
+        const now = new Date();
         const { error } = await supabase
             .from('Order')
-            .update({ status: newStatus.toUpperCase() })
+            .update({ status: newStatus.toUpperCase(), updatedAt: now.toISOString() })
             .eq('id', orderId);
 
         if (error) {
             console.error('Failed to update status', error);
             setToastMessage({ message: 'Failed to update status', type: 'error' });
         } else {
-            setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+            setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus, updatedAt: now } : o));
             setToastMessage({ message: `Order updated to ${newStatus} `, type: 'success' });
 
             if (selectedOrder && selectedOrder.id === orderId) {
-                setSelectedOrder({ ...selectedOrder, status: newStatus, updatedAt: new Date() });
+                setSelectedOrder({ ...selectedOrder, status: newStatus, updatedAt: now });
             }
         }
     };
 
     const deleteOrder = async (orderId: string) => {
-        if (!window.confirm('Are you sure you want to permanently delete this order? This action cannot be undone.')) {
+        if (!window.confirm('Are you sure you want to delete this order? It will be hidden from the dashboard but preserved for analytics.')) {
             return;
         }
 
         const { error } = await supabase
             .from('Order')
-            .delete()
+            .update({ isDeleted: true, deletedAt: new Date().toISOString() })
             .eq('id', orderId);
 
         if (error) {
@@ -280,10 +282,18 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
                                     <th className="text-right py-3 px-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-border-light dark:divide-border-dark">
+                            <motion.tbody
+                                variants={{
+                                    hidden: { opacity: 0 },
+                                    visible: { opacity: 1, transition: { staggerChildren: 0.05 } }
+                                }}
+                                initial="hidden"
+                                animate="visible"
+                                className="divide-y divide-border-light dark:divide-border-dark"
+                            >
                                 {filteredOrders.length === 0 ? (
                                     <tr>
-                                        <td colSpan={7} className="py-12 text-center text-slate-500 dark:text-slate-400">
+                                        <td colSpan={6} className="py-12 text-center text-slate-500 dark:text-slate-400">
                                             <div className="flex flex-col items-center justify-center">
                                                 <Icon name="inbox" className="text-4xl text-slate-300 dark:text-slate-600 mb-3" />
                                                 <p>No orders found</p>
@@ -292,7 +302,11 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
                                     </tr>
                                 ) : (
                                     filteredOrders.map((order) => (
-                                        <tr
+                                        <motion.tr
+                                            variants={{
+                                                hidden: { opacity: 0, x: -10 },
+                                                visible: { opacity: 1, x: 0 }
+                                            }}
                                             key={order.id}
                                             className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors cursor-pointer"
                                             onClick={() => setSelectedOrder(order)}
@@ -308,6 +322,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
                                                     <span className="text-slate-900 dark:text-white font-medium">{order.userName}</span>
                                                 </div>
                                             </td>
+
                                             <td className="py-4 px-4">
                                                 <div className="flex items-center gap-2">
                                                     {order.items && order.items.length > 0 ? (
@@ -396,10 +411,10 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
                                                     )}
                                                 </div>
                                             </td>
-                                        </tr>
+                                        </motion.tr>
                                     ))
                                 )}
-                            </tbody>
+                            </motion.tbody>
                         </table>
                     </div>
                 )}
@@ -427,6 +442,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
                                     <span className="font-mono text-xs text-slate-500 dark:text-slate-400 block mb-1">
                                         {order.id}
                                     </span>
+
                                     <div className="flex items-center gap-2">
                                         <div className={`size-6 rounded-full flex items-center justify-center text-[10px] font-bold bg-primary/10 text-primary`}>
                                             {order.userName.charAt(0).toUpperCase()}

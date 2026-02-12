@@ -10,13 +10,19 @@ import {
     Plus,
     CreditCard
 } from 'lucide-react';
-import { useUser } from '@clerk/clerk-react';
+import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useCartStore } from '../../store/useCartStore';
+import { compressPdf } from '../../lib/compressPdf';
 import { useOrderStore } from '../../store/useOrderStore';
+import { createOrder, uploadFile } from '../../services/data';
+import { useNotificationStore } from '../../store/useNotificationStore';
+import { toast } from 'sonner';
 import { Button } from '../ui/Button';
 import { cn } from '../../lib/utils';
 import { CartItem, Order } from '../../types';
+
+import { OrderConfirmation } from '../user/OrderConfirmation';
 
 // Add global declaration for Razorpay
 declare global {
@@ -40,7 +46,7 @@ const loadRazorpayScript = () => {
 };
 
 export const CartDrawer: React.FC = () => {
-    const { user } = useUser();
+    const { user } = useAuth();
     const navigate = useNavigate();
     const {
         cart,
@@ -55,36 +61,61 @@ export const CartDrawer: React.FC = () => {
 
     const cartTotal = getCartTotal();
 
+    // State for upload progress
+    const [uploadProgress, setUploadProgress] = React.useState(0);
+    const [isProcessing, setIsProcessing] = React.useState(false);
+    const [confirmedOrder, setConfirmedOrder] = React.useState<Order | null>(null);
+
     const handlePayment = useCallback(async () => {
+        setIsProcessing(true);
+        setUploadProgress(0);
+
+        const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
+        if (!razorpayKey || !/^rzp_(test|live)_/i.test(razorpayKey)) {
+            toast.error('Payment gateway key is missing or invalid. Please configure VITE_RAZORPAY_KEY_ID.');
+            setIsProcessing(false);
+            return;
+        }
+
         const res = await loadRazorpayScript();
 
         if (!res) {
-            alert('Razorpay SDK failed to load. Are you online?');
+            toast.error('Razorpay SDK failed to load. Are you online?');
+            setIsProcessing(false);
             return;
         }
 
         const totalAmount = (cartTotal * 1.05).toFixed(2);
 
         const options = {
-            key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_PLACEHOLDER',
+            key: razorpayKey,
             amount: Math.round(parseFloat(totalAmount) * 100).toString(),
             currency: "INR",
             name: "Printly",
             description: "Print Order Payment",
-            image: window.location.origin + "/Printly.png",
             handler: async (response: any) => {
-                console.log(response);
-
                 const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-                // Upload Files
-                console.log('Uploading files...');
+                let uploadError = false;
+                const totalFiles = cart.filter(i => i.type === 'print').length;
+                let filesUploaded = 0;
+
                 const processedCart = await Promise.all(cart.map(async (item) => {
-                    if (item.type === 'print' && (item as any).file) {
+                    if (item.type === 'print') {
+                        // Check for valid file object (persistence issue check)
+                        if (!(item as any).file || !(item as any).file.name) {
+                            console.error('Missing file object for item:', item.name);
+                            uploadError = true;
+                            return item;
+                        }
+
                         try {
-                            const { uploadFile } = await import('../../services/data');
-                            const publicUrl = await uploadFile((item as any).file);
+                            // Compress PDF before upload for smaller storage
+                            const compressedFile = await compressPdf((item as any).file);
+                            const publicUrl = await uploadFile(compressedFile);
                             if (publicUrl) {
+                                filesUploaded++;
+                                setUploadProgress(Math.round((filesUploaded / totalFiles) * 100));
                                 return { ...item, fileUrl: publicUrl };
                             }
                         } catch (err) {
@@ -94,12 +125,18 @@ export const CartDrawer: React.FC = () => {
                     return item;
                 }));
 
+                if (uploadError) {
+                    toast.error("Some files are missing (likely due to page refresh). Please remove and re-add your print items.");
+                    setIsProcessing(false);
+                    return;
+                }
+
                 const newOrder: Order = {
                     id: response.razorpay_payment_id || Math.random().toString(36).substr(2, 9),
                     orderToken: Math.random().toString(36).substr(2, 9).toUpperCase(),
                     userId: user?.id,
-                    userEmail: user?.primaryEmailAddress?.emailAddress || 'guest@example.com',
-                    userName: user?.fullName || 'Guest',
+                    userEmail: user?.email || 'guest@example.com',
+                    userName: user?.name || 'Guest',
                     items: processedCart,
                     type: 'mixed',
                     totalAmount: parseFloat(totalAmount),
@@ -112,26 +149,34 @@ export const CartDrawer: React.FC = () => {
                 };
 
                 // Saving Order to DB
-                console.log('Saving order to DB...');
-                const userRole = (user?.publicMetadata?.role as string) || 'USER';
-                const { success, error } = await import('../../services/data').then(m => m.createOrder(newOrder, userRole));
+                const userRole = user?.isAdmin ? 'ADMIN' : (user?.isDeveloper ? 'DEVELOPER' : 'USER');
+                const { success, error } = await createOrder(newOrder, userRole);
 
                 if (!success) {
-                    console.error('Failed to save order to DB:', error);
-                    alert('Payment successful but failed to save order. Please contact support.');
+                    console.error('Failed to save order to DB:', error?.message || error);
+                    toast.error('Payment successful but failed to save order. Please contact support.');
+                    setIsProcessing(false);
                     return;
                 }
 
                 addOrder(newOrder); // Update local store too
+
+                // Add Notification
+                const { addNotification } = useNotificationStore.getState();
+                addNotification({
+                    title: 'Order Placed Successfully',
+                    message: `Your order #${newOrder.orderToken} has been placed.`,
+                    type: 'success'
+                });
+
                 clearCart();
-                toggleCart(false);
-                navigate('/profile');
-                // In a real app, you'd show a success modal here. For now, let's rely on Profile page showing it "right after".
-                alert(`Payment Successful! Your collection OTP is ${otp}`);
+                setConfirmedOrder(newOrder); // Show confirmation modal instead of direct navigation
+                toast.success(`Payment Successful! Your collection OTP is ${otp}`, { duration: 5000 });
+                setIsProcessing(false);
             },
             prefill: {
-                name: user?.fullName || "User Name",
-                email: user?.primaryEmailAddress?.emailAddress || "user@example.com",
+                name: user?.name || "User Name",
+                email: user?.email || "user@example.com",
                 contact: "9999999999",
             },
             notes: {
@@ -144,7 +189,8 @@ export const CartDrawer: React.FC = () => {
 
         const paymentObject = new window.Razorpay(options);
         paymentObject.on('payment.failed', function (response: any) {
-            alert(response.error.description);
+            toast.error(response?.error?.description || 'Payment failed. Please try again.');
+            setIsProcessing(false);
         });
         paymentObject.open();
     }, [cartTotal, clearCart, toggleCart, addOrder, cart, user, navigate]);
@@ -156,7 +202,7 @@ export const CartDrawer: React.FC = () => {
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-black/60 backdrop-blur-md animate-fade-in"
-                onClick={() => toggleCart(false)}
+                onClick={() => !isProcessing && toggleCart(false)}
             />
 
             {/* Drawer */}
@@ -175,6 +221,7 @@ export const CartDrawer: React.FC = () => {
                         variant="ghost"
                         size="icon"
                         onClick={() => toggleCart(false)}
+                        disabled={isProcessing}
                         className="hover:bg-white/5 text-text-muted hover:text-white rounded-full"
                     >
                         <X size={20} />
@@ -183,6 +230,20 @@ export const CartDrawer: React.FC = () => {
 
                 {/* Items */}
                 <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                    {/* Progress Bar Overlay */}
+                    {isProcessing && uploadProgress > 0 && uploadProgress < 100 && (
+                        <div className="absolute inset-0 bg-black/80 z-20 flex flex-col items-center justify-center p-8 text-center animate-fade-in">
+                            <div className="w-full max-w-[200px] bg-white/10 rounded-full h-2 mb-4 overflow-hidden">
+                                <div
+                                    className="bg-primary h-full rounded-full transition-all duration-300 ease-out"
+                                    style={{ width: `${uploadProgress}%` }}
+                                />
+                            </div>
+                            <h3 className="text-white font-bold mb-2">Uploading Files ({uploadProgress}%)</h3>
+                            <p className="text-xs text-text-muted">Please do not close this window...</p>
+                        </div>
+                    )}
+
                     {cart.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-full text-center p-8 text-text-muted">
                             <div className="size-24 rounded-full bg-white/5 flex items-center justify-center mb-6">
@@ -202,7 +263,10 @@ export const CartDrawer: React.FC = () => {
                         cart.map((item) => (
                             <div
                                 key={item.id}
-                                className="group relative flex gap-4"
+                                className={cn(
+                                    "group relative flex gap-4 transition-opacity duration-300",
+                                    isProcessing ? "opacity-50 pointer-events-none" : "opacity-100"
+                                )}
                             >
                                 {/* Thumbnail */}
                                 <div className="size-20 rounded-xl bg-background flex items-center justify-center shrink-0 border border-border text-text-muted relative overflow-hidden">
@@ -228,6 +292,7 @@ export const CartDrawer: React.FC = () => {
                                             <button
                                                 onClick={() => removeFromCart(item.id)}
                                                 className="text-text-muted hover:text-red-500 transition-colors p-1 -mt-1 -mr-1"
+                                                disabled={isProcessing}
                                             >
                                                 <Trash2 size={16} />
                                             </button>
@@ -254,7 +319,7 @@ export const CartDrawer: React.FC = () => {
                                             <button
                                                 onClick={() => updateQuantity(item.id, -1)}
                                                 className="size-6 flex items-center justify-center hover:bg-white/10 rounded transition-colors text-white disabled:opacity-50"
-                                                disabled={item.quantity <= 1}
+                                                disabled={item.quantity <= 1 || isProcessing}
                                             >
                                                 <Minus size={12} />
                                             </button>
@@ -262,6 +327,7 @@ export const CartDrawer: React.FC = () => {
                                             <button
                                                 onClick={() => updateQuantity(item.id, 1)}
                                                 className="size-6 flex items-center justify-center hover:bg-white/10 rounded transition-colors text-white"
+                                                disabled={isProcessing}
                                             >
                                                 <Plus size={12} />
                                             </button>
@@ -296,13 +362,21 @@ export const CartDrawer: React.FC = () => {
                         </div>
 
                         <Button
-                            className="w-full py-6 text-base font-bold bg-white text-black hover:bg-white/90 shadow-none hover:scale-[1.01] active:scale-[0.99] transition-all rounded-xl"
+                            className="w-full py-6 text-base font-bold bg-white text-black hover:bg-white/90 shadow-none hover:scale-[1.01] active:scale-[0.99] transition-all rounded-xl relative overflow-hidden"
                             onClick={handlePayment}
+                            disabled={isProcessing}
                         >
-                            <span className="flex items-center gap-2">
-                                Checkout
-                                <ArrowRight size={18} />
-                            </span>
+                            {isProcessing ? (
+                                <span className="flex items-center gap-2">
+                                    <div className="size-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                                    Processing...
+                                </span>
+                            ) : (
+                                <span className="flex items-center gap-2">
+                                    Checkout
+                                    <ArrowRight size={18} />
+                                </span>
+                            )}
                         </Button>
                         <p className="text-center text-[10px] text-text-muted mt-4 flex items-center justify-center gap-2 opacity-60">
                             <CreditCard size={12} />
@@ -311,6 +385,22 @@ export const CartDrawer: React.FC = () => {
                     </div>
                 )}
             </div>
+            {confirmedOrder && (
+                <OrderConfirmation
+                    order={{
+                        id: confirmedOrder.id,
+                        tokenNumber: confirmedOrder.otp,
+                        totalAmount: confirmedOrder.totalAmount,
+                        status: confirmedOrder.status,
+                        createdAt: confirmedOrder.createdAt.toISOString(),
+                        fileName: confirmedOrder.items?.[0]?.name || 'Print Order'
+                    }}
+                    onClose={() => {
+                        setConfirmedOrder(null);
+                        toggleCart(false);
+                    }}
+                />
+            )}
         </div>
     );
 };

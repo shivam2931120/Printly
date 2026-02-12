@@ -1,16 +1,8 @@
-import React, { useEffect } from 'react';
-import { useUser, useClerk } from '@clerk/clerk-react';
-import { Icon } from '../ui/Icon';
+import React from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 
 export const DomainGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const { user, isLoaded, isSignedIn } = useUser();
-    const { signOut } = useClerk();
-
-    useEffect(() => {
-        if (isLoaded && isSignedIn && user) {
-            // Restriction removed per user request
-        }
-    }, [user, isLoaded, isSignedIn, signOut]);
+    const { isLoaded } = useAuth();
 
     if (!isLoaded) {
         return (

@@ -19,13 +19,12 @@ const steps = [
 
 export const OrderTracker: React.FC<OrderTrackerProps> = ({ status, className, onStepClick }) => {
     const currentStepIndex = steps.findIndex(s => s.id === status.toLowerCase()) ?? 0;
-    // Map cancelled to -1 or handle separately
     const isCancelled = status.toLowerCase() === 'cancelled';
 
     if (isCancelled) {
         return (
-            <div className={cn("w-full py-4", className)}>
-                <div className="flex items-center justify-center p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 font-bold">
+            <div className={cn("w-full py-2", className)}>
+                <div className="flex items-center justify-center p-2 bg-red-500/10 border border-red-500/20 rounded-lg text-red-500 text-xs font-bold">
                     Order Cancelled
                 </div>
             </div>
@@ -33,14 +32,14 @@ export const OrderTracker: React.FC<OrderTrackerProps> = ({ status, className, o
     }
 
     return (
-        <div className={cn("w-full py-4", className)}>
+        <div className={cn("w-full py-2", className)}>
             <div className="relative flex items-center justify-between">
                 {/* Progress Bar Background */}
-                <div className="absolute left-0 top-4 -translate-y-1/2 w-full h-0.5 bg-slate-100 dark:bg-zinc-800 rounded-full -z-10" />
+                <div className="absolute left-0 top-3 -translate-y-1/2 w-full h-0.5 bg-slate-100 dark:bg-zinc-800 rounded-full -z-10" />
 
                 {/* Active Progress Bar */}
                 <div
-                    className="absolute left-0 top-4 -translate-y-1/2 h-0.5 bg-black dark:bg-white rounded-full -z-10 transition-all duration-500"
+                    className="absolute left-0 top-3 -translate-y-1/2 h-0.5 bg-black dark:bg-white rounded-full -z-10 transition-all duration-500"
                     style={{
                         width: `${(currentStepIndex / (steps.length - 1)) * 100}%`
                     }}
@@ -57,24 +56,24 @@ export const OrderTracker: React.FC<OrderTrackerProps> = ({ status, className, o
                             key={step.id}
                             onClick={() => isClickable && onStepClick(step.id as OrderStatus)}
                             className={cn(
-                                "flex flex-col items-center gap-2 transition-all duration-200",
+                                "flex flex-col items-center gap-1 transition-all duration-200",
                                 isClickable && "cursor-pointer hover:opacity-80 active:scale-95"
                             )}
                         >
                             <div
                                 className={cn(
-                                    "size-8 rounded-full flex items-center justify-center border-2 transition-all duration-300 bg-white dark:bg-black",
+                                    "size-6 rounded-full flex items-center justify-center border-[1.5px] transition-all duration-300 bg-white dark:bg-black",
                                     isActive
-                                        ? "border-black dark:border-white text-black dark:text-white scale-110"
+                                        ? "border-black dark:border-white text-black dark:text-white"
                                         : "border-slate-200 dark:border-slate-800 text-slate-300 dark:text-slate-700",
                                     isCurrent && step.id === 'printing' && "animate-spin"
                                 )}
                             >
-                                <Icon size={14} />
+                                <Icon size={10} />
                             </div>
                             <span
                                 className={cn(
-                                    "text-[10px] font-bold uppercase tracking-wider transition-colors duration-300 select-none",
+                                    "text-[8px] font-bold uppercase tracking-wider transition-colors duration-300 select-none hidden sm:block",
                                     isActive ? "text-black dark:text-white" : "text-slate-300 dark:text-slate-700"
                                 )}
                             >

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
     ArrowLeft,
@@ -7,16 +8,16 @@ import {
     XCircle,
     Loader2,
     Package,
-    Calendar,
     ChevronRight,
     Ban
 } from 'lucide-react';
-import { useUser } from '@clerk/clerk-react';
+import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/Button';
 import { cn } from '../../lib/utils';
 import { useOrderStore } from '../../store/useOrderStore';
 import { Order } from '../../types';
-import { fetchOrders, cancelOrder } from '../../services/data';
+import { fetchOrders, cancelOrder, markOrderCollected } from '../../services/data';
+import { toast } from 'sonner';
 import { Skeleton } from '../ui/Skeleton';
 import { OrderTracker } from './OrderTracker';
 
@@ -30,7 +31,7 @@ const statusConfig: Record<string, { color: string; icon: any; label: string }> 
 };
 
 export const MyOrdersPage: React.FC = () => {
-    const { user, isLoaded } = useUser();
+    const { user, isLoaded } = useAuth();
     const { orders: storeOrders, setOrders } = useOrderStore();
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [loading, setLoading] = useState(true);
@@ -57,8 +58,8 @@ export const MyOrdersPage: React.FC = () => {
         if (isLoaded) {
             loadOrders();
 
-            // Auto-reload every 10 seconds
-            const interval = setInterval(loadOrders, 10000);
+            // Auto-reload every 60 seconds
+            const interval = setInterval(loadOrders, 60000);
             return () => clearInterval(interval);
         }
     }, [isLoaded, user?.id, setOrders]);
@@ -68,15 +69,7 @@ export const MyOrdersPage: React.FC = () => {
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
 
-    const formatDate = (date: Date | string) => {
-        return new Date(date).toLocaleDateString('en-IN', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    };
+
 
     const getOrderSummary = (order: Order) => {
         if (order.items && order.items.length > 0) {
@@ -102,16 +95,17 @@ export const MyOrdersPage: React.FC = () => {
             const result = await cancelOrder(orderId, user.id);
 
             if (!result.success) {
-                alert(result.error || 'Failed to cancel order.');
+                toast.error(result.error || 'Failed to cancel order.');
                 return;
             }
 
             // Optimistic update
             setOrders(storeOrders.map(o => o.id === orderId ? { ...o, status: 'cancelled' } : o));
+            toast.success('Order cancelled successfully.');
 
         } catch (error) {
             console.error('Failed to cancel order:', error);
-            alert('Failed to cancel order. Please try again.');
+            toast.error('Failed to cancel order. Please try again.');
         } finally {
             setCancellingId(null);
         }
@@ -121,19 +115,19 @@ export const MyOrdersPage: React.FC = () => {
         if (!confirm('Have you collected this order? This will mark it as completed.')) return;
 
         try {
-            const { markOrderCollected } = await import('../../services/data');
             const result = await markOrderCollected(orderId);
 
             if (!result.success) {
-                alert('Failed to update order. Please try again.');
+                toast.error('Failed to update order. Please try again.');
                 return;
             }
 
             // Optimistic update
             setOrders(storeOrders.map(o => o.id === orderId ? { ...o, status: 'completed' } : o));
+            toast.success('Order marked as collected.');
         } catch (error) {
             console.error('Failed to mark collected:', error);
-            alert('An error occurred.');
+            toast.error('An error occurred.');
         }
     };
 
@@ -142,85 +136,76 @@ export const MyOrdersPage: React.FC = () => {
         : orders.filter(o => o.status.toLowerCase() === filterStatus);
 
     if (!isLoaded) return (
-        <div className="max-w-5xl mx-auto space-y-8 p-4">
+        <div className="max-w-3xl mx-auto space-y-4 p-4">
             <div className="flex justify-between items-center">
-                <div className="space-y-2">
-                    <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-8 w-48" />
-                </div>
-                <div className="flex gap-4">
-                    <Skeleton className="h-16 w-32 rounded-xl" />
-                    <Skeleton className="h-16 w-32 rounded-xl" />
+                <Skeleton className="h-6 w-36" />
+                <div className="flex gap-3">
+                    <Skeleton className="h-12 w-24 rounded-lg" />
+                    <Skeleton className="h-12 w-24 rounded-lg" />
                 </div>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-3">
                 {[1, 2, 3].map(i => (
-                    <Skeleton key={i} className="h-48 w-full rounded-2xl" />
+                    <Skeleton key={i} className="h-24 w-full rounded-xl" />
                 ))}
             </div>
         </div>
     );
 
     if (loading) return (
-        <div className="max-w-5xl mx-auto space-y-8 p-4">
-            {/* Header Skeleton */}
+        <div className="max-w-3xl mx-auto space-y-4 p-4">
             <div className="flex justify-between items-center">
-                <div className="space-y-2">
-                    <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-8 w-48" />
-                </div>
-                <div className="flex gap-4">
-                    <Skeleton className="h-16 w-32 rounded-xl" />
-                    <Skeleton className="h-16 w-32 rounded-xl" />
+                <Skeleton className="h-6 w-36" />
+                <div className="flex gap-3">
+                    <Skeleton className="h-12 w-24 rounded-lg" />
+                    <Skeleton className="h-12 w-24 rounded-lg" />
                 </div>
             </div>
-            {/* List Skeleton */}
-            <div className="space-y-4">
+            <div className="space-y-3">
                 {[1, 2, 3].map(i => (
-                    <Skeleton key={i} className="h-48 w-full rounded-2xl" />
+                    <Skeleton key={i} className="h-24 w-full rounded-xl" />
                 ))}
             </div>
         </div>
     );
 
     return (
-        <div className="space-y-8 animate-fade-in pb-20 max-w-5xl mx-auto">
+        <div className="space-y-5 animate-fade-in pb-20 max-w-3xl mx-auto">
 
             {/* Dashboard Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="flex items-center justify-between gap-4">
                 <div>
                     <button
                         onClick={() => navigate('/')}
-                        className="flex items-center gap-2 text-text-muted hover:text-white transition-colors mb-2 text-sm"
+                        className="flex items-center gap-2 text-text-muted hover:text-white transition-colors mb-1 text-xs"
                     >
-                        <ArrowLeft size={16} />
-                        Back to Home
+                        <ArrowLeft size={14} />
+                        Back
                     </button>
-                    <h1 className="text-3xl font-bold text-white font-display">My Orders</h1>
-                    <p className="text-text-muted mt-1">Track pending jobs and view history</p>
+                    <h1 className="text-2xl font-bold text-white font-display">My Orders</h1>
                 </div>
 
                 {/* Stats Cards (Mini) */}
-                <div className="flex gap-4">
-                    <div className="px-4 py-3 bg-background-card border border-border rounded-xl">
-                        <p className="text-xs text-text-muted uppercase font-bold">Total Spent</p>
-                        <p className="text-lg font-bold text-white">₹{orders.reduce((acc, o) => acc + o.totalAmount, 0).toFixed(0)}</p>
+                <div className="flex gap-3">
+                    <div className="px-3 py-2 bg-background-card border border-border rounded-lg">
+                        <p className="text-[10px] text-text-muted uppercase font-bold">Total Spent</p>
+                        <p className="text-base font-bold text-white">₹{orders.reduce((acc, o) => acc + o.totalAmount, 0).toFixed(0)}</p>
                     </div>
-                    <div className="px-4 py-3 bg-background-card border border-border rounded-xl">
-                        <p className="text-xs text-text-muted uppercase font-bold">Active Jobs</p>
-                        <p className="text-lg font-bold text-white">{orders.filter(o => ['pending', 'printing', 'confirmed'].includes(o.status.toLowerCase())).length}</p>
+                    <div className="px-3 py-2 bg-background-card border border-border rounded-lg">
+                        <p className="text-[10px] text-text-muted uppercase font-bold">Active Jobs</p>
+                        <p className="text-base font-bold text-white">{orders.filter(o => ['pending', 'printing', 'confirmed'].includes(o.status.toLowerCase())).length}</p>
                     </div>
                 </div>
             </div>
 
             {/* Filters */}
-            <div className="flex flex-wrap gap-2 pb-2">
+            <div className="flex flex-wrap gap-1.5">
                 {['all', 'pending', 'printing', 'completed', 'cancelled'].map(status => (
                     <button
                         key={status}
                         onClick={() => setFilterStatus(status)}
                         className={cn(
-                            "px-4 py-2 rounded-full text-sm font-medium transition-all border capitalize",
+                            "px-3 py-1.5 rounded-full text-xs font-medium transition-all border capitalize",
                             filterStatus === status
                                 ? "bg-white text-black border-white"
                                 : "bg-transparent text-text-muted border-border hover:border-white/20 hover:text-white"
@@ -233,97 +218,91 @@ export const MyOrdersPage: React.FC = () => {
 
             {/* Orders List */}
             {filteredOrders.length > 0 ? (
-                <div className="grid gap-4">
+                <motion.div
+                    variants={{
+                        hidden: { opacity: 0 },
+                        visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+                    }}
+                    initial="hidden"
+                    animate="visible"
+                    className="grid gap-4"
+                >
                     {filteredOrders.map((order) => {
                         const status = statusConfig[order.status.toLowerCase()] || statusConfig.pending;
                         const StatusIcon = status.icon;
 
                         return (
-                            <div
+                            <motion.div
+                                variants={{
+                                    hidden: { opacity: 0, y: 20 },
+                                    visible: { opacity: 1, y: 0 }
+                                }}
                                 key={order.id}
-                                className="group relative bg-background-card border border-border rounded-2xl overflow-hidden hover:border-white/20 transition-all duration-300"
+                                className="group relative bg-background-card border border-border rounded-xl overflow-hidden hover:border-white/20 transition-all duration-300"
                             >
-                                <div className="p-6">
-                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-
-                                        {/* Left Info */}
-                                        <div className="flex items-start gap-4">
-                                            <div className={cn("size-10 rounded-full flex items-center justify-center shrink-0 border", status.color)}>
-                                                <StatusIcon size={18} className={order.status === 'printing' ? 'animate-spin' : ''} />
+                                <div className="p-4">
+                                    {/* Top row: status icon + summary + price */}
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <div className={cn("size-8 rounded-full flex items-center justify-center shrink-0 border", status.color)}>
+                                                <StatusIcon size={14} className={order.status === 'printing' ? 'animate-spin' : ''} />
                                             </div>
-                                            <div>
-                                                <div className="flex items-center gap-3 mb-1">
-                                                    <span className="font-bold text-white text-lg">{getOrderSummary(order)}</span>
-                                                    <span className={cn("text-[10px] uppercase font-bold px-2 py-0.5 rounded border bg-opacity-10", status.color)}>
+                                            <div className="min-w-0">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-bold text-white text-sm truncate">{getOrderSummary(order)}</span>
+                                                    <span className={cn("text-[9px] uppercase font-bold px-1.5 py-0.5 rounded border whitespace-nowrap", status.color)}>
                                                         {status.label}
                                                     </span>
                                                 </div>
-                                                <div className="flex items-center gap-4 text-sm text-text-muted">
-                                                    <span className="font-mono">#{order.id.slice(-6)}</span>
-                                                    {order.otp && (
-                                                        <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 text-[10px] font-bold rounded border border-blue-500/30 tracking-wider">
-                                                            OTP: {order.otp}
-                                                        </span>
-                                                    )}
-                                                    <span>•</span>
-                                                    <div className="flex items-center gap-1.5">
-                                                        <Calendar size={14} />
-                                                        {formatDate(order.createdAt)}
-                                                    </div>
-                                                </div>
+                                                <span className="text-xs text-text-muted font-mono">#{order.id.slice(-6)}</span>
                                             </div>
                                         </div>
 
-                                        {/* Right Info */}
-                                        <div className="flex items-end flex-col gap-2">
-                                            <span className="text-2xl font-bold text-white">₹{order.totalAmount.toFixed(2)}</span>
-                                            <div className="flex items-center gap-2">
-                                                {order.status === 'pending' && (
-                                                    <button
-                                                        onClick={() => handleCancelOrder(order.id)}
-                                                        disabled={cancellingId === order.id}
-                                                        className="text-sm px-3 py-1.5 bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 rounded-lg transition-colors flex items-center gap-1.5"
-                                                    >
-                                                        {cancellingId === order.id ? (
-                                                            <Loader2 size={12} className="animate-spin" />
-                                                        ) : (
-                                                            <Ban size={12} />
-                                                        )}
-                                                        Cancel
-                                                    </button>
-                                                )}
+                                        <div className="text-right shrink-0">
+                                            <span className="text-lg font-bold text-white">₹{order.totalAmount.toFixed(0)}</span>
+                                        </div>
+                                    </div>
 
-                                            </div>
-                                            {/* Mark Collected Action */}
+                                    {/* Action row */}
+                                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50">
+                                        <OrderTracker status={order.status} className="!py-1" />
+
+                                        <div className="flex items-center gap-2 shrink-0 ml-3">
+                                            {order.status === 'pending' && (
+                                                <button
+                                                    onClick={() => handleCancelOrder(order.id)}
+                                                    disabled={cancellingId === order.id}
+                                                    className="text-xs px-2.5 py-1 bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 rounded-lg transition-colors flex items-center gap-1"
+                                                >
+                                                    {cancellingId === order.id ? (
+                                                        <Loader2 size={10} className="animate-spin" />
+                                                    ) : (
+                                                        <Ban size={10} />
+                                                    )}
+                                                    Cancel
+                                                </button>
+                                            )}
                                             {order.status === 'ready' && (
-                                                <div className="mt-2">
-                                                    <button
-                                                        onClick={() => handleMarkCollected(order.id)}
-                                                        className="w-full text-sm px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg shadow-green-900/20"
-                                                    >
-                                                        <CheckCircle2 size={16} />
-                                                        I have Collected this Order
-                                                    </button>
-                                                </div>
+                                                <button
+                                                    onClick={() => handleMarkCollected(order.id)}
+                                                    className="text-xs px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-colors flex items-center gap-1.5"
+                                                >
+                                                    <CheckCircle2 size={12} />
+                                                    Collected
+                                                </button>
                                             )}
                                         </div>
                                     </div>
-
-
-                                    {/* Order Tracker */}
-                                    <div className="mt-6 pt-6 border-t border-border">
-                                        <OrderTracker status={order.status} />
-                                    </div>
                                 </div>
-                            </div>
+                            </motion.div>
                         );
                     })}
-                </div>
+                </motion.div>
             ) : (
-                <div className="text-center py-20 bg-background-card/50 rounded-3xl border border-dashed border-border">
-                    <Package size={48} className="text-text-muted opacity-20 mx-auto mb-4" />
-                    <h3 className="text-lg font-bold text-white">No orders found</h3>
-                    <p className="text-text-muted mt-1 mb-6">You haven't placed any orders in this category yet.</p>
+                <div className="text-center py-12 bg-background-card/50 rounded-2xl border border-dashed border-border">
+                    <Package size={36} className="text-text-muted opacity-20 mx-auto mb-3" />
+                    <h3 className="text-base font-bold text-white">No orders found</h3>
+                    <p className="text-text-muted text-sm mt-1 mb-4">You haven't placed any orders yet.</p>
                     {filterStatus !== 'all' && (
                         <Button variant="outline" onClick={() => setFilterStatus('all')}>
                             View all orders

@@ -5,7 +5,8 @@ import {
   Settings,
   ShoppingCart,
   ChevronRight,
-  Check
+  Check,
+  Plus
 } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { PricingConfig, PrintOptions, User } from '../types';
@@ -68,7 +69,6 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
       return;
     }
 
-    // Initialize files with 0 page count. PreviewStep will parse and update this.
     const processed = newFiles.map((file) => ({
       id: Math.random().toString(36).substr(2, 9),
       file,
@@ -81,7 +81,6 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   const handleUpdatePageCount = (count: number) => {
     if (files.length > 0) {
       const lastIdx = files.length - 1;
-      // Only update if changed to avoid loops
       if (files[lastIdx].pageCount !== count) {
         setFiles(prev => {
           const newFiles = [...prev];
@@ -97,61 +96,46 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
   };
 
   const handleAddToCart = () => {
-    if (files.length === 0) {
-      return;
-    }
-
-    // Basic validation for page count
-    if (files.some(f => f.pageCount === 0)) {
-      // In a real app we might show a toast, but here we can just warn or proceed
-      // If proceeding with 0, price might be 0.
-      console.warn("Some files have 0 pages detected.");
-    }
-
+    if (files.length === 0) return;
     addToCartPrint(files, printOptions, pricing);
-    // Reset Flow
     setFiles([]);
     setStep(0);
     setPrintOptions(DEFAULT_OPTIONS);
   };
 
-  // Responsive Logic
-  const isDesktop = window.innerWidth >= 1024; // Simple check
-
-  // Desktop: Compact Layout
   return (
-    <div className="h-full flex flex-col lg:flex-row gap-6 animate-fade-in px-4 lg:px-0 overflow-hidden">
-
+    <div className="h-full flex flex-col lg:flex-row gap-6 animate-in px-4 lg:px-0 overflow-hidden">
       {/* Mobile Stepper Header */}
-      <div className="lg:hidden flex items-center justify-between mb-2">
+      <div className="lg:hidden flex items-center justify-between mb-8 px-2 bg-white/[0.02] p-4 rounded-3xl border border-white/[0.05]">
         {[0, 1, 2].map((s) => (
-          <div key={s} className="flex items-center">
+          <div key={s} className="flex flex-1 items-center last:flex-none">
             <div className={cn(
-              "size-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300",
+              "size-10 rounded-2xl flex items-center justify-center text-sm font-black transition-all duration-500",
               step === s
-                ? "bg-white text-black scale-110 shadow-glow-white"
+                ? "bg-white text-black scale-110 shadow-glow-primary"
                 : step > s
-                  ? "bg-green-500 text-black"
-                  : "bg-background-card border border-border text-text-muted"
+                  ? "bg-green-500 text-black shadow-[0_0_15px_rgba(34,197,94,0.3)]"
+                  : "bg-white/[0.03] border border-white/10 text-text-muted"
             )}>
-              {step > s ? <Check size={14} /> : s + 1}
+              {step > s ? <Check size={18} strokeWidth={3} /> : s + 1}
             </div>
             {s < 2 && (
-              <div className={cn(
-                "h-0.5 w-12 mx-2 transition-colors duration-300",
-                step > s ? "bg-green-500" : "bg-border"
-              )} />
+              <div className="flex-1 h-[2px] mx-3 bg-white/[0.03] overflow-hidden rounded-full">
+                <div className={cn(
+                  "h-full transition-all duration-700 ease-out",
+                  step > s ? "w-full bg-green-500" : "w-0"
+                )} />
+              </div>
             )}
           </div>
         ))}
       </div>
 
       {/* Desktop: Streamlined 2-Panel Layout */}
-      <div className="hidden lg:grid grid-cols-12 gap-8 w-full h-full max-h-[calc(100vh-160px)]">
-
-        {/* Panel 1: Upload & File List (Col 5) */}
-        <div className="col-span-5 flex flex-col gap-6 overflow-hidden">
-          <div className="flex-1 overflow-y-auto pr-4 no-scrollbar">
+      <div className="hidden lg:grid grid-cols-12 gap-10 w-full h-full max-h-[calc(100vh-140px)]">
+        {/* Panel 1: Upload & File List */}
+        <div className="col-span-5 flex flex-col gap-8 overflow-hidden">
+          <div className="flex-1 overflow-y-auto pr-6 no-scrollbar">
             <UploadStep
               files={files}
               onFilesAdded={handleFilesAdded}
@@ -159,7 +143,6 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               onNext={() => { }}
             />
           </div>
-          {/* Hidden Preview for analysis only if desktop */}
           <div className="hidden">
             {files.length > 0 && (
               <PreviewStep
@@ -172,9 +155,13 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
           </div>
         </div>
 
-        {/* Panel 2: Settings & Total (Col 7) */}
-        <div className="col-span-7 flex flex-col gap-6 bg-background-card border border-border rounded-3xl p-8 relative overflow-hidden">
-          <div className="flex-1 overflow-y-auto no-scrollbar">
+        {/* Panel 2: Settings & Total */}
+        <div className="col-span-7 flex flex-col bg-white/[0.02] border border-white/[0.05] rounded-[40px] p-10 relative overflow-hidden shadow-2xl">
+          <div className="absolute top-0 right-0 p-8 opacity-10">
+            <Settings size={120} />
+          </div>
+
+          <div className="flex-1 overflow-y-auto no-scrollbar relative z-10">
             <SettingsStep
               options={printOptions}
               onChange={setPrintOptions}
@@ -183,25 +170,30 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
             />
           </div>
 
-          <div className="mt-auto pt-6 border-t border-border flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-xs text-text-muted uppercase font-bold tracking-widest">Total Estimated Cost</p>
-                <p className="text-3xl font-black text-white">₹{totalPrice.toFixed(0)}</p>
+          <div className="mt-10 pt-10 border-t border-white/[0.05] flex flex-col gap-6 relative z-10">
+            <div className="flex items-end justify-between">
+              <div className="space-y-2">
+                <p className="text-[10px] text-text-muted uppercase font-black tracking-[0.2em]">Total Estimated Cost</p>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-4xl font-black text-white font-display">₹{totalPrice.toFixed(0)}</span>
+                  <span className="text-xs text-text-muted font-bold">INR</span>
+                </div>
               </div>
               <div className="flex flex-col items-end text-right">
-                <p className="text-xs text-text-muted font-medium">{files.length} document{files.length !== 1 ? 's' : ''}</p>
-                <p className="text-xs text-text-muted font-medium">
-                  {files.reduce((acc, f) => acc + f.pageCount, 0)} total pages
-                </p>
+                <div className="flex items-center gap-2 bg-white/[0.03] px-3 py-1.5 rounded-full border border-white/5 mb-2">
+                  <FileText size={12} className="text-primary" />
+                  <span className="text-[11px] text-white font-bold">{files.reduce((acc, f) => acc + f.pageCount, 0)} pages</span>
+                </div>
+                <p className="text-[10px] text-text-muted font-black uppercase tracking-widest">{files.length} document{files.length !== 1 ? 's' : ''}</p>
               </div>
             </div>
             <Button
               onClick={handleAddToCart}
               disabled={files.length === 0 || files.some(f => f.pageCount === 0)}
-              className="w-full h-14 text-xl font-black bg-white text-black hover:bg-white/90 shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-all active:scale-[0.98]"
+              className="w-full h-16 text-xl bg-white text-black hover:bg-white/90 shadow-glow-primary transition-all active:scale-[0.98] rounded-3xl"
             >
               Add to Cart
+              <Plus size={24} className="ml-2" />
             </Button>
           </div>
         </div>
@@ -209,34 +201,35 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
 
       {/* Mobile: Stepper Views */}
       <div className="lg:hidden flex-1 pb-32">
-        {step === 0 && (
-          <UploadStep
-            files={files}
-            onFilesAdded={handleFilesAdded}
-            onFileRemove={handleRemoveFile}
-            onNext={() => setStep(1)}
-          />
-        )}
+        <div className="animate-in">
+          {step === 0 && (
+            <UploadStep
+              files={files}
+              onFilesAdded={handleFilesAdded}
+              onFileRemove={handleRemoveFile}
+              onNext={() => setStep(1)}
+            />
+          )}
 
-        {step === 1 && (
-          <SettingsStep
-            options={printOptions}
-            onChange={setPrintOptions}
-            totalPrice={totalPrice}
-            onNext={() => setStep(2)}
-          />
-        )}
+          {step === 1 && (
+            <SettingsStep
+              options={printOptions}
+              onChange={setPrintOptions}
+              totalPrice={totalPrice}
+              onNext={() => setStep(2)}
+            />
+          )}
 
-        {step === 2 && (
-          <PreviewStep
-            file={files.length > 0 ? files[files.length - 1].file : null}
-            totalPrice={totalPrice}
-            onAddToCart={handleAddToCart}
-            onPageCountChange={handleUpdatePageCount}
-          />
-        )}
+          {step === 2 && (
+            <PreviewStep
+              file={files.length > 0 ? files[files.length - 1].file : null}
+              totalPrice={totalPrice}
+              onAddToCart={handleAddToCart}
+              onPageCountChange={handleUpdatePageCount}
+            />
+          )}
+        </div>
       </div>
-
     </div>
   );
 };

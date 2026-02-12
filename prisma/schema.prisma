@@ -6,8 +6,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum Role {
@@ -49,8 +50,6 @@ model Shop {
   users          User[]
   orders         Order[]
   products       Product[]
-  services       Service[]
-  inventory      InventoryItem[]
 }
 
 // ===== USERS =====
@@ -85,50 +84,20 @@ model Product {
   
   shopId      String?
   shop        Shop?    @relation(fields: [shopId], references: [id])
-  orderItems  OrderItem[]
 }
 
-// ===== SERVICES =====
-model Service {
-  id          String   @id @default(cuid())
-  name        String
-  description String
-  category    String
-  basePrice   Float
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  shopId      String?
-  shop        Shop?    @relation(fields: [shopId], references: [id])
-  variants    ServiceVariant[]
-  orderItems  OrderItem[]
-}
-
-model ServiceVariant {
-  id        String   @id @default(cuid())
-  name      String
-  price     Float
-  serviceId String
-  service   Service  @relation(fields: [serviceId], references: [id])
-}
-
-// ===== ORDERS =====
+// ===== ORDERS (items stored as JSONB — no separate OrderItem table) =====
 model Order {
   id            String        @id @default(cuid())
   orderToken    String        @unique @default(cuid())
   totalAmount   Float
   status        OrderStatus   @default(PENDING)
   paymentStatus PaymentStatus @default(UNPAID)
-  fileName      String?
-  pageCount     Int?
-  copies        Int?
-  paperSize     String?
-  colorMode     String?
-  sides         String?
-  binding       String?
   userEmail     String?
   userName      String?
+  items         Json          @default("[]") // JSONB array of cart items
+  isDeleted     Boolean       @default(false)
+  deletedAt     DateTime?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   
@@ -136,41 +105,30 @@ model Order {
   user          User?         @relation(fields: [userId], references: [id])
   shopId        String?
   shop          Shop?         @relation(fields: [shopId], references: [id])
-  items         OrderItem[]
 }
 
-model OrderItem {
-  id          String   @id @default(cuid())
-  orderId     String
-  order       Order    @relation(fields: [orderId], references: [id])
-  
-  // Type discriminator
-  type        String   @default("product") // 'product' | 'print' | 'service'
-
-  // Product/Service Link
-  productId   String?
-  product     Product? @relation(fields: [productId], references: [id])
-  serviceId   String?
-  service     Service? @relation(fields: [serviceId], references: [id])
-  
-  // Print Job Details
-  fileUrl     String?
-  fileName    String?
-  printConfig Json?    // Stores PrintOptions, pageCount, etc.
-  
-  quantity    Int
-  price       Float
-  details     Json?    // Generic details/metadata
-}
-
-// ===== INVENTORY =====
-model InventoryItem {
-  id        String @id @default(cuid())
+// ===== INVENTORY (print shop supplies) =====
+model Inventory {
+  id        String   @id @default(cuid())
   name      String
-  stock     Int
-  unit      String
-  threshold Int
+  stock     Int      @default(0)
+  unit      String   @default("pieces")
+  threshold Int      @default(10)
+  shopId    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   
-  shopId    String
-  shop      Shop   @relation(fields: [shopId], references: [id])
+  logs      StockLog[]
+}
+
+// ===== STOCK LOG (audit trail for inventory changes) =====
+model StockLog {
+  id          String    @id @default(cuid())
+  amount      Int       // positive = added, negative = removed
+  note        String    @default("")
+  createdBy   String    @default("")
+  createdAt   DateTime  @default(now())
+  
+  inventoryId String
+  inventory   Inventory @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
 }

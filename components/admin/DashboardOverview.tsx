@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '../ui/Icon';
-import { fetchOrders } from '../../services/data';
+import { fetchAllOrdersForAnalytics, fetchInventory, InventoryRow } from '../../services/data';
 import { Order } from '../../types';
 import {
     AreaChart,
@@ -11,16 +11,21 @@ import {
     Tooltip
 } from 'recharts';
 
-// Mini chart data (Static for now, hard to aggregate real-time cleanly without backend grouping)
-const revenueData = [
-    { day: 'M', value: 0 },
-    { day: 'T', value: 0 },
-    { day: 'W', value: 0 },
-    { day: 'T', value: 0 },
-    { day: 'F', value: 0 },
-    { day: 'S', value: 0 },
-    { day: 'S', value: 0 },
-];
+// Generate weekly revenue data from real orders
+const generateWeeklyRevenue = (orders: Order[]) => {
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const dayMap = new Map<string, number>();
+    days.forEach(d => dayMap.set(d, 0));
+
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    orders.forEach(order => {
+        const date = new Date(order.createdAt);
+        const dayName = dayNames[date.getDay()];
+        dayMap.set(dayName, (dayMap.get(dayName) || 0) + order.totalAmount);
+    });
+
+    return days.map(day => ({ day, value: dayMap.get(day) || 0 }));
+};
 
 interface DashboardOverviewProps {
     onNavigate: (section: string) => void;
@@ -28,13 +33,18 @@ interface DashboardOverviewProps {
 
 export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate }) => {
     const [orders, setOrders] = useState<Order[]>([]);
+    const [inventory, setInventory] = useState<InventoryRow[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const loadData = async () => {
             try {
-                const data = await fetchOrders();
-                setOrders(data);
+                const [orderData, invData] = await Promise.all([
+                    fetchAllOrdersForAnalytics(),
+                    fetchInventory(),
+                ]);
+                setOrders(orderData);
+                setInventory(invData);
             } catch (e) {
                 console.error('Failed to load dashboard data:', e);
             } finally {
@@ -44,7 +54,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
         loadData();
     }, []);
 
-    const pendingOrders = orders.filter(o => o.status === 'confirmed');
+    const pendingOrders = orders.filter(o => ['pending', 'confirmed'].includes(o.status));
     const printingOrders = orders.filter(o => o.status === 'printing');
     const completedToday = orders.filter(o => o.status === 'completed' && new Date(o.updatedAt).toDateString() === new Date().toDateString());
 
@@ -54,6 +64,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
         .reduce((sum, o) => sum + o.totalAmount, 0);
 
     const totalRevenue = orders.reduce((sum, o) => sum + o.totalAmount, 0);
+    const revenueData = generateWeeklyRevenue(orders);
 
     return (
         <div className="space-y-6">
@@ -135,21 +146,77 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
                             <p className="text-sm text-green-600 dark:text-green-400">Synced from Database</p>
                         </div>
                     </div>
-                    <div className="h-48 flex items-center justify-center text-slate-500">
-                        {/* Chart disabled as real historical data isn't easily aggregatable on client side without expensive ops */}
-                        <p>Chart requires historical data aggregation</p>
+                    <div className="h-48" style={{ minWidth: 0 }}>
+                        {!loading && <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={revenueData} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
+                                <defs>
+                                    <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
+                                        <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} tickFormatter={(v) => `₹${v}`} />
+                                <Tooltip
+                                    contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#fff' }}
+                                    formatter={(value: number) => [`₹${value.toLocaleString()}`, 'Revenue']}
+                                />
+                                <Area type="monotone" dataKey="value" stroke="#22c55e" strokeWidth={2} fill="url(#revenueGradient)" />
+                            </AreaChart>
+                        </ResponsiveContainer>}
                     </div>
                 </div>
 
-                {/* Quick Actions */}
-                <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-6">
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Quick Actions</h3>
-                    <div className="space-y-3">
-                        <QuickAction icon="print" label="Manage Orders" color="bg-blue-500" onClick={() => onNavigate('orders')} />
-                        <QuickAction icon="inventory_2" label="Check Inventory" color="bg-purple-500" onClick={() => onNavigate('inventory')} />
-                        <QuickAction icon="people" label="Customers" color="bg-green-500" onClick={() => onNavigate('customers')} />
-                        <QuickAction icon="settings" label="Platform Settings" color="bg-slate-500" onClick={() => onNavigate('settings')} />
+                {/* Quick Actions + Inventory Status */}
+                <div className="space-y-6">
+                    <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-6">
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Quick Actions</h3>
+                        <div className="space-y-3">
+                            <QuickAction icon="print" label="Manage Orders" color="bg-blue-500" onClick={() => onNavigate('orders')} />
+                            <QuickAction icon="inventory_2" label="Add Products" color="bg-amber-500" onClick={() => onNavigate('products')} />
+                            <QuickAction icon="warehouse" label="Check Inventory" color="bg-purple-500" onClick={() => onNavigate('inventory')} />
+                            <QuickAction icon="attach_money" label="Update Pricing" color="bg-green-500" onClick={() => onNavigate('pricing')} />
+                            <QuickAction icon="settings" label="Settings" color="bg-slate-500" onClick={() => onNavigate('settings')} />
+                        </div>
                     </div>
+
+                    {/* Inventory Status Widget */}
+                    {inventory.length > 0 && (
+                        <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Stock Status</h3>
+                                <button
+                                    onClick={() => onNavigate('inventory')}
+                                    className="text-xs text-blue-600 dark:text-blue-400 font-medium hover:underline"
+                                >
+                                    View All
+                                </button>
+                            </div>
+                            <div className="space-y-3">
+                                {inventory
+                                    .filter(i => i.stock <= i.threshold)
+                                    .slice(0, 4)
+                                    .map(item => {
+                                        const isCritical = item.stock <= item.threshold * 0.3;
+                                        return (
+                                            <div key={item.id} className="flex items-center gap-3">
+                                                <div className={`size-2 rounded-full ${isCritical ? 'bg-red-500' : 'bg-yellow-500'}`} />
+                                                <span className="text-sm text-slate-700 dark:text-slate-300 flex-1 truncate">{item.name}</span>
+                                                <span className={`text-xs font-bold ${isCritical ? 'text-red-600 dark:text-red-400' : 'text-yellow-600 dark:text-yellow-400'}`}>
+                                                    {item.stock} {item.unit}
+                                                </span>
+                                            </div>
+                                        );
+                                    })}
+                                {inventory.filter(i => i.stock <= i.threshold).length === 0 && (
+                                    <p className="text-sm text-green-600 dark:text-green-400 flex items-center gap-2">
+                                        <Icon name="check_circle" className="text-base" />
+                                        All stock levels healthy
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -183,11 +250,16 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-4">
-                                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${order.status === 'confirmed'
-                                        ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-                                        : order.status === 'printing'
-                                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-                                            : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                        order.status === 'pending'
+                                            ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400'
+                                            : order.status === 'confirmed'
+                                                ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                                                : order.status === 'printing'
+                                                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                                                    : order.status === 'cancelled'
+                                                        ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                                                        : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
                                         }`}>
                                         {order.status}
                                     </span>

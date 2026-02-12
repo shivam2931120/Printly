@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AdminSidebar } from './AdminSidebar';
 import { Icon } from '../ui/Icon';
+import { NotificationDropdown } from '../layout/NotificationDropdown';
 
 interface AdminLayoutProps {
     children: React.ReactNode;
@@ -8,6 +9,7 @@ interface AdminLayoutProps {
     onSectionChange: (section: string) => void;
     adminAvatar?: string | null;
     adminName?: string;
+    onSignOut?: () => void;
 }
 
 export const AdminLayout: React.FC<AdminLayoutProps> = ({
@@ -15,7 +17,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
     activeSection,
     onSectionChange,
     adminAvatar,
-    adminName = 'Admin'
+    adminName = 'Admin',
+    onSignOut
 }) => {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -31,6 +34,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
                     onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
                     adminAvatar={adminAvatar}
                     adminName={adminName}
+                    onSignOut={onSignOut}
                 />
             </div>
 
@@ -55,6 +59,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
                     }}
                     adminAvatar={adminAvatar}
                     adminName={adminName}
+                    onSignOut={onSignOut}
                 />
             </div>
 
@@ -96,10 +101,9 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
                             </div>
 
                             {/* Notifications */}
-                            <button className="relative p-2 rounded-lg text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                                <Icon name="notifications" className="text-xl" />
-                                <span className="absolute top-1.5 right-1.5 size-2 bg-red-500 rounded-full" />
-                            </button>
+                            <div className="text-slate-900 dark:text-white">
+                                <NotificationDropdown />
+                            </div>
 
                             {/* Mobile User Avatar */}
                             <div className="lg:hidden">

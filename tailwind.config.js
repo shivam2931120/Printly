@@ -11,16 +11,20 @@ export default {
         extend: {
             colors: {
                 background: {
-                    DEFAULT: '#050505', // True Black
+                    DEFAULT: '#050505',
                     card: '#141414',
                     subtle: '#0E0E0E',
-                    dark: '#0A0A0A', // Added for auth inputs
-                    darker: '#020202', // Added for auth page bg
+                    dark: '#0A0A0A',
+                    darker: '#020202',
+                },
+                foreground: {
+                    DEFAULT: '#FFFFFF',
+                    muted: '#A0A0A0',
                 },
                 border: {
                     DEFAULT: '#242424',
                     subtle: '#1A1A1A',
-                    dark: '#2A2A2A', // Added for auth inputs
+                    dark: '#2A2A2A',
                 },
                 text: {
                     primary: '#FFFFFF',
@@ -32,16 +36,28 @@ export default {
                     hover: '#E5E5E5',
                     foreground: '#000000',
                 },
-                // Maintaining semantic aliases for compatibility but mapping to new theme
                 primary: {
                     DEFAULT: '#FFFFFF',
                     foreground: '#000000',
                     hover: '#E5E5E5',
                 },
                 surface: {
-                    light: '#FFFFFF', // Keeping for potential light mode legacy, though we are strict dark
+                    light: '#FFFFFF',
                     dark: '#141414',
                     darker: '#050505',
+                },
+                // Shadcn/UI alias mapping for index.css cleanup
+                popover: {
+                    DEFAULT: '#0C0C0C',
+                    foreground: '#FFFFFF',
+                },
+                muted: {
+                    DEFAULT: '#1E1E1E',
+                    foreground: '#A0A0A0',
+                },
+                card: {
+                    DEFAULT: '#0C0C0C',
+                    foreground: '#FFFFFF',
                 },
                 // Functional colors
                 success: '#22C55E',
@@ -50,7 +66,7 @@ export default {
             },
             fontFamily: {
                 sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-                display: ['Source Sans 3', 'Inter', 'ui-sans-serif', 'system-ui'],
+                display: ['Outfit', 'Inter', 'ui-sans-serif', 'system-ui'],
                 mono: ['JetBrains Mono', 'monospace'],
             },
             borderRadius: {

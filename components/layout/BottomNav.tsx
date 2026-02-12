@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Upload, Store, Receipt, UserCircle, ShoppingBag } from 'lucide-react';
+import { Upload, Store, Receipt, UserCircle, ShoppingBag, LayoutDashboard, Code } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useCartStore } from '../../store/useCartStore';
 
@@ -25,6 +25,12 @@ export const BottomNav: React.FC<BottomNavProps> = ({ user }) => {
             { name: 'Orders', path: '/my-orders', icon: Receipt },
             { name: 'Profile', path: '/profile', icon: UserCircle }
         );
+
+        if (user.isDeveloper) {
+            links.push({ name: 'Dev', path: '/developer', icon: Code });
+        } else if (user.isAdmin) {
+            links.push({ name: 'Admin', path: '/admin', icon: LayoutDashboard });
+        }
     }
 
     return (
@@ -37,8 +43,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({ user }) => {
                             key={link.path}
                             to={link.path}
                             className={({ isActive }) => cn(
-                                "flex flex-col items-center gap-1 p-2 rounded-xl transition-all",
-                                isActive ? "text-white" : "text-text-muted hover:text-white"
+                                "flex flex-col items-center gap-1 p-2 rounded-xl transition-all duration-200 active:scale-95",
+                                isActive ? "text-white bg-white/[0.06]" : "text-text-muted hover:text-white"
                             )}
                         >
                             <Icon size={22} strokeWidth={2} />
@@ -51,7 +57,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ user }) => {
                 {user && (
                     <button
                         onClick={() => toggleCart(true)}
-                        className="flex flex-col items-center gap-1 p-2 rounded-xl text-text-muted hover:text-white relative group"
+                        className="flex flex-col items-center gap-1 p-2 rounded-xl text-text-muted hover:text-white relative group transition-all duration-200 active:scale-95"
                     >
                         <div className="relative">
                             <ShoppingBag size={22} strokeWidth={2} />
