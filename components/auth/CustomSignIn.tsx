@@ -34,21 +34,25 @@ export const CustomSignIn = () => {
                 }
             } else {
                 const authUserId = data.user?.id;
+                const authEmail = data.user?.email;
 
                 if (!authUserId) {
                     navigate('/');
                     return;
                 }
 
+                // Look up User row by authId
+                let resolvedRole = 'USER';
                 const { data: authIdRecord } = await supabase
                     .from('User')
                     .select('id, role')
                     .eq('authId', authUserId)
                     .maybeSingle();
 
-                let resolvedRole = normalizeRole(authIdRecord?.role);
-
-                if (!authIdRecord) {
+                if (authIdRecord) {
+                    resolvedRole = authIdRecord.role || 'USER';
+                } else {
+                    // Try by email and backfill authId
                     const { data: emailRecord } = await supabase
                         .from('User')
                         .select('id, role')
@@ -56,18 +60,38 @@ export const CustomSignIn = () => {
                         .maybeSingle();
 
                     if (emailRecord?.id) {
-                        resolvedRole = normalizeRole(emailRecord.role);
-
+                        resolvedRole = emailRecord.role || 'USER';
                         await supabase
                             .from('User')
                             .update({ authId: authUserId })
                             .eq('id', emailRecord.id);
+                    } else {
+                        // No User row at all — auto-create one
+                        // Prisma @default(cuid()) is client-side only, must provide id
+                        const userName = data.user?.user_metadata?.name || data.user?.user_metadata?.full_name || authEmail?.split('@')[0] || 'User';
+                        const { data: newUser, error: insertErr } = await supabase
+                            .from('User')
+                            .insert({
+                                id: crypto.randomUUID(),
+                                authId: authUserId,
+                                email: authEmail || email,
+                                name: userName,
+                                role: 'USER',
+                            })
+                            .select('id, role')
+                            .single();
+                        if (insertErr) {
+                            console.warn('[SignIn] Auto-insert failed:', insertErr.message);
+                        }
+                        if (newUser) resolvedRole = newUser.role || 'USER';
                     }
                 }
 
-                if (hasDeveloperAccess(resolvedRole)) {
+                const normalizedRole = normalizeRole(resolvedRole);
+
+                if (hasDeveloperAccess(normalizedRole)) {
                     navigate('/developer');
-                } else if (hasAdminAccess(resolvedRole)) {
+                } else if (hasAdminAccess(normalizedRole)) {
                     navigate('/admin');
                 } else {
                     navigate('/');

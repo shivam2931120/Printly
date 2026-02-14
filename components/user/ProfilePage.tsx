@@ -1,5 +1,5 @@
 import React from 'react';
-import { User as UserIcon, Shield, LogOut, Package, HelpCircle, LogIn, AlertTriangle, ArrowRight } from 'lucide-react';
+import { User as UserIcon, Shield, LogOut, Package, HelpCircle, LogIn, AlertTriangle, ArrowRight, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/Button';
 import { useNavigate } from 'react-router-dom';
@@ -120,6 +120,29 @@ export const ProfilePage: React.FC = () => {
                     )}
                 </div>
             </div>
+
+            {/* Dashboard shortcut for admin/developer */}
+            {(user.isDeveloper || user.isAdmin) && (
+                <button
+                    onClick={() => navigate(user.isDeveloper ? '/developer' : '/admin')}
+                    className="w-full flex items-center justify-between p-5 bg-blue-500/10 border border-blue-500/20 rounded-[28px] hover:bg-blue-500/15 transition-all group"
+                >
+                    <div className="flex items-center gap-4">
+                        <div className="size-12 rounded-2xl bg-blue-500/20 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform">
+                            <LayoutDashboard size={24} />
+                        </div>
+                        <div className="text-left">
+                            <p className="font-black text-white text-sm uppercase tracking-wider">
+                                {user.isDeveloper ? 'Developer' : 'Admin'} Dashboard
+                            </p>
+                            <p className="text-[10px] text-blue-400/60 font-bold uppercase tracking-widest mt-0.5">
+                                Manage your shop
+                            </p>
+                        </div>
+                    </div>
+                    <ArrowRight className="w-5 h-5 text-blue-400 opacity-40 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                </button>
+            )}
 
             {/* Quick Actions */}
             <div className="grid grid-cols-2 gap-4">

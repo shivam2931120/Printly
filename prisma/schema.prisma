@@ -50,6 +50,7 @@ model Shop {
   users          User[]
   orders         Order[]
   products       Product[]
+  dailyStats     DailyStats[]
 }
 
 // ===== USERS =====
@@ -131,4 +132,22 @@ model StockLog {
   
   inventoryId String
   inventory   Inventory @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+}
+
+// ===== DAILY STATS (persisted analytics — survives order deletion) =====
+model DailyStats {
+  id              String   @id @default(cuid())
+  date            DateTime @unique @db.Date
+  revenue         Float    @default(0)
+  orderCount      Int      @default(0)
+  printJobs       Int      @default(0)
+  productSales    Int      @default(0)
+  avgOrderValue   Float    @default(0)
+  uniqueCustomers Int      @default(0)
+  bwPages         Int      @default(0)
+  colorPages      Int      @default(0)
+  shopId          String?
+  shop            Shop?    @relation(fields: [shopId], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }

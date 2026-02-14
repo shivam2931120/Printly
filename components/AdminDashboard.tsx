@@ -3,6 +3,7 @@ import { AdminLayout } from './admin/AdminLayout';
 import { DashboardOverview } from './admin/DashboardOverview';
 import { OrdersPanel } from './admin/OrdersPanel';
 import { InventoryPanel } from './admin/InventoryPanel';
+import { AnalyticsDashboard } from './admin/AnalyticsDashboard';
 import { ProductManagement } from './admin/ProductManagement';
 import { PricingSettings } from './admin/PricingSettings';
 import { ShopSettings } from './admin/ShopSettings';
@@ -43,6 +44,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         return <DashboardOverview onNavigate={(section) => setActiveSection(section)} />;
       case 'orders':
         return <OrdersPanel currentUserId={currentUser?.id || ''} />;
+      case 'analytics':
+        return <AnalyticsDashboard />;
       case 'products':
         return <ProductManagement />;
       case 'pricing':

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 import { supabase } from '../services/supabase';
 import type { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import type { User } from '../types';
@@ -24,111 +24,132 @@ const AuthContext = createContext<AuthState>({
 
 export const useAuth = () => useContext(AuthContext);
 
+/** Map a DB row → app User */
+function mapDbUser(dbUser: any, authUser: SupabaseUser): User {
+    const role = normalizeRole(dbUser?.role || authUser.user_metadata?.role || authUser.app_metadata?.role);
+    return {
+        id: dbUser.id,
+        authId: authUser.id,
+        email: dbUser.email || authUser.email || '',
+        name: dbUser.name || authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
+        avatar: dbUser.avatar || authUser.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(dbUser.name || 'U')}&background=random`,
+        isAdmin: hasAdminAccess(role) || dbUser.isAdmin === true,
+        isDeveloper: hasDeveloperAccess(role) || dbUser.isDeveloper === true,
+    };
+}
+
+/** Fallback user when DB is unreachable */
+function getFallbackUser(authUser: SupabaseUser): User {
+    const role = normalizeRole(authUser.user_metadata?.role || authUser.app_metadata?.role);
+    return {
+        id: `temp_${authUser.id}`,
+        authId: authUser.id,
+        email: authUser.email || '',
+        name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
+        avatar: authUser.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(authUser.email?.split('@')[0] || 'U')}&background=random`,
+        isAdmin: hasAdminAccess(role),
+        isDeveloper: hasDeveloperAccess(role),
+    };
+}
+
+/** Supabase query with timeout — never hangs */
+async function queryWithTimeout<T>(
+    queryFn: () => PromiseLike<{ data: T | null; error: any }>,
+    ms = 8000
+): Promise<{ data: T | null; error: any }> {
+    const timeout = new Promise<{ data: null; error: any }>((resolve) =>
+        setTimeout(() => resolve({ data: null, error: { message: 'Query timeout', code: 'TIMEOUT' } }), ms)
+    );
+    return Promise.race([queryFn(), timeout]);
+}
+
+/** Fetch User row from DB: by authId → email → auto-create */
+async function fetchUserRecord(authUser: SupabaseUser): Promise<User> {
+    try {
+        // 1. By authId
+        const { data: records, error: e1 } = await queryWithTimeout(() =>
+            supabase.from('User').select('*').eq('authId', authUser.id)
+        );
+
+        if (e1 && e1.code !== 'TIMEOUT') console.warn('[Auth] authId lookup error:', e1.message);
+        if (records && Array.isArray(records) && records.length > 0) {
+            return mapDbUser(records[0], authUser);
+        }
+
+        // 2. By email — backfill authId
+        if (authUser.email) {
+            const { data: emailRecords } = await queryWithTimeout(() =>
+                supabase.from('User').select('*').eq('email', authUser.email!)
+            );
+
+            if (emailRecords && Array.isArray(emailRecords) && emailRecords.length > 0) {
+                const legacy = emailRecords[0];
+                supabase.from('User').update({ authId: authUser.id }).eq('id', legacy.id).then(() => {}); // fire-and-forget
+                return mapDbUser({ ...legacy, authId: authUser.id }, authUser);
+            }
+        }
+
+        // 3. Auto-create
+        const { data: inserted, error: insertErr } = await queryWithTimeout(() =>
+            supabase.from('User').insert({
+                id: crypto.randomUUID(),
+                authId: authUser.id,
+                email: authUser.email || '',
+                name: authUser.user_metadata?.name || authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'User',
+                avatar: authUser.user_metadata?.avatar_url || null,
+                role: 'USER',
+            }).select().single()
+        );
+
+        if (inserted && !insertErr) {
+            return mapDbUser(inserted, authUser);
+        }
+
+        // Retry lookups on conflict
+        if (insertErr) {
+            const { data: retry } = await queryWithTimeout(() =>
+                supabase.from('User').select('*').eq('authId', authUser.id).maybeSingle()
+            );
+            if (retry) return mapDbUser(retry, authUser);
+        }
+
+        return getFallbackUser(authUser);
+    } catch (err: any) {
+        // AbortError is harmless — StrictMode double-mount or navigation
+        if (err?.name === 'AbortError') {
+            console.log('[Auth] Request aborted (harmless)');
+        } else {
+            console.error('[Auth] fetchUserRecord error:', err);
+        }
+        return getFallbackUser(authUser);
+    }
+}
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [session, setSession] = useState<Session | null>(null);
     const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
     const [appUser, setAppUser] = useState<User | null>(null);
     const [isLoaded, setIsLoaded] = useState(false);
+    const resolveRef = useRef(0);
 
-    /**
-     * Map database user record to application User type
-     */
-    const mapDbUser = (dbUser: any, authUser: SupabaseUser): User => {
-        const role = normalizeRole(dbUser?.role || authUser.user_metadata?.role || authUser.app_metadata?.role);
-
-        return {
-            id: dbUser.id,
-            authId: authUser.id,
-            email: dbUser.email || authUser.email || '',
-            name: dbUser.name || authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
-            avatar: dbUser.avatar || authUser.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(dbUser.name || 'U')}&background=random`,
-            isAdmin: hasAdminAccess(role) || dbUser.isAdmin === true,
-            isDeveloper: hasDeveloperAccess(role) || dbUser.isDeveloper === true,
-        };
-    };
-
-    /**
-     * Create a fallback "Minimal User" if DB fetch fails
-     */
-    const getFallbackUser = (authUser: SupabaseUser): User => {
-        const role = normalizeRole(authUser.user_metadata?.role || authUser.app_metadata?.role);
-
-        return {
-            id: `temp_${authUser.id}`,
-            authId: authUser.id,
-            email: authUser.email || '',
-            name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
-            avatar: authUser.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(authUser.email?.split('@')[0] || 'U')}&background=random`,
-            isAdmin: hasAdminAccess(role),
-            isDeveloper: hasDeveloperAccess(role),
-        };
-    };
-
-    const fetchUserRecord = async (authUser: SupabaseUser): Promise<User> => {
-        try {
-            const { data: records } = await supabase
-                .from('User')
-                .select('*')
-                .eq('authId', authUser.id);
-
-            if (records && records.length > 0) {
-                return mapDbUser(records[0], authUser);
+    const resolveAppUser = useCallback(async (authUser: SupabaseUser) => {
+        const seq = ++resolveRef.current;
+        const user = await fetchUserRecord(authUser);
+        if (seq !== resolveRef.current) return; // stale
+        setAppUser(prev => {
+            if (prev && (prev.isDeveloper || prev.isAdmin) && !user.isDeveloper && !user.isAdmin && user.id.startsWith('temp_')) {
+                return prev; // never downgrade privileged user to fallback
             }
-
-            if (authUser.email) {
-                const { data: emailRecords } = await supabase
-                    .from('User')
-                    .select('*')
-                    .eq('email', authUser.email);
-
-                if (emailRecords && emailRecords.length > 0) {
-                    const legacyUser = emailRecords[0];
-
-                    await supabase
-                        .from('User')
-                        .update({ authId: authUser.id })
-                        .eq('id', legacyUser.id);
-
-                    return mapDbUser({ ...legacyUser, authId: authUser.id }, authUser);
-                }
-            }
-
-            return getFallbackUser(authUser);
-        } catch (err) {
-            return getFallbackUser(authUser);
-        }
-    };
+            return user;
+        });
+    }, []);
 
     useEffect(() => {
         let mounted = true;
 
-        const initialize = async () => {
-            try {
-                const { data: { session: s } } = await supabase.auth.getSession();
-                if (!mounted) return;
-
-                setSession(s);
-                setSupabaseUser(s?.user ?? null);
-
-                if (s?.user) {
-                    // Set fallback immediately so app is usable
-                    const fallback = getFallbackUser(s.user);
-                    setAppUser(fallback);
-                    // Fetch real profile in background
-                    fetchUserRecord(s.user).then(u => {
-                        if (mounted) setAppUser(u);
-                    });
-                }
-
-                setIsLoaded(true);
-            } catch (err) {
-                console.error('[Auth] Init Error:', err);
-                if (mounted) setIsLoaded(true);
-            }
-        };
-
-        initialize();
-
+        // Use ONLY onAuthStateChange — it fires INITIAL_SESSION first,
+        // then SIGNED_IN / SIGNED_OUT / TOKEN_REFRESHED.
+        // No separate getSession() call → no AbortError from StrictMode double-mount.
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, s) => {
             if (!mounted) return;
 
@@ -136,24 +157,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setSupabaseUser(s?.user ?? null);
 
             if (s?.user) {
-                const fallback = getFallbackUser(s.user);
-                setAppUser(fallback);
-                fetchUserRecord(s.user).then(u => {
-                    if (mounted) setAppUser(u);
-                });
+                await resolveAppUser(s.user);
             } else {
                 setAppUser(null);
             }
-            setIsLoaded(true);
+
+            if (mounted) setIsLoaded(true);
         });
+
+        // Safety: if onAuthStateChange never fires (edge case), force isLoaded after 5s
+        const safety = setTimeout(() => {
+            if (mounted) setIsLoaded(prev => prev || true);
+        }, 5000);
 
         return () => {
             mounted = false;
+            clearTimeout(safety);
             subscription.unsubscribe();
         };
-    }, []);
+    }, [resolveAppUser]);
 
     const handleSignOut = async () => {
+        resolveRef.current++;
         await supabase.auth.signOut();
         setAppUser(null);
         setSupabaseUser(null);
@@ -167,7 +192,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 supabaseUser,
                 session,
                 isLoaded,
-                isSignedIn: !!session?.user, // Always true if Auth session exists
+                isSignedIn: !!session?.user,
                 signOut: handleSignOut,
             }}
         >

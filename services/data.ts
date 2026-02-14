@@ -324,6 +324,15 @@ export interface StockLogRow {
     createdAt: string;
 }
 
+/** Silently ignore errors when table/RLS is missing (migration not yet run) */
+const isTableAccessError = (err: { code?: string; message?: string; status?: number } | null) =>
+    !err ? false :
+    ['PGRST205', '42P01', '42501'].includes(err.code || '') ||
+    (err as any).status === 403 ||
+    err.message?.includes('schema cache') ||
+    err.message?.includes('permission denied') ||
+    err.message?.includes('does not exist');
+
 export const fetchInventory = async (): Promise<InventoryRow[]> => {
     const { data, error } = await supabase
         .from('Inventory')
@@ -331,8 +340,7 @@ export const fetchInventory = async (): Promise<InventoryRow[]> => {
         .order('name');
 
     if (error) {
-        // Silently return empty if table doesn't exist yet (migration not run)
-        if (error.code === 'PGRST205' || error.message?.includes('schema cache')) return [];
+        if (isTableAccessError(error)) return [];
         console.error('Error fetching inventory:', error);
         return [];
     }
@@ -358,7 +366,7 @@ export const addInventoryItem = async (item: {
         .single();
 
     if (error) {
-        if (error.code !== 'PGRST205') console.error('Error adding inventory item:', error);
+        if (!isTableAccessError(error)) console.error('Error adding inventory item:', error);
         return { success: false, error };
     }
     return { success: true, data: data as InventoryRow };
@@ -390,7 +398,7 @@ export const updateInventoryStock = async (
         .eq('id', inventoryId);
 
     if (updateErr) {
-        if (updateErr.code !== 'PGRST205') console.error('Error updating inventory stock:', updateErr);
+        if (!isTableAccessError(updateErr)) console.error('Error updating inventory stock:', updateErr);
         return { success: false, error: updateErr };
     }
 
@@ -405,7 +413,7 @@ export const updateInventoryStock = async (
         });
 
     if (logErr) {
-        if (logErr.code !== 'PGRST205') console.error('Error logging stock change:', logErr);
+        if (!isTableAccessError(logErr)) console.error('Error logging stock change:', logErr);
         // Don't fail — stock was updated, just log failed
     }
 
@@ -419,7 +427,7 @@ export const deleteInventoryItem = async (inventoryId: string): Promise<{ succes
         .eq('id', inventoryId);
 
     if (error) {
-        if (error.code !== 'PGRST205') console.error('Error deleting inventory item:', error);
+        if (!isTableAccessError(error)) console.error('Error deleting inventory item:', error);
         return { success: false, error };
     }
     return { success: true };
@@ -434,10 +442,154 @@ export const fetchStockHistory = async (inventoryId: string): Promise<StockLogRo
         .limit(50);
 
     if (error) {
-        if (error.code !== 'PGRST205') console.error('Error fetching stock history:', error);
+        if (!isTableAccessError(error)) console.error('Error fetching stock history:', error);
         return [];
     }
     return data as StockLogRow[];
+};
+
+// ===== DAILY STATS (persistent analytics) =====
+
+export interface DailyStatsRow {
+    id: string;
+    date: string;
+    revenue: number;
+    orderCount: number;
+    printJobs: number;
+    productSales: number;
+    avgOrderValue: number;
+    uniqueCustomers: number;
+    bwPages: number;
+    colorPages: number;
+    shopId: string | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
+/** Fetch persisted daily stats for a date range */
+export const fetchDailyStats = async (
+    from?: string,
+    to?: string
+): Promise<DailyStatsRow[]> => {
+    let query = supabase
+        .from('DailyStats')
+        .select('*')
+        .order('date', { ascending: true });
+
+    if (from) query = query.gte('date', from);
+    if (to) query = query.lte('date', to);
+
+    const { data, error } = await query;
+
+    if (error) {
+        if (isTableAccessError(error)) return [];
+        console.error('Error fetching daily stats:', error);
+        return [];
+    }
+    return data as DailyStatsRow[];
+};
+
+/** Call the snapshot_daily_stats RPC to aggregate current orders into DailyStats */
+export const snapshotDailyStats = async (): Promise<{ success: boolean; rowsUpserted?: number; error?: any }> => {
+    const { data, error } = await supabase.rpc('snapshot_daily_stats');
+
+    if (error) {
+        if (isTableAccessError(error) || error.code === '42883') return { success: false, error };
+        console.error('Error snapshotting daily stats:', error);
+        return { success: false, error };
+    }
+
+    return {
+        success: true,
+        rowsUpserted: (data as any)?.rowsUpserted || 0,
+    };
+};
+
+/** Get summary totals from persisted DailyStats */
+export const getDailyStatsSummary = async (): Promise<{
+    totalRevenue: number;
+    totalOrders: number;
+    totalPrintJobs: number;
+    totalProductSales: number;
+    totalCustomers: number;
+    totalBwPages: number;
+    totalColorPages: number;
+}> => {
+    const stats = await fetchDailyStats();
+    return stats.reduce(
+        (acc, s) => ({
+            totalRevenue: acc.totalRevenue + s.revenue,
+            totalOrders: acc.totalOrders + s.orderCount,
+            totalPrintJobs: acc.totalPrintJobs + s.printJobs,
+            totalProductSales: acc.totalProductSales + s.productSales,
+            totalCustomers: acc.totalCustomers + s.uniqueCustomers,
+            totalBwPages: acc.totalBwPages + s.bwPages,
+            totalColorPages: acc.totalColorPages + s.colorPages,
+        }),
+        { totalRevenue: 0, totalOrders: 0, totalPrintJobs: 0, totalProductSales: 0, totalCustomers: 0, totalBwPages: 0, totalColorPages: 0 }
+    );
+};
+
+// ===== DB USAGE & AUTO-CLEANUP =====
+
+export interface DbUsage {
+    used_mb: number;
+    limit_mb: number;
+    percent_used: number;
+}
+
+export const getDbUsage = async (): Promise<DbUsage | null> => {
+    try {
+        const { data, error } = await supabase.rpc('get_db_usage');
+        if (error) {
+            if (isTableAccessError(error) || error.code === '42883') return null;
+            console.error('Error checking DB usage:', error);
+            return null;
+        }
+        return data as DbUsage;
+    } catch {
+        return null;
+    }
+};
+
+export const cleanupOldOrders = async (
+    keepDays: number = 7,
+    force: boolean = false
+): Promise<{ success: boolean; ordersDeleted?: number; freedMbApprox?: number; error?: any }> => {
+    try {
+        const { data, error } = await supabase.rpc('cleanup_old_orders', {
+            keep_days: keepDays,
+            force,
+        });
+        if (error) {
+            if (isTableAccessError(error) || error.code === '42883') return { success: false, error };
+            console.error('Error during cleanup:', error);
+            return { success: false, error };
+        }
+        return data as any;
+    } catch {
+        return { success: false };
+    }
+};
+
+export const autoCleanupIfNeeded = async (): Promise<{
+    success: boolean;
+    action?: string;
+    ordersDeleted?: number;
+    dbUsage?: DbUsage;
+} | null> => {
+    try {
+        const { data, error } = await supabase.rpc('auto_cleanup_if_needed');
+        if (error) {
+            // Silently fail if function doesn't exist yet
+            if (error.code === '42883' || error.message?.includes('does not exist')) return null;
+            console.error('Error during auto-cleanup:', error);
+            return null;
+        }
+        return data as any;
+    } catch {
+        return null;
+    }
 };
 
 // ===== STORAGE =====

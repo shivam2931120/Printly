@@ -14,6 +14,7 @@ interface AdminSidebarProps {
 const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
     { id: 'orders', label: 'Orders', icon: 'receipt_long' },
+    { id: 'analytics', label: 'Analytics', icon: 'analytics' },
     { id: 'products', label: 'Products', icon: 'inventory_2' },
     { id: 'pricing', label: 'Pricing', icon: 'attach_money' },
     { id: 'inventory', label: 'Inventory', icon: 'warehouse' },

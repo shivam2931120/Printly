@@ -1,80 +1,115 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '../ui/Icon';
-import { ShopConfig, DEFAULT_SHOP_CONFIG } from '../../types';
+import { supabase } from '../../services/data';
 
-interface Shop extends ShopConfig {
+interface Shop {
+    id: string;
+    shopName: string;
+    tagline: string;
+    location: string;
+    contact: string;
+    email: string;
+    isActive: boolean;
+    createdAt: string;
     totalOrders: number;
     totalRevenue: number;
 }
 
 export const ShopsManagement: React.FC<{ onSelectShop?: (shopId: string) => void; onManageShop?: (shopId: string) => void }> = ({ onSelectShop, onManageShop }) => {
     const [shops, setShops] = useState<Shop[]>([]);
+    const [loading, setLoading] = useState(true);
     const [isAddingShop, setIsAddingShop] = useState(false);
     const [newShopName, setNewShopName] = useState('');
 
-    useEffect(() => {
-        // Load shops from localStorage
-        const storedShops = localStorage.getItem('printwise_all_shops');
-        if (storedShops) {
-            try {
-                setShops(JSON.parse(storedShops));
-            } catch (e) {
-                initializeDefaultShop();
+    const loadShops = async () => {
+        setLoading(true);
+        try {
+            const { data: shopRows, error } = await supabase
+                .from('Shop')
+                .select('*')
+                .order('createdAt', { ascending: false });
+
+            if (error) {
+                console.error('Error fetching shops:', error);
+                setShops([]);
+                return;
             }
-        } else {
-            initializeDefaultShop();
+
+            // Get order counts / revenue per shop
+            const { data: orderStats } = await supabase
+                .from('Order')
+                .select('shopId, totalAmount');
+
+            const shopStats: Record<string, { orders: number; revenue: number }> = {};
+            (orderStats || []).forEach((o: any) => {
+                const sid = o.shopId || 'unknown';
+                if (!shopStats[sid]) shopStats[sid] = { orders: 0, revenue: 0 };
+                shopStats[sid].orders++;
+                shopStats[sid].revenue += o.totalAmount || 0;
+            });
+
+            const mapped: Shop[] = (shopRows || []).map((s: any) => ({
+                id: s.id,
+                shopName: s.shopName || s.name || 'Unnamed Shop',
+                tagline: s.tagline || '',
+                location: s.location || '',
+                contact: s.contact || '',
+                email: s.email || '',
+                isActive: s.isActive ?? true,
+                createdAt: s.createdAt,
+                totalOrders: shopStats[s.id]?.orders || 0,
+                totalRevenue: shopStats[s.id]?.revenue || 0,
+            }));
+
+            setShops(mapped);
+        } catch (e) {
+            console.error('Failed to load shops:', e);
+        } finally {
+            setLoading(false);
         }
-    }, []);
-
-    const initializeDefaultShop = () => {
-        // Get current shop config and orders
-        const currentConfig = JSON.parse(localStorage.getItem('printwise_shop_config') || JSON.stringify(DEFAULT_SHOP_CONFIG));
-        const orders = JSON.parse(localStorage.getItem('printwise_orders') || '[]');
-        const totalRevenue = orders.reduce((sum: number, o: { totalAmount?: number }) => sum + (o.totalAmount || 0), 0);
-
-        const defaultShop: Shop = {
-            ...currentConfig,
-            shopId: 'shop_default',
-            totalOrders: orders.length,
-            totalRevenue,
-        };
-
-        setShops([defaultShop]);
-        localStorage.setItem('printwise_all_shops', JSON.stringify([defaultShop]));
     };
 
-    const addShop = () => {
+    useEffect(() => { loadShops(); }, []);
+
+    const addShop = async () => {
         if (!newShopName.trim()) return;
-
-        const newShop: Shop = {
-            ...DEFAULT_SHOP_CONFIG,
-            shopId: `shop_${Date.now()}`,
-            shopName: newShopName,
-            createdAt: new Date().toISOString(),
-            totalOrders: 0,
-            totalRevenue: 0,
-        };
-
-        const updated = [...shops, newShop];
-        setShops(updated);
-        localStorage.setItem('printwise_all_shops', JSON.stringify(updated));
-        setNewShopName('');
-        setIsAddingShop(false);
+        try {
+            const { error } = await supabase.from('Shop').insert({
+                shopName: newShopName.trim(),
+                tagline: 'Print Shop',
+                isActive: true,
+            });
+            if (error) {
+                console.error('Error adding shop:', error);
+                return;
+            }
+            setNewShopName('');
+            setIsAddingShop(false);
+            loadShops();
+        } catch (e) {
+            console.error('Failed to add shop:', e);
+        }
     };
 
-    const toggleShopStatus = (shopId: string) => {
-        const updated = shops.map(shop =>
-            shop.shopId === shopId ? { ...shop, isActive: !shop.isActive } : shop
-        );
-        setShops(updated);
-        localStorage.setItem('printwise_all_shops', JSON.stringify(updated));
+    const toggleShopStatus = async (shopId: string, currentlyActive: boolean) => {
+        try {
+            const { error } = await supabase
+                .from('Shop')
+                .update({ isActive: !currentlyActive })
+                .eq('id', shopId);
+            if (error) {
+                console.error('Error toggling shop status:', error);
+                return;
+            }
+            loadShops();
+        } catch (e) {
+            console.error('Failed to toggle shop:', e);
+        }
     };
 
     const handleManageShop = (shop: Shop) => {
-        localStorage.setItem('printwise_active_shop_id', shop.shopId);
-        localStorage.setItem('printwise_shop_config', JSON.stringify(shop));
-        onSelectShop?.(shop.shopId);
-        onManageShop?.(shop.shopId);
+        onSelectShop?.(shop.id);
+        onManageShop?.(shop.id);
     };
 
     const totalRevenue = shops.reduce((sum, s) => sum + s.totalRevenue, 0);
@@ -86,16 +121,16 @@ export const ShopsManagement: React.FC<{ onSelectShop?: (shopId: string) => void
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Shops Management</h2>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
+                    <h2 className="text-2xl font-bold text-white">Shops Management</h2>
+                    <p className="text-slate-400 text-sm mt-1">
                         Manage all registered shops on the platform
                     </p>
                 </div>
                 <button
                     onClick={() => setIsAddingShop(true)}
-                    className="glass-btn glass-btn-primary h-10 px-4 text-sm"
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white text-sm font-semibold hover:bg-white/15 transition-colors"
                 >
-                    <Icon name="add_business" className="text-lg mr-2" />
+                    <Icon name="add_business" className="text-lg" />
                     Add Shop
                 </button>
             </div>
@@ -177,7 +212,12 @@ export const ShopsManagement: React.FC<{ onSelectShop?: (shopId: string) => void
             )}
 
             {/* Shops List */}
-            <div className="bg-surface-dark rounded-xl border border-border-dark overflow-hidden shadow-sm">
+            {loading ? (
+                <div className="flex items-center justify-center py-20">
+                    <div className="size-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                </div>
+            ) : (
+            <div className="bg-white/[0.02] rounded-xl border border-white/[0.06] overflow-hidden">
                 <table className="w-full">
                     <thead>
                         <tr className="bg-surface-darker/50 border-b border-border-dark">
@@ -191,7 +231,7 @@ export const ShopsManagement: React.FC<{ onSelectShop?: (shopId: string) => void
                     </thead>
                     <tbody className="divide-y divide-border-dark">
                         {shops.map((shop) => (
-                            <tr key={shop.shopId} className="hover:bg-surface-darker/30 transition-colors group">
+                            <tr key={shop.id} className="hover:bg-white/[0.02] transition-colors group">
                                 <td className="py-4 px-4">
                                     <div className="flex items-center gap-3">
                                         <div className="p-2 rounded-lg bg-primary/10">
@@ -226,7 +266,7 @@ export const ShopsManagement: React.FC<{ onSelectShop?: (shopId: string) => void
                                         <button
                                             onClick={() => {
                                                 if (confirm(`Are you sure you want to ${shop.isActive ? 'suspend' : 'activate'} this shop?`)) {
-                                                    toggleShopStatus(shop.shopId);
+                                                    toggleShopStatus(shop.id, shop.isActive);
                                                 }
                                             }}
                                             className={`flex items-center gap-1 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${shop.isActive
@@ -247,11 +287,12 @@ export const ShopsManagement: React.FC<{ onSelectShop?: (shopId: string) => void
 
                 {shops.length === 0 && (
                     <div className="py-12 text-center">
-                        <Icon name="store" className="text-4xl text-slate-300 dark:text-slate-600 mb-3" />
-                        <p className="text-slate-500 dark:text-slate-400">No shops registered yet</p>
+                        <Icon name="store" className="text-4xl text-slate-600 mb-3" />
+                        <p className="text-slate-400">No shops registered yet</p>
                     </div>
                 )}
             </div>
+            )}
         </div>
     );
 };

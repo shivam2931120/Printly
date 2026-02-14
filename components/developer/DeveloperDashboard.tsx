@@ -3,27 +3,25 @@ import { useNavigate } from 'react-router-dom';
 import { Icon } from '../ui/Icon';
 import { ShopsManagement } from './ShopsManagement';
 import { SalesOverview } from './SalesOverview';
-import { ViewMode, User } from '../../types';
+import { StoragePanel } from '../admin/StoragePanel';
+import { User } from '../../types';
 
 interface DeveloperDashboardProps {
     currentUser: User | null;
     onSignOut: () => void;
-    darkMode?: boolean;
-    onToggleDarkMode?: () => void;
 }
 
-type DevSection = 'shops' | 'sales';
+type DevSection = 'shops' | 'sales' | 'storage';
 
 const NAV_ITEMS: { id: DevSection; label: string; icon: string }[] = [
-    { id: 'shops', label: 'Shops Management', icon: 'store' },
-    { id: 'sales', label: 'Sales Overview', icon: 'analytics' },
+    { id: 'shops', label: 'Shops', icon: 'store' },
+    { id: 'sales', label: 'Sales', icon: 'analytics' },
+    { id: 'storage', label: 'Storage', icon: 'database' },
 ];
 
 export const DeveloperDashboard: React.FC<DeveloperDashboardProps> = ({
     currentUser,
     onSignOut,
-    darkMode,
-    onToggleDarkMode,
 }) => {
     const navigate = useNavigate();
     const [activeSection, setActiveSection] = useState<DevSection>('shops');
@@ -34,6 +32,8 @@ export const DeveloperDashboard: React.FC<DeveloperDashboardProps> = ({
                 return <ShopsManagement onManageShop={() => navigate('/admin')} />;
             case 'sales':
                 return <SalesOverview />;
+            case 'storage':
+                return <StoragePanel />;
             default:
                 return <ShopsManagement />;
         }
@@ -58,35 +58,30 @@ export const DeveloperDashboard: React.FC<DeveloperDashboardProps> = ({
                         <div className="flex items-center gap-3">
                             {/* Navigation Shortcuts */}
                             <div className="hidden md:flex items-center gap-2 mr-4 border-r border-white/[0.08] pr-4">
-                                <button
-                                    onClick={() => navigate('/')}
+                                <a
+                                    href="/?view=student"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
                                     className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-medium text-text-secondary hover:text-white hover:bg-white/[0.05] border border-transparent hover:border-white/10 transition-all duration-200"
                                 >
                                     <Icon name="school" className="text-lg" />
                                     Student Portal
-                                </button>
-                                <button
-                                    onClick={() => navigate('/admin')}
+                                </a>
+                                <a
+                                    href="/admin"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
                                     className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-medium text-text-secondary hover:text-white hover:bg-white/[0.05] border border-transparent hover:border-white/10 transition-all duration-200"
                                 >
                                     <Icon name="admin_panel_settings" className="text-lg" />
                                     Admin Console
-                                </button>
+                                </a>
                             </div>
 
                             <div className="flex items-center gap-2 pl-2">
                                 <span className="text-sm font-medium text-text-secondary hidden sm:block">
                                     {currentUser?.name}
                                 </span>
-                                {onToggleDarkMode && (
-                                    <button
-                                        onClick={onToggleDarkMode}
-                                        className="p-2 rounded-xl text-text-secondary hover:text-white hover:bg-white/[0.05] transition-colors duration-200"
-                                        title="Toggle Dark Mode"
-                                    >
-                                        <Icon name={darkMode ? 'light_mode' : 'dark_mode'} className="text-xl" />
-                                    </button>
-                                )}
                                 <button
                                     onClick={onSignOut}
                                     className="glass-btn glass-btn-danger p-2 rounded-xl"
@@ -99,20 +94,24 @@ export const DeveloperDashboard: React.FC<DeveloperDashboardProps> = ({
                     </div>
 
                     <div className="md:hidden pb-3 flex items-center gap-2">
-                        <button
-                            onClick={() => navigate('/')}
+                        <a
+                            href="/?view=student"
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-text-secondary hover:text-white hover:bg-white/[0.05] border border-white/10 transition-all duration-200 active:scale-[0.98]"
                         >
                             <Icon name="school" className="text-base" />
                             Student Portal
-                        </button>
-                        <button
-                            onClick={() => navigate('/admin')}
+                        </a>
+                        <a
+                            href="/admin"
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-text-secondary hover:text-white hover:bg-white/[0.05] border border-white/10 transition-all duration-200 active:scale-[0.98]"
                         >
                             <Icon name="admin_panel_settings" className="text-base" />
                             Admin Console
-                        </button>
+                        </a>
                     </div>
                 </div>
             </header>

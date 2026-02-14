@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Icon } from '../ui/Icon';
-import { fetchAllOrdersForAnalytics, fetchInventory, InventoryRow } from '../../services/data';
+import { fetchAllOrdersForAnalytics, fetchInventory, autoCleanupIfNeeded, InventoryRow } from '../../services/data';
 import { Order } from '../../types';
 import {
     AreaChart,
@@ -36,35 +36,55 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
     const [inventory, setInventory] = useState<InventoryRow[]>([]);
     const [loading, setLoading] = useState(true);
 
+    const loadData = async () => {
+        try {
+            const [orderData, invData] = await Promise.all([
+                fetchAllOrdersForAnalytics(),
+                fetchInventory(),
+            ]);
+            setOrders(orderData);
+            setInventory(invData);
+        } catch (e) {
+            console.error('Failed to load dashboard data:', e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const loadData = async () => {
-            try {
-                const [orderData, invData] = await Promise.all([
-                    fetchAllOrdersForAnalytics(),
-                    fetchInventory(),
-                ]);
-                setOrders(orderData);
-                setInventory(invData);
-            } catch (e) {
-                console.error('Failed to load dashboard data:', e);
-            } finally {
-                setLoading(false);
-            }
-        };
         loadData();
     }, []);
 
-    const pendingOrders = orders.filter(o => ['pending', 'confirmed'].includes(o.status));
-    const printingOrders = orders.filter(o => o.status === 'printing');
-    const completedToday = orders.filter(o => o.status === 'completed' && new Date(o.updatedAt).toDateString() === new Date().toDateString());
+    // Auto-cleanup: runs once on dashboard load, best-effort
+    useEffect(() => {
+        const checkCleanup = async () => {
+            try {
+                const result = await autoCleanupIfNeeded();
+                if (result && result.ordersDeleted && result.ordersDeleted > 0) {
+                    console.log(`[Auto-cleanup] ${result.ordersDeleted} old orders archived`);
+                    loadData(); // Refresh after cleanup
+                }
+            } catch { /* silent */ }
+        };
+        checkCleanup();
+    }, []);
 
-    // Calculate Today's Revenue
-    const todayRevenue = orders
-        .filter(o => new Date(o.createdAt).toDateString() === new Date().toDateString())
-        .reduce((sum, o) => sum + o.totalAmount, 0);
+    const pendingOrders = useMemo(() => orders.filter(o => ['pending', 'confirmed'].includes(o.status)), [orders]);
+    const printingOrders = useMemo(() => orders.filter(o => o.status === 'printing'), [orders]);
+    const completedToday = useMemo(() => {
+        const todayStr = new Date().toDateString();
+        return orders.filter(o => o.status === 'completed' && new Date(o.updatedAt).toDateString() === todayStr);
+    }, [orders]);
 
-    const totalRevenue = orders.reduce((sum, o) => sum + o.totalAmount, 0);
-    const revenueData = generateWeeklyRevenue(orders);
+    const todayRevenue = useMemo(() => {
+        const todayStr = new Date().toDateString();
+        return orders
+            .filter(o => new Date(o.createdAt).toDateString() === todayStr)
+            .reduce((sum, o) => sum + o.totalAmount, 0);
+    }, [orders]);
+
+    const totalRevenue = useMemo(() => orders.reduce((sum, o) => sum + o.totalAmount, 0), [orders]);
+    const revenueData = useMemo(() => generateWeeklyRevenue(orders), [orders]);
 
     return (
         <div className="space-y-6">
@@ -146,8 +166,8 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
                             <p className="text-sm text-green-600 dark:text-green-400">Synced from Database</p>
                         </div>
                     </div>
-                    <div className="h-48" style={{ minWidth: 0 }}>
-                        {!loading && <ResponsiveContainer width="100%" height="100%">
+                    <div className="h-48" style={{ minWidth: 0, minHeight: 192 }}>
+                        {!loading && revenueData.length > 0 && <ResponsiveContainer width="99%" height={180} debounce={1}>
                             <AreaChart data={revenueData} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
                                 <defs>
                                     <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
