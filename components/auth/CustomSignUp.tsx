@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, ArrowRight, ArrowLeft, Loader2, CheckCircle2, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, ArrowLeft, Loader2, CheckCircle2, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { supabase } from '../../services/supabase';
 
@@ -13,7 +13,9 @@ export const CustomSignUp = () => {
     const [lastName, setLastName] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [success, setSuccess] = useState(false);
+    const [formStep, setFormStep] = useState<'form' | 'otp'>('form');
+    const [otpCode, setOtpCode] = useState('');
+    const [isVerifying, setIsVerifying] = useState(false);
     const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -27,6 +29,12 @@ export const CustomSignUp = () => {
             return;
         }
 
+        if (password.length < 6) {
+            setError('Password must be at least 6 characters');
+            setIsLoading(false);
+            return;
+        }
+
         try {
             const fullName = `${firstName} ${lastName}`.trim();
             const { error: signUpError } = await supabase.auth.signUp({
@@ -34,14 +42,19 @@ export const CustomSignUp = () => {
                 password,
                 options: {
                     data: { name: fullName, full_name: fullName },
-                    emailRedirectTo: `${window.location.origin}/auth/callback`,
+                    // No emailRedirectTo — OTP code verification instead of magic link
                 },
             });
 
             if (signUpError) {
-                setError(signUpError.message);
+                if (signUpError.message?.includes('already registered')) {
+                    setError('This email is already registered. Try signing in.');
+                } else {
+                    setError(signUpError.message);
+                }
             } else {
-                setSuccess(true);
+                // Move to OTP verification step
+                setFormStep('otp');
             }
         } catch (err: any) {
             setError(err.message || 'Failed to sign up');
@@ -50,34 +63,131 @@ export const CustomSignUp = () => {
         }
     };
 
-    if (success) {
+    const handleVerifyOtp = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsVerifying(true);
+        setError('');
+
+        try {
+            const { error: verifyError } = await supabase.auth.verifyOtp({
+                email,
+                token: otpCode.trim(),
+                type: 'signup',
+            });
+
+            if (verifyError) {
+                if (verifyError.message?.includes('expired')) {
+                    setError('OTP has expired. Please request a new one.');
+                } else if (verifyError.message?.includes('invalid') || verifyError.message?.includes('Token')) {
+                    setError('Invalid OTP code. Please check and try again.');
+                } else {
+                    setError(verifyError.message);
+                }
+            } else {
+                // Verified — AuthContext picks up the new session automatically
+                navigate('/');
+            }
+        } catch (err: any) {
+            setError(err.message || 'Verification failed');
+        } finally {
+            setIsVerifying(false);
+        }
+    };
+
+    const handleResendOtp = async () => {
+        setError('');
+        setIsLoading(true);
+        try {
+            const { error: resendErr } = await supabase.auth.resend({
+                type: 'signup',
+                email,
+            });
+            if (resendErr) {
+                setError(resendErr.message);
+            } else {
+                setOtpCode('');
+            }
+        } catch (err: any) {
+            setError(err.message || 'Failed to resend');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // ===== OTP Verification Screen =====
+    if (formStep === 'otp') {
         return (
             <div className="min-h-screen flex items-center justify-center bg-[#050505] relative overflow-hidden px-4">
                 <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-white/5 rounded-full blur-[120px] pointer-events-none opacity-50" />
 
                 <div className="w-full max-w-sm relative z-10 animate-in">
                     <div className="w-full bg-white/[0.03] border border-white/[0.05] p-10 rounded-[40px] shadow-2xl backdrop-blur-xl text-center">
-                        <div className="inline-flex items-center justify-center size-20 rounded-[32px] bg-green-500 text-black mb-8 shadow-[0_0_30px_rgba(34,197,94,0.3)]">
-                            <CheckCircle2 size={40} strokeWidth={2.5} />
+                        <div className="inline-flex items-center justify-center size-20 rounded-[32px] bg-white text-black mb-8 shadow-[0_0_30px_rgba(255,255,255,0.15)]">
+                            <ShieldCheck size={40} strokeWidth={2.5} />
                         </div>
-                        <h1 className="text-3xl font-black text-white tracking-tight mb-3 font-display">Check your inbox</h1>
+                        <h1 className="text-3xl font-black text-white tracking-tight mb-3 font-display">Verify Email</h1>
                         <p className="text-text-muted text-sm leading-relaxed mb-8">
-                            We've sent a verification link to <span className="text-white font-bold">{email}</span>. Please verify your account to continue.
+                            We've sent a 6-digit code to <span className="text-white font-bold">{email}</span>. Enter it below to complete registration.
                         </p>
 
-                        <Button
-                            onClick={() => navigate('/sign-in')}
-                            className="w-full h-14 text-sm font-black bg-white text-black hover:bg-white/90 shadow-glow-primary rounded-2xl"
-                        >
-                            Back to Login
-                            <ArrowRight className="ml-2 w-4 h-4" />
-                        </Button>
+                        <form onSubmit={handleVerifyOtp} className="space-y-5">
+                            {error && (
+                                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-xs font-bold text-center animate-in">
+                                    {error}
+                                </div>
+                            )}
+
+                            <input
+                                type="text"
+                                value={otpCode}
+                                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                className="w-full text-center text-3xl font-black tracking-[0.5em] py-5 bg-white/5 border border-white/10 rounded-2xl focus:border-white/30 focus:bg-white/[0.08] outline-none transition-all text-white placeholder-white/20"
+                                placeholder="000000"
+                                maxLength={6}
+                                autoFocus
+                                required
+                            />
+
+                            <Button
+                                type="submit"
+                                disabled={isVerifying || otpCode.length < 6}
+                                className="w-full h-14 text-sm font-black bg-white text-black hover:bg-white/90 shadow-glow-primary rounded-2xl disabled:opacity-40"
+                            >
+                                {isVerifying ? (
+                                    <Loader2 className="h-5 w-5 animate-spin mx-auto" />
+                                ) : (
+                                    <span className="flex items-center justify-center gap-3">
+                                        VERIFY & CONTINUE <ArrowRight className="w-4 h-4" />
+                                    </span>
+                                )}
+                            </Button>
+
+                            <div className="flex items-center justify-between pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => { setFormStep('form'); setError(''); setOtpCode(''); }}
+                                    className="text-text-muted text-xs font-bold hover:text-white transition-colors"
+                                >
+                                    <ArrowLeft className="w-3 h-3 inline mr-1" />
+                                    Back
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleResendOtp}
+                                    disabled={isLoading}
+                                    className="text-text-muted text-xs font-bold hover:text-white transition-colors disabled:opacity-40"
+                                >
+                                    {isLoading ? 'Sending...' : 'Resend Code'}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
         );
     }
 
+    // ===== Sign Up Form =====
     return (
         <div className="min-h-screen flex items-center justify-center bg-[#050505] relative overflow-hidden px-4">
             {/* Background Accents */}

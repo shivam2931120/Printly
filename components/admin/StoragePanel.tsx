@@ -48,21 +48,22 @@ export const StoragePanel: React.FC = () => {
         }
     };
 
-    const handleCleanup = async (keepDays: number, label: string, force = false) => {
+    const handleCleanup = async (keepDays: number, label: string) => {
         setActionLoading(label);
         setLastResult(null);
         try {
-            const res: CleanupResult = await cleanupOldOrders(keepDays, force);
+            const res: any = await cleanupOldOrders(keepDays, true);
             if (res.success) {
                 setLastResult(
                     `Cleaned ${res.ordersDeleted || 0} orders older than ${keepDays} day(s) — freed ~${(res.freedMbApprox || 0).toFixed(1)} MB`
                 );
                 loadUsage();
             } else {
-                setLastResult(`Cleanup failed: ${res.error?.message || 'Unknown error'}`);
+                const reason = res.reason || res.error?.message || 'RPC function not found — run the migration SQL first';
+                setLastResult(`Cleanup: ${reason}`);
             }
         } catch {
-            setLastResult('Cleanup failed unexpectedly');
+            setLastResult('Cleanup failed — run the migration SQL to create the cleanup function');
         } finally {
             setActionLoading(null);
         }
@@ -213,7 +214,7 @@ export const StoragePanel: React.FC = () => {
                             Clean 30+ days
                         </button>
                         <button
-                            onClick={() => handleCleanup(7, 'clean7', true)}
+                            onClick={() => handleCleanup(7, 'clean7')}
                             disabled={actionLoading !== null}
                             className="w-full py-2 rounded-lg border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-700 dark:text-red-300 text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                         >

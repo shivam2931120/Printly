@@ -129,7 +129,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ user }) => {
                                 isSidebarExpanded ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4 hidden"
                             )}>
                                 <p className="text-sm font-bold text-white truncate">{user.name}</p>
-                                <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Premium Member</p>
+                                <p className={cn(
+                                    "text-[10px] font-bold uppercase tracking-wider",
+                                    user.isDeveloper ? "text-purple-400" : user.isAdmin ? "text-amber-400" : "text-text-muted"
+                                )}>
+                                    {user.isDeveloper ? 'Developer' : user.isAdmin ? 'Admin' : 'User'}
+                                </p>
                             </div>
                         </div>
 

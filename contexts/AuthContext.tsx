@@ -4,6 +4,39 @@ import type { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import type { User } from '../types';
 import { hasAdminAccess, hasDeveloperAccess, normalizeRole } from '../lib/utils';
 
+const CACHE_KEY = 'printly_user_cache';
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+interface CachedUser {
+    user: User;
+    ts: number;
+}
+
+function getCachedUser(): User | null {
+    try {
+        const raw = localStorage.getItem(CACHE_KEY);
+        if (!raw) return null;
+        const cached: CachedUser = JSON.parse(raw);
+        if (Date.now() - cached.ts > CACHE_TTL) {
+            localStorage.removeItem(CACHE_KEY);
+            return null;
+        }
+        return cached.user;
+    } catch {
+        return null;
+    }
+}
+
+function setCachedUser(user: User | null) {
+    try {
+        if (user && !user.id.startsWith('temp_')) {
+            localStorage.setItem(CACHE_KEY, JSON.stringify({ user, ts: Date.now() }));
+        } else {
+            localStorage.removeItem(CACHE_KEY);
+        }
+    } catch { /* ignore */ }
+}
+
 interface AuthState {
     user: User | null;
     supabaseUser: SupabaseUser | null;
@@ -55,7 +88,7 @@ function getFallbackUser(authUser: SupabaseUser): User {
 /** Supabase query with timeout — never hangs */
 async function queryWithTimeout<T>(
     queryFn: () => PromiseLike<{ data: T | null; error: any }>,
-    ms = 8000
+    ms = 5000
 ): Promise<{ data: T | null; error: any }> {
     const timeout = new Promise<{ data: null; error: any }>((resolve) =>
         setTimeout(() => resolve({ data: null, error: { message: 'Query timeout', code: 'TIMEOUT' } }), ms)
@@ -126,10 +159,11 @@ async function fetchUserRecord(authUser: SupabaseUser): Promise<User> {
 }
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const cachedUser = getCachedUser();
     const [session, setSession] = useState<Session | null>(null);
     const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
-    const [appUser, setAppUser] = useState<User | null>(null);
-    const [isLoaded, setIsLoaded] = useState(false);
+    const [appUser, setAppUser] = useState<User | null>(cachedUser);
+    const [isLoaded, setIsLoaded] = useState(!!cachedUser); // instant if cached
     const resolveRef = useRef(0);
 
     const resolveAppUser = useCallback(async (authUser: SupabaseUser) => {
@@ -140,6 +174,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (prev && (prev.isDeveloper || prev.isAdmin) && !user.isDeveloper && !user.isAdmin && user.id.startsWith('temp_')) {
                 return prev; // never downgrade privileged user to fallback
             }
+            setCachedUser(user);
             return user;
         });
     }, []);
@@ -149,7 +184,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // Use ONLY onAuthStateChange — it fires INITIAL_SESSION first,
         // then SIGNED_IN / SIGNED_OUT / TOKEN_REFRESHED.
-        // No separate getSession() call → no AbortError from StrictMode double-mount.
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, s) => {
             if (!mounted) return;
 
@@ -160,15 +194,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 await resolveAppUser(s.user);
             } else {
                 setAppUser(null);
+                setCachedUser(null);
             }
 
             if (mounted) setIsLoaded(true);
         });
 
-        // Safety: if onAuthStateChange never fires (edge case), force isLoaded after 5s
+        // Safety: if onAuthStateChange never fires, force isLoaded after 3s
         const safety = setTimeout(() => {
-            if (mounted) setIsLoaded(prev => prev || true);
-        }, 5000);
+            if (mounted) setIsLoaded(true);
+        }, 3000);
 
         return () => {
             mounted = false;
@@ -179,6 +214,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const handleSignOut = async () => {
         resolveRef.current++;
+        setCachedUser(null);
         await supabase.auth.signOut();
         setAppUser(null);
         setSupabaseUser(null);

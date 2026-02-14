@@ -6,7 +6,9 @@ import {
     File as FileIcon,
     Palette,
     X,
-    Copy
+    Copy,
+    Minus,
+    Plus
 } from 'lucide-react';
 import { PrintOptions, PricingConfig } from '../../types';
 import { cn } from '../../lib/utils';
@@ -29,61 +31,66 @@ export const SettingsStep: React.FC<SettingsStepProps> = ({
         onChange({ ...options, [key]: value });
     };
 
-    const optionBtnClass = (selected: boolean) => cn(
-        "relative flex items-center justify-center gap-2 p-3 rounded-xl border text-sm font-bold transition-all duration-200",
+    const pill = (selected: boolean) => cn(
+        "flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer select-none",
         selected
-            ? "bg-white text-black border-white shadow-glow-primary"
-            : "bg-background-card border-border text-text-muted hover:border-white/20 hover:text-white"
+            ? "bg-white text-black shadow-[0_0_12px_rgba(255,255,255,0.15)]"
+            : "bg-white/[0.04] text-text-muted border border-white/[0.08] hover:bg-white/[0.08] hover:text-white"
     );
 
     return (
-        <div className="space-y-6 animate-fade-in pb-24">
-            <div className="text-center lg:text-left space-y-2">
-                <h2 className="text-3xl font-black text-white font-display">Print Settings</h2>
-                <p className="text-text-muted">Customize how your documents should look.</p>
+        <div className="space-y-4 animate-fade-in pb-24">
+            <div>
+                <h2 className="text-xl font-black text-white font-display">Print Settings</h2>
+                <p className="text-text-muted text-xs mt-0.5">Customize your print options</p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
+            {/* All options in a compact card */}
+            <div className="glass rounded-2xl p-4 space-y-4">
                 {/* Color Mode */}
-                <div className="glass rounded-2xl p-4 lg:p-5 space-y-3">
-                    <label className="text-xs font-black text-text-muted uppercase tracking-[0.16em] block">Color Mode</label>
-                    <div className="grid grid-cols-2 gap-2">
+                <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Color</span>
+                    <div className="flex gap-1.5">
                         {(['bw', 'color'] as const).map((mode) => (
                             <button
                                 key={mode}
                                 onClick={() => updateOption('colorMode', mode)}
-                                className={optionBtnClass(options.colorMode === mode)}
+                                className={pill(options.colorMode === mode)}
                             >
-                                <Palette size={16} />
-                                <span>{mode === 'bw' ? 'Black & White' : 'Full Color'}</span>
-                                {options.colorMode === mode && <Check size={13} className="absolute top-2 right-2" />}
+                                <Palette size={12} />
+                                {mode === 'bw' ? 'B&W' : 'Color'}
+                                {options.colorMode === mode && <Check size={10} />}
                             </button>
                         ))}
                     </div>
                 </div>
 
+                <div className="border-t border-white/[0.06]" />
+
                 {/* Sides */}
-                <div className="glass rounded-2xl p-4 lg:p-5 space-y-3">
-                    <label className="text-xs font-black text-text-muted uppercase tracking-[0.16em] block">Sides</label>
-                    <div className="grid grid-cols-2 gap-2">
+                <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Sides</span>
+                    <div className="flex gap-1.5">
                         {(['single', 'double'] as const).map((side) => (
                             <button
                                 key={side}
                                 onClick={() => updateOption('sides', side)}
-                                className={optionBtnClass(options.sides === side)}
+                                className={pill(options.sides === side)}
                             >
-                                <FileIcon size={16} />
-                                <span>{side === 'single' ? 'Single Sided' : 'Double Sided'}</span>
-                                {options.sides === side && <Check size={13} className="absolute top-2 right-2" />}
+                                <FileIcon size={12} />
+                                {side === 'single' ? 'Single' : 'Double'}
+                                {options.sides === side && <Check size={10} />}
                             </button>
                         ))}
                     </div>
                 </div>
 
+                <div className="border-t border-white/[0.06]" />
+
                 {/* Binding */}
-                <div className="glass rounded-2xl p-4 lg:p-5 space-y-3 lg:col-span-2">
-                    <label className="text-xs font-black text-text-muted uppercase tracking-[0.16em] block">Binding</label>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Binding</span>
+                    <div className="flex gap-1.5">
                         {[
                             { id: 'none', label: 'None', icon: X },
                             { id: 'spiral', label: 'Spiral', icon: Layers },
@@ -91,46 +98,40 @@ export const SettingsStep: React.FC<SettingsStepProps> = ({
                             { id: 'hard', label: 'Hard', icon: Book },
                         ].map((bind) => {
                             const bindId = bind.id as PrintOptions['binding'];
-                            const isSelected = options.binding === bindId;
-
                             return (
                                 <button
                                     key={bind.id}
                                     onClick={() => updateOption('binding', bindId)}
-                                    className={optionBtnClass(isSelected)}
+                                    className={pill(options.binding === bindId)}
                                 >
-                                    <bind.icon size={16} />
-                                    <span>{bind.label}</span>
-                                    {isSelected && <Check size={13} className="absolute top-2 right-2" />}
+                                    <bind.icon size={12} />
+                                    {bind.label}
+                                    {options.binding === bindId && <Check size={10} />}
                                 </button>
                             );
                         })}
                     </div>
                 </div>
 
-                {/* Copies Stepper */}
-                <div className="glass rounded-2xl p-4 lg:p-5 space-y-3 lg:col-span-2">
-                    <label className="text-xs font-black text-text-muted uppercase tracking-[0.16em] block">Number of Copies</label>
-                    <div className="flex items-center justify-between p-4 bg-background-card border border-border rounded-xl">
-                        <div className="flex items-center gap-2">
-                            <Copy size={16} className="text-text-muted" />
-                            <span className="text-white font-semibold">Copies per document</span>
-                        </div>
-                        <div className="flex items-center gap-6">
-                            <button
-                                onClick={() => updateOption('copies', Math.max(1, options.copies - 1))}
-                                className="size-9 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
-                            >
-                                -
-                            </button>
-                            <span className="text-xl font-bold text-white w-6 text-center">{options.copies}</span>
-                            <button
-                                onClick={() => updateOption('copies', options.copies + 1)}
-                                className="size-9 rounded-full bg-white flex items-center justify-center text-black hover:bg-white/90 transition-colors"
-                            >
-                                +
-                            </button>
-                        </div>
+                <div className="border-t border-white/[0.06]" />
+
+                {/* Copies */}
+                <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Copies</span>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => updateOption('copies', Math.max(1, options.copies - 1))}
+                            className="size-7 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
+                        >
+                            <Minus size={12} />
+                        </button>
+                        <span className="text-base font-bold text-white w-5 text-center tabular-nums">{options.copies}</span>
+                        <button
+                            onClick={() => updateOption('copies', options.copies + 1)}
+                            className="size-7 rounded-full bg-white flex items-center justify-center text-black hover:bg-white/90 transition-colors"
+                        >
+                            <Plus size={12} />
+                        </button>
                     </div>
                 </div>
             </div>
