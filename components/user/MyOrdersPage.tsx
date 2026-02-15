@@ -1,22 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
     ArrowLeft,
     Clock,
     CheckCircle2,
-    XCircle,
     Loader2,
     Package,
     ChevronRight,
-    Ban
+    Copy,
+    Check
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/Button';
 import { cn } from '../../lib/utils';
 import { useOrderStore } from '../../store/useOrderStore';
 import { Order } from '../../types';
-import { fetchOrders, cancelOrder, markOrderCollected } from '../../services/data';
+import { fetchOrders, markOrderCollected, supabase } from '../../services/data';
 import { toast } from 'sonner';
 import { Skeleton } from '../ui/Skeleton';
 import { OrderTracker } from './OrderTracker';
@@ -27,7 +27,6 @@ const statusConfig: Record<string, { color: string; icon: any; label: string }> 
     printing: { color: 'text-purple-500 bg-purple-500/10 border-purple-500/20', icon: Loader2, label: 'Printing' },
     ready: { color: 'text-green-500 bg-green-500/10 border-green-500/20', icon: CheckCircle2, label: 'Ready for Pickup' },
     completed: { color: 'text-text-muted bg-white/5 border-white/10', icon: CheckCircle2, label: 'Completed' },
-    cancelled: { color: 'text-red-500 bg-red-500/10 border-red-500/20', icon: XCircle, label: 'Cancelled' },
 };
 
 export const MyOrdersPage: React.FC = () => {
@@ -35,34 +34,65 @@ export const MyOrdersPage: React.FC = () => {
     const { orders: storeOrders, setOrders } = useOrderStore();
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [loading, setLoading] = useState(true);
-    const [cancellingId, setCancellingId] = useState<string | null>(null);
     const navigate = useNavigate();
+    const [copiedId, setCopiedId] = useState<string | null>(null);
 
-    // Fetch latest orders on mount
+    const handleCopyOtp = useCallback((orderId: string, otp: string) => {
+        navigator.clipboard.writeText(otp).then(() => {
+            setCopiedId(orderId);
+            toast.success('OTP copied!');
+            setTimeout(() => setCopiedId(null), 2000);
+        }).catch(() => toast.error('Failed to copy'));
+    }, []);
+
+    // Fetch latest orders on mount — use email-based query as fast fallback
     React.useEffect(() => {
+        let cancelled = false;
         const loadOrders = async () => {
-            if (user?.id) {
-                try {
-                    const data = await fetchOrders(user.id);
-                    setOrders(data);
-                } catch (error) {
-                    console.error('Failed to sync orders:', error);
-                } finally {
-                    setLoading(false);
-                }
-            } else if (isLoaded && !user) {
-                setLoading(false); // No user, stop loading
+            if (!user) {
+                if (isLoaded) setLoading(false);
+                return;
+            }
+            try {
+                // Try userId first, but also accept temp_ users by fetching via email
+                const userId = user.id.startsWith('temp_') ? undefined : user.id;
+                const data = await fetchOrders(userId);
+                if (!cancelled) setOrders(data);
+            } catch (error) {
+                console.error('Failed to sync orders:', error);
+            } finally {
+                if (!cancelled) setLoading(false);
             }
         };
 
-        if (isLoaded) {
+        if (isLoaded || user) {
             loadOrders();
 
-            // Auto-reload every 60 seconds
+            // Real-time subscription for instant order updates
+            const userId = user?.id;
+            const channel = userId ? supabase
+                .channel(`student-orders-${userId}`)
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'UPDATE',
+                        schema: 'public',
+                        table: 'Order',
+                        filter: `userId=eq.${userId}`,
+                    },
+                    () => { loadOrders(); }
+                )
+                .subscribe() : null;
+
+            // Fallback polling every 60s
             const interval = setInterval(loadOrders, 60000);
-            return () => clearInterval(interval);
+            return () => {
+                cancelled = true;
+                clearInterval(interval);
+                if (channel) supabase.removeChannel(channel);
+            };
         }
-    }, [isLoaded, user?.id, setOrders]);
+    }, [isLoaded, user?.id, user?.email, setOrders]);
 
     // Derived state for orders (sorting)
     const orders = storeOrders.sort((a, b) =>
@@ -83,32 +113,6 @@ export const MyOrdersPage: React.FC = () => {
             return summaryParts.join(' • ');
         }
         return order.fileName || 'Order Details';
-    };
-
-    const handleCancelOrder = async (orderId: string) => {
-        if (!confirm('Are you sure you want to cancel this order? This action cannot be undone.')) return;
-
-        setCancellingId(orderId);
-        try {
-            if (!user?.id) return;
-
-            const result = await cancelOrder(orderId, user.id);
-
-            if (!result.success) {
-                toast.error(result.error || 'Failed to cancel order.');
-                return;
-            }
-
-            // Optimistic update
-            setOrders(storeOrders.map(o => o.id === orderId ? { ...o, status: 'cancelled' } : o));
-            toast.success('Order cancelled successfully.');
-
-        } catch (error) {
-            console.error('Failed to cancel order:', error);
-            toast.error('Failed to cancel order. Please try again.');
-        } finally {
-            setCancellingId(null);
-        }
     };
 
     const handleMarkCollected = async (orderId: string) => {
@@ -200,7 +204,7 @@ export const MyOrdersPage: React.FC = () => {
 
             {/* Filters */}
             <div className="flex flex-wrap gap-1.5">
-                {['all', 'pending', 'printing', 'completed', 'cancelled'].map(status => (
+                {['all', 'pending', 'printing', 'completed'].map(status => (
                     <button
                         key={status}
                         onClick={() => setFilterStatus(status)}
@@ -254,7 +258,9 @@ export const MyOrdersPage: React.FC = () => {
                                                         {status.label}
                                                     </span>
                                                 </div>
-                                                <span className="text-xs text-text-muted font-mono">#{order.id.slice(-6)}</span>
+                                                <div className="flex items-center gap-2 mt-0.5">
+                                                    <span className="text-xs text-text-muted font-mono">#{order.id.slice(-6)}</span>
+                                                </div>
                                             </div>
                                         </div>
 
@@ -268,20 +274,6 @@ export const MyOrdersPage: React.FC = () => {
                                         <OrderTracker status={order.status} className="!py-1" />
 
                                         <div className="flex items-center gap-2 shrink-0 ml-3">
-                                            {order.status === 'pending' && (
-                                                <button
-                                                    onClick={() => handleCancelOrder(order.id)}
-                                                    disabled={cancellingId === order.id}
-                                                    className="text-xs px-2.5 py-1 bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 rounded-lg transition-colors flex items-center gap-1"
-                                                >
-                                                    {cancellingId === order.id ? (
-                                                        <Loader2 size={10} className="animate-spin" />
-                                                    ) : (
-                                                        <Ban size={10} />
-                                                    )}
-                                                    Cancel
-                                                </button>
-                                            )}
                                             {order.status === 'ready' && (
                                                 <button
                                                     onClick={() => handleMarkCollected(order.id)}
@@ -293,6 +285,43 @@ export const MyOrdersPage: React.FC = () => {
                                             )}
                                         </div>
                                     </div>
+
+                                    {/* Big OTP Display */}
+                                    {order.orderToken && order.status !== 'completed' && (
+                                        <div className="mt-3 pt-3 border-t border-border/50">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5">Pickup OTP</p>
+                                                    <div className="flex items-center gap-1">
+                                                        {order.orderToken.split('').map((char, idx) => (
+                                                            <div
+                                                                key={idx}
+                                                                className="w-8 h-10 bg-amber-500/10 border border-amber-500/30 rounded-lg flex items-center justify-center text-lg font-black text-amber-400 font-mono"
+                                                            >
+                                                                {char}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => handleCopyOtp(order.id, order.orderToken!)}
+                                                    className={cn(
+                                                        "flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all",
+                                                        copiedId === order.id
+                                                            ? "bg-green-500/20 text-green-400 border border-green-500/30"
+                                                            : "bg-white/5 text-text-muted border border-border hover:bg-white/10 hover:text-white"
+                                                    )}
+                                                >
+                                                    {copiedId === order.id ? (
+                                                        <><Check size={12} /> Copied</>
+                                                    ) : (
+                                                        <><Copy size={12} /> Copy</>
+                                                    )}
+                                                </button>
+                                            </div>
+                                            <p className="text-[10px] text-text-muted mt-1.5">Show this code at the counter to collect your order</p>
+                                        </div>
+                                    )}
                                 </div>
                             </motion.div>
                         );

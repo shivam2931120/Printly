@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Icon } from '../ui/Icon';
-import { fetchAllOrdersForAnalytics, fetchDailyStats, DailyStatsRow } from '../../services/data';
+import { fetchAllOrdersForAnalytics, fetchDailyStats, DailyStatsRow, exportToCSV } from '../../services/data';
 import { Order } from '../../types';
 
 export const SalesOverview: React.FC = () => {
@@ -68,12 +68,35 @@ export const SalesOverview: React.FC = () => {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
-            <div>
-                <h2 className="text-2xl font-bold text-white">Sales Overview</h2>
-                <p className="text-slate-400 text-sm mt-1">
-                    Aggregate sales data across all shops (real-time + persisted)
-                </p>
+            {/* Header with Export */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h2 className="text-2xl font-bold text-white">Sales Overview</h2>
+                    <p className="text-slate-400 text-sm mt-1">
+                        Aggregate sales data across all shops (real-time + persisted)
+                    </p>
+                </div>
+                <button
+                    onClick={() => {
+                        if (orders.length === 0) return;
+                        const rows = orders.map(o => ({
+                            'Order ID': o.id,
+                            'OTP': o.orderToken || '',
+                            'Date': new Date(o.createdAt).toLocaleDateString(),
+                            'Customer': o.userName,
+                            'Email': o.userEmail,
+                            'Amount (₹)': o.totalAmount.toFixed(2),
+                            'Status': o.status.toUpperCase(),
+                            'Payment': o.paymentStatus.toUpperCase(),
+                        }));
+                        exportToCSV(rows, 'printly_sales_report');
+                    }}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.05] border border-white/[0.10] text-sm font-medium text-white hover:bg-white/[0.10] transition-colors"
+                    disabled={orders.length === 0}
+                >
+                    <Icon name="download" className="text-lg" />
+                    Export CSV
+                </button>
             </div>
 
             {loading ? (

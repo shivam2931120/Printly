@@ -18,6 +18,7 @@ const navItems = [
     { id: 'products', label: 'Products', icon: 'inventory_2' },
     { id: 'pricing', label: 'Pricing', icon: 'attach_money' },
     { id: 'inventory', label: 'Inventory', icon: 'warehouse' },
+    { id: 'audit', label: 'Audit Log', icon: 'history' },
     { id: 'settings', label: 'Settings', icon: 'settings' },
 ];
 

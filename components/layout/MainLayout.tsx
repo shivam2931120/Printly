@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { User } from '../../types';
 import { cn } from '../../lib/utils';
 import { useUIStore } from '../../store/useUIStore';
 import { BottomNav } from './BottomNav';
+import { useRealtimeNotifications } from '../../hooks/useRealtimeNotifications';
 
 interface MainLayoutProps {
     children: React.ReactNode;
@@ -13,6 +14,9 @@ interface MainLayoutProps {
 
 export const MainLayout: React.FC<MainLayoutProps> = ({ children, user }) => {
     const { isSidebarExpanded } = useUIStore();
+
+    // Real-time push notifications for students
+    useRealtimeNotifications({ userId: user?.id, role: 'student', enabled: !!user });
 
     return (
         <div className="min-h-screen bg-background text-text-primary flex">

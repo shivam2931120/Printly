@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Icon } from '../ui/Icon';
 import { Toast } from '../ui/Toast';
 import { OrderDetails } from './OrderDetails';
 import { Order, OrderStatus } from '../../types';
-import { fetchOrders, fetchAdminOrders, supabase } from '../../services/data';
-import { Skeleton } from '../ui/Skeleton'; // Added Skeleton import
+import { fetchOrders, fetchAdminOrders, supabase, exportToCSV, bulkUpdateOrderStatus, bulkDeleteOrders } from '../../services/data';
+import { Skeleton } from '../ui/Skeleton';
 
 interface OrdersPanelProps {
     currentUserId: string;
@@ -19,6 +19,9 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
     const [toastMessage, setToastMessage] = useState<{ message: string, type: 'info' | 'success' | 'warning' | 'error' } | null>(null);
     const prevOrdersCountRef = useRef<number>(0);
     const [loading, setLoading] = useState(true);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
+    const [paymentFilter, setPaymentFilter] = useState<string>('all');
 
 
 
@@ -39,7 +42,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
             if (prevOrdersCountRef.current > 0 && data.length > prevOrdersCountRef.current) {
                 const newOrder = data[0];
                 setToastMessage({
-                    message: `New Order Received! ID: ${newOrder.id.split('-')[1] || newOrder.id} `,
+                    message: `New Order Received! OTP: ${newOrder.orderToken || newOrder.id.slice(-4)} `,
                     type: 'success'
                 });
             }
@@ -129,34 +132,65 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
             return;
         }
 
-        const headers = ['Order ID', 'Date', 'Customer', 'Email', 'Items', 'Total Amount', 'Status', 'Payment'];
-        const csvContent = [
-            headers.join(','),
-            ...filteredOrders.map(order => {
-                const itemsCount = order.items ? order.items.length : (order.fileName ? 1 : 0);
-                const itemsDesc = order.items ? `${itemsCount} items` : order.fileName || 'N/A';
+        const rows = filteredOrders.map(order => ({
+            'OTP': order.orderToken || '',
+            'Order ID': order.id,
+            'Date': new Date(order.createdAt).toLocaleDateString(),
+            'Time': new Date(order.createdAt).toLocaleTimeString(),
+            'Customer': order.userName,
+            'Email': order.userEmail,
+            'Items': order.items ? order.items.map(i => `${i.name} x${i.quantity}`).join('; ') : (order.fileName || 'N/A'),
+            'Total (₹)': order.totalAmount.toFixed(2),
+            'Status': order.status.toUpperCase(),
+            'Payment': order.paymentStatus.toUpperCase(),
+        }));
 
-                return [
-                    order.id,
-                    new Date(order.createdAt).toLocaleDateString(),
-                    `"${order.userName}"`,
-                    order.userEmail,
-                    `"${itemsDesc}"`,
-                    order.totalAmount,
-                    order.status,
-                    order.paymentStatus
-                ].join(',');
-            })
-        ].join('\n');
+        exportToCSV(rows, 'printly_orders');
+        setToastMessage({ message: `Exported ${rows.length} orders`, type: 'success' });
+    };
 
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.setAttribute('href', url);
-        link.setAttribute('download', `orders_export_${new Date().toISOString().split('T')[0]}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+    // Bulk actions
+    const toggleSelect = (id: string) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            next.has(id) ? next.delete(id) : next.add(id);
+            return next;
+        });
+    };
+
+    const toggleSelectAll = () => {
+        if (selectedIds.size === filteredOrders.length) {
+            setSelectedIds(new Set());
+        } else {
+            setSelectedIds(new Set(filteredOrders.map(o => o.id)));
+        }
+    };
+
+    const handleBulkStatus = async (status: OrderStatus) => {
+        const ids = Array.from(selectedIds);
+        if (ids.length === 0) return;
+        const { success } = await bulkUpdateOrderStatus(ids, status);
+        if (success) {
+            setOrders(prev => prev.map(o => ids.includes(o.id) ? { ...o, status, updatedAt: new Date() } : o));
+            setSelectedIds(new Set());
+            setToastMessage({ message: `${ids.length} orders updated to ${status}`, type: 'success' });
+        } else {
+            setToastMessage({ message: 'Bulk update failed', type: 'error' });
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        const ids = Array.from(selectedIds);
+        if (ids.length === 0) return;
+        if (!window.confirm(`Delete ${ids.length} orders?`)) return;
+        const { success } = await bulkDeleteOrders(ids);
+        if (success) {
+            setOrders(prev => prev.filter(o => !ids.includes(o.id)));
+            setSelectedIds(new Set());
+            setToastMessage({ message: `${ids.length} orders deleted`, type: 'success' });
+        } else {
+            setToastMessage({ message: 'Bulk delete failed', type: 'error' });
+        }
     };
 
     const statusColors: Record<string, string> = {
@@ -165,7 +199,6 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
         'printing': 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400',
         'ready': 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
         'completed': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-        'cancelled': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
     };
 
     const paymentColors: Record<string, string> = {
@@ -175,22 +208,42 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
         'failed': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
     };
 
-    const filteredOrders = orders.filter(order => {
+    const filteredOrders = useMemo(() => orders.filter(order => {
         const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
+        const matchesPayment = paymentFilter === 'all' || order.paymentStatus === paymentFilter;
         const matchesSearch = order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
             order.userName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (order.orderToken && order.orderToken.toLowerCase().includes(searchQuery.toLowerCase())) ||
+            (order.userEmail && order.userEmail.toLowerCase().includes(searchQuery.toLowerCase())) ||
             (order.fileName && order.fileName.toLowerCase().includes(searchQuery.toLowerCase()));
-        return matchesStatus && matchesSearch;
-    });
 
-    const statusCounts = {
+        // Date filter
+        let matchesDate = true;
+        if (dateFilter !== 'all') {
+            const now = new Date();
+            const orderDate = new Date(order.createdAt);
+            if (dateFilter === 'today') {
+                matchesDate = orderDate.toDateString() === now.toDateString();
+            } else if (dateFilter === 'week') {
+                const weekAgo = new Date(now);
+                weekAgo.setDate(weekAgo.getDate() - 7);
+                matchesDate = orderDate >= weekAgo;
+            } else if (dateFilter === 'month') {
+                matchesDate = orderDate.getMonth() === now.getMonth() && orderDate.getFullYear() === now.getFullYear();
+            }
+        }
+
+        return matchesStatus && matchesPayment && matchesSearch && matchesDate;
+    }), [orders, statusFilter, paymentFilter, searchQuery, dateFilter]);
+
+    const statusCounts = useMemo(() => ({
         all: orders.length,
         pending: orders.filter(o => o.status === 'pending').length,
         confirmed: orders.filter(o => o.status === 'confirmed').length,
         printing: orders.filter(o => o.status === 'printing').length,
         ready: orders.filter(o => o.status === 'ready').length,
         completed: orders.filter(o => o.status === 'completed').length,
-    };
+    }), [orders]);
 
     return (
         <div className="space-y-6">
@@ -238,17 +291,65 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
                 ))}
             </div>
 
-            {/* Search */}
-            <div className="relative max-w-md">
-                <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg" />
-                <input
-                    type="text"
-                    placeholder="Search by order ID, customer, or file..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-lg text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary focus:border-primary"
-                />
+            {/* Search & Advanced Filters */}
+            <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1 max-w-md">
+                    <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg" />
+                    <input
+                        type="text"
+                        placeholder="Search by OTP, name, email, or file..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2.5 bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-lg text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary focus:border-primary"
+                        aria-label="Search orders"
+                    />
+                </div>
+                <select
+                    value={dateFilter}
+                    onChange={(e) => setDateFilter(e.target.value as any)}
+                    className="px-3 py-2.5 bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-lg text-sm text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-primary"
+                    aria-label="Filter by date"
+                >
+                    <option value="all">All Time</option>
+                    <option value="today">Today</option>
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                </select>
+                <select
+                    value={paymentFilter}
+                    onChange={(e) => setPaymentFilter(e.target.value)}
+                    className="px-3 py-2.5 bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-lg text-sm text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-primary"
+                    aria-label="Filter by payment"
+                >
+                    <option value="all">All Payments</option>
+                    <option value="paid">Paid</option>
+                    <option value="unpaid">Unpaid</option>
+                </select>
             </div>
+
+            {/* Bulk Action Bar */}
+            {selectedIds.size > 0 && (
+                <div className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl animate-fade-in">
+                    <span className="text-sm font-bold text-blue-700 dark:text-blue-300">{selectedIds.size} selected</span>
+                    <div className="flex items-center gap-2 ml-auto">
+                        <button onClick={() => handleBulkStatus('printing')} className="px-3 py-1.5 text-xs font-bold rounded-lg bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 hover:bg-indigo-200 transition-colors">
+                            <Icon name="print" className="text-sm mr-1" />Print
+                        </button>
+                        <button onClick={() => handleBulkStatus('ready')} className="px-3 py-1.5 text-xs font-bold rounded-lg bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 hover:bg-purple-200 transition-colors">
+                            <Icon name="check_circle" className="text-sm mr-1" />Ready
+                        </button>
+                        <button onClick={() => handleBulkStatus('completed')} className="px-3 py-1.5 text-xs font-bold rounded-lg bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 hover:bg-green-200 transition-colors">
+                            <Icon name="done_all" className="text-sm mr-1" />Complete
+                        </button>
+                        <button onClick={handleBulkDelete} className="px-3 py-1.5 text-xs font-bold rounded-lg bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 hover:bg-red-200 transition-colors">
+                            <Icon name="delete" className="text-sm mr-1" />Delete
+                        </button>
+                        <button onClick={() => setSelectedIds(new Set())} className="px-3 py-1.5 text-xs font-medium rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                            Clear
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Desktop Orders Table */}
             <div className="hidden md:block bg-surface-light/80 dark:bg-surface-dark/80 backdrop-blur-xl rounded-xl border border-border-light dark:border-border-dark overflow-hidden shadow-sm">
@@ -274,7 +375,16 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr>
-                                    <th className="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">ID</th>
+                                    <th className="py-3 px-3 w-10">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedIds.size === filteredOrders.length && filteredOrders.length > 0}
+                                            onChange={toggleSelectAll}
+                                            className="rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary"
+                                            aria-label="Select all orders"
+                                        />
+                                    </th>
+                                    <th className="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">OTP</th>
                                     <th className="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">User</th>
                                     <th className="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Items</th>
                                     <th className="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Payment</th>
@@ -293,7 +403,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
                             >
                                 {filteredOrders.length === 0 ? (
                                     <tr>
-                                        <td colSpan={6} className="py-12 text-center text-slate-500 dark:text-slate-400">
+                                        <td colSpan={7} className="py-12 text-center text-slate-500 dark:text-slate-400">
                                             <div className="flex flex-col items-center justify-center">
                                                 <Icon name="inbox" className="text-4xl text-slate-300 dark:text-slate-600 mb-3" />
                                                 <p>No orders found</p>
@@ -308,11 +418,29 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
                                                 visible: { opacity: 1, x: 0 }
                                             }}
                                             key={order.id}
-                                            className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors cursor-pointer"
+                                            className={`hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors cursor-pointer ${selectedIds.has(order.id) ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}
                                             onClick={() => setSelectedOrder(order)}
                                         >
-                                            <td className="py-4 px-4 font-mono text-sm">
-                                                <span className="font-semibold text-slate-900 dark:text-white truncate max-w-[120px] block" title={order.id}>{order.id}</span>
+                                            <td className="py-4 px-3" onClick={(e) => e.stopPropagation()}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedIds.has(order.id)}
+                                                    onChange={() => toggleSelect(order.id)}
+                                                    className="rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary"
+                                                    aria-label={`Select order ${order.orderToken || order.id}`}
+                                                />
+                                            </td>
+                                            <td className="py-4 px-4">
+                                                <div className="flex flex-col items-start gap-1">
+                                                    {order.orderToken ? (
+                                                        <span className="font-mono text-sm font-black tracking-wider text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded-lg border border-amber-200 dark:border-amber-800">
+                                                            {order.orderToken}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="font-mono text-xs text-slate-400">—</span>
+                                                    )}
+                                                    <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">#{order.id.slice(-6)}</span>
+                                                </div>
                                             </td>
                                             <td className="py-4 px-4">
                                                 <div className="flex items-center gap-2">
@@ -350,11 +478,6 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
                                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${paymentColors[order.paymentStatus] || 'bg-gray-100'}`}>
                                                         {order.paymentStatus}
                                                     </span>
-                                                    {order.status === 'cancelled' && order.paymentStatus === 'paid' && (
-                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-red-100 text-red-700 border border-red-200 shadow-sm animate-pulse">
-                                                            Refund Needed
-                                                        </span>
-                                                    )}
                                                 </div>
                                             </td>
                                             <td className="py-4 px-4">
@@ -400,7 +523,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
                                                         </button>
                                                     )}
 
-                                                    {(order.status === 'completed' || order.status === 'cancelled') && (
+                                                    {order.status === 'completed' && (
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); deleteOrder(order.id); }}
                                                             className="p-2 rounded-lg bg-red-100 text-red-600 hover:bg-red-600 hover:text-white dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white transition-all"
@@ -436,12 +559,17 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
                             className="bg-surface-light/80 dark:bg-surface-dark/80 backdrop-blur-xl rounded-xl border border-border-light dark:border-border-dark p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
                             onClick={() => setSelectedOrder(order)}
                         >
-                            {/* Header: ID and Status */}
+                            {/* Header: OTP and Status */}
                             <div className="flex justify-between items-start mb-3">
                                 <div>
-                                    <span className="font-mono text-xs text-slate-500 dark:text-slate-400 block mb-1">
-                                        {order.id}
-                                    </span>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        {order.orderToken ? (
+                                            <span className="font-mono text-sm font-black tracking-wider text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded-lg border border-amber-200 dark:border-amber-800">
+                                                {order.orderToken}
+                                            </span>
+                                        ) : null}
+                                        <span className="font-mono text-[10px] text-slate-400 dark:text-slate-500">#{order.id.slice(-6)}</span>
+                                    </div>
 
                                     <div className="flex items-center gap-2">
                                         <div className={`size-6 rounded-full flex items-center justify-center text-[10px] font-bold bg-primary/10 text-primary`}>
@@ -520,7 +648,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
                                     </button>
                                 )}
 
-                                {(order.status === 'completed' || order.status === 'cancelled') && (
+                                {order.status === 'completed' && (
                                     <button
                                         onClick={(e) => { e.stopPropagation(); deleteOrder(order.id); }}
                                         className="py-2 px-3 rounded-lg bg-red-600 text-white font-bold text-xs hover:bg-red-700 transition-colors flex items-center justify-center gap-1.5 shadow-md shadow-red-500/20"

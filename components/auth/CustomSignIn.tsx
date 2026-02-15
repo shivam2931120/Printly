@@ -4,6 +4,7 @@ import { Lock, Mail, ArrowRight, ArrowLeft, Loader2, Eye, EyeOff } from 'lucide-
 import { Button } from '../ui/Button';
 import { supabase } from '../../services/supabase';
 import { hasAdminAccess, hasDeveloperAccess, normalizeRole } from '../../lib/utils';
+import { RateLimits } from '../../lib/rateLimiter';
 
 export const CustomSignIn = () => {
     const [email, setEmail] = useState('');
@@ -19,6 +20,15 @@ export const CustomSignIn = () => {
         setError('');
 
         try {
+            // Rate limit sign-in attempts
+            try {
+                await RateLimits.signin(async () => {});
+            } catch (err: any) {
+                setError(err.message);
+                setIsLoading(false);
+                return;
+            }
+
             const { data, error: signInError } = await supabase.auth.signInWithPassword({
                 email,
                 password,

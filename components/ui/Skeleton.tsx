@@ -8,6 +8,8 @@ interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
 export const Skeleton: React.FC<SkeletonProps> = ({ className, ...props }) => {
     return (
         <div
+            role="status"
+            aria-label="Loading"
             className={cn(
                 "animate-pulse rounded-md bg-slate-200 dark:bg-slate-800",
                 className

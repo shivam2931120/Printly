@@ -41,7 +41,6 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ order: initialOrder,
         'printing': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
         'ready': 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
         'completed': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-        'cancelled': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
         'confirmed': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
     };
 
@@ -68,7 +67,9 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ order: initialOrder,
                             <Icon name="receipt_long" className="text-2xl text-blue-600 dark:text-blue-400" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold text-slate-900 dark:text-white truncate max-w-[200px]">{order.id}</h2>
+                            <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                                Order #{order.id.slice(-8).toUpperCase()}
+                            </h2>
                             <div className="flex items-center gap-2 mt-1">
                                 <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[order.status] || 'bg-slate-100'}`}>
                                     {order.status}
@@ -79,6 +80,17 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ order: initialOrder,
                             </div>
                         </div>
                     </div>
+                    {/* Pickup OTP - prominent display for verification */}
+                    {order.orderToken && (
+                        <div className="flex flex-col items-center mr-2">
+                            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Pickup OTP</span>
+                            <div className="px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-300 dark:border-amber-600 border-dashed">
+                                <span className="text-lg font-black font-mono tracking-[0.2em] text-amber-700 dark:text-amber-400">
+                                    {order.orderToken}
+                                </span>
+                            </div>
+                        </div>
+                    )}
                     <button
                         onClick={onClose}
                         className="p-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
@@ -133,10 +145,19 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ order: initialOrder,
                                         <div className="size-10 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-sm font-bold text-blue-600 dark:text-blue-400">
                                             {order.userName.charAt(0).toUpperCase()}
                                         </div>
-                                        <div>
+                                        <div className="flex-1 min-w-0">
                                             <p className="font-semibold text-sm text-slate-900 dark:text-white">{order.userName}</p>
                                             <p className="text-sm text-slate-500 dark:text-slate-400">{order.userEmail}</p>
                                         </div>
+                                        {/* Inline OTP for quick glance */}
+                                        {order.orderToken && order.status !== 'completed' && (
+                                            <div className="flex flex-col items-center px-3 py-1 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                                                <span className="text-[8px] font-bold text-amber-500 uppercase tracking-widest">OTP</span>
+                                                <span className="text-sm font-black font-mono tracking-wider text-amber-700 dark:text-amber-400">
+                                                    {order.orderToken}
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
                                 </section>
                             </div>
@@ -175,11 +196,6 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ order: initialOrder,
                                                                     {item.options.binding !== 'none' && (
                                                                         <span className="text-xs bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 px-2 py-0.5 rounded border border-orange-200 dark:border-orange-900/50">
                                                                             Binding: {item.options.binding}
-                                                                        </span>
-                                                                    )}
-                                                                    {item.options.stapling !== 'none' && (
-                                                                        <span className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-900/50">
-                                                                            Staple: {item.options.stapling}
                                                                         </span>
                                                                     )}
                                                                     {item.options.holePunch && (

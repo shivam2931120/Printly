@@ -51,8 +51,6 @@ export interface PrintOptions {
   paperType: 'normal' | 'bond' | 'glossy';
   pageSelection: 'all' | 'custom';
   pageRange?: { from: number; to: number };
-  // New Options
-  stapling: 'none' | 'corner' | 'side';
   holePunch: boolean;
   coverPage: 'none' | 'front' | 'front_back';
 }
@@ -80,12 +78,6 @@ export interface PricingConfig {
     bond: number;
     glossy: number;
   };
-  // New Pricing
-  staplingPrices: {
-    none: number;
-    corner: number;
-    side: number;
-  };
   holePunchPrice: number; // per file/job
   coverPagePrice: number; // per page (usually thicker paper)
 }
@@ -112,18 +104,13 @@ export const DEFAULT_PRICING: PricingConfig = {
     bond: 2,
     glossy: 5,
   },
-  staplingPrices: {
-    none: 0,
-    corner: 10,
-    side: 15,
-  },
   holePunchPrice: 10,
   coverPagePrice: 15,
 };
 
 // ===== ORDER =====
-export type OrderStatus = 'pending' | 'confirmed' | 'printing' | 'ready' | 'completed' | 'cancelled';
-export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
+export type OrderStatus = 'pending' | 'confirmed' | 'printing' | 'ready' | 'completed';
+export type PaymentStatus = 'pending' | 'paid' | 'failed';
 
 // ===== CART & ORDER =====
 export type CartItemType = 'product' | 'print';

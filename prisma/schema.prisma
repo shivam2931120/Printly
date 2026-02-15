@@ -23,13 +23,11 @@ enum OrderStatus {
   PRINTING
   READY
   COMPLETED
-  CANCELLED
 }
 
 enum PaymentStatus {
   PAID
   UNPAID
-  REFUNDED
 }
 
 // ===== SHOPS (Multi-tenant) =====

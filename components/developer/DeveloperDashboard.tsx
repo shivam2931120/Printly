@@ -5,6 +5,8 @@ import { ShopsManagement } from './ShopsManagement';
 import { SalesOverview } from './SalesOverview';
 import { StoragePanel } from '../admin/StoragePanel';
 import { User } from '../../types';
+import { NotificationDropdown } from '../layout/NotificationDropdown';
+import { useRealtimeNotifications } from '../../hooks/useRealtimeNotifications';
 
 interface DeveloperDashboardProps {
     currentUser: User | null;
@@ -25,6 +27,9 @@ export const DeveloperDashboard: React.FC<DeveloperDashboardProps> = ({
 }) => {
     const navigate = useNavigate();
     const [activeSection, setActiveSection] = useState<DevSection>('shops');
+
+    // Real-time push notifications for developer
+    useRealtimeNotifications({ userId: currentUser?.id, role: 'developer', enabled: !!currentUser });
 
     const renderContent = () => {
         switch (activeSection) {
@@ -79,6 +84,8 @@ export const DeveloperDashboard: React.FC<DeveloperDashboardProps> = ({
                             </div>
 
                             <div className="flex items-center gap-2 pl-2">
+                                {/* Notifications */}
+                                <NotificationDropdown />
                                 <span className="text-sm font-medium text-text-secondary hidden sm:block">
                                     {currentUser?.name}
                                 </span>

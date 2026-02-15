@@ -7,8 +7,10 @@ import { AnalyticsDashboard } from './admin/AnalyticsDashboard';
 import { ProductManagement } from './admin/ProductManagement';
 import { PricingSettings } from './admin/PricingSettings';
 import { ShopSettings } from './admin/ShopSettings';
+import { AuditViewer } from './admin/AuditViewer';
 import { Icon } from './ui/Icon';
 import { User, PricingConfig } from '../types';
+import { useRealtimeNotifications } from '../hooks/useRealtimeNotifications';
 
 interface AdminDashboardProps {
   currentUser: User | null;
@@ -25,6 +27,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 }) => {
   const [activeSection, setActiveSection] = useState('dashboard');
   const [adminAvatar, setAdminAvatar] = useState<string | null>(null);
+
+  // Real-time push notifications for admin
+  useRealtimeNotifications({ userId: currentUser?.id, role: 'admin', enabled: !!currentUser });
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -52,6 +57,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         return <PricingSettings pricing={pricing} onUpdate={onPricingUpdate} />;
       case 'inventory':
         return <InventoryPanel />;
+      case 'audit':
+        return <AuditViewer />;
       case 'settings':
         return (
           <SettingsPanel

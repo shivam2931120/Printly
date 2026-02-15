@@ -485,4 +485,163 @@ GRANT EXECUTE ON FUNCTION public.get_db_usage() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.cleanup_old_orders(int, boolean) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.auto_cleanup_if_needed() TO authenticated;
 
+-- ============================================================
+-- 7. Backfill orderToken to 4-digit numeric for all orders
+-- ============================================================
+UPDATE public."Order"
+SET "orderToken" = LPAD(FLOOR(1000 + random() * 9000)::int::text, 4, '0')
+WHERE "orderToken" IS NULL
+   OR length(trim("orderToken")) != 4
+   OR "orderToken" ~ '[^0-9]';
+
+-- ============================================================
+-- 8. DB Constraints, Indexes & Token Uniqueness
+-- ============================================================
+
+-- 8a. NOT NULL constraints (safe: only on columns that always have values)
+ALTER TABLE public."Order" ALTER COLUMN "totalAmount" SET NOT NULL;
+ALTER TABLE public."Order" ALTER COLUMN status SET NOT NULL;
+ALTER TABLE public."Order" ALTER COLUMN "paymentStatus" SET NOT NULL;
+ALTER TABLE public."Order" ALTER COLUMN "createdAt" SET NOT NULL;
+ALTER TABLE public."Order" ALTER COLUMN "updatedAt" SET NOT NULL;
+ALTER TABLE public."Order" ALTER COLUMN "isDeleted" SET NOT NULL;
+ALTER TABLE public."Order" ALTER COLUMN "isDeleted" SET DEFAULT false;
+
+ALTER TABLE public."User" ALTER COLUMN email SET NOT NULL;
+ALTER TABLE public."User" ALTER COLUMN "createdAt" SET NOT NULL;
+ALTER TABLE public."User" ALTER COLUMN "updatedAt" SET NOT NULL;
+
+-- 8b. Performance indexes (IF NOT EXISTS for idempotency)
+CREATE INDEX IF NOT EXISTS idx_order_userid ON public."Order"("userId");
+CREATE INDEX IF NOT EXISTS idx_order_shopid ON public."Order"("shopId");
+CREATE INDEX IF NOT EXISTS idx_order_status ON public."Order"(status);
+CREATE INDEX IF NOT EXISTS idx_order_created ON public."Order"("createdAt" DESC);
+CREATE INDEX IF NOT EXISTS idx_order_email ON public."Order"("userEmail");
+CREATE INDEX IF NOT EXISTS idx_order_deleted ON public."Order"("isDeleted") WHERE "isDeleted" = false;
+CREATE INDEX IF NOT EXISTS idx_order_token ON public."Order"("orderToken");
+
+CREATE INDEX IF NOT EXISTS idx_user_authid ON public."User"("authId");
+CREATE INDEX IF NOT EXISTS idx_user_email ON public."User"(email);
+CREATE INDEX IF NOT EXISTS idx_user_role ON public."User"(role);
+
+CREATE INDEX IF NOT EXISTS idx_product_shopid ON public."Product"("shopId");
+CREATE INDEX IF NOT EXISTS idx_product_active ON public."Product"("isActive") WHERE "isActive" = true;
+
+CREATE INDEX IF NOT EXISTS idx_dailystats_date ON public."DailyStats"(date DESC);
+CREATE INDEX IF NOT EXISTS idx_stocklog_invid ON public."StockLog"("inventoryId");
+
+-- 8c. Token uniqueness: generate_unique_order_token() function
+--     Generates a 4-digit numeric token, retries on collision (max 50 attempts)
+CREATE OR REPLACE FUNCTION public.generate_unique_order_token()
+RETURNS text
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    new_token text;
+    attempts int := 0;
+BEGIN
+    LOOP
+        new_token := LPAD(FLOOR(1000 + random() * 9000)::int::text, 4, '0');
+        -- Check if this token is already used by an active (non-completed, non-cancelled) order
+        IF NOT EXISTS (
+            SELECT 1 FROM public."Order"
+            WHERE "orderToken" = new_token
+              AND status NOT IN ('COMPLETED', 'CANCELLED')
+              AND "isDeleted" = false
+        ) THEN
+            RETURN new_token;
+        END IF;
+        attempts := attempts + 1;
+        IF attempts > 50 THEN
+            -- Fallback: 5-digit token for extreme load
+            RETURN LPAD(FLOOR(10000 + random() * 90000)::int::text, 5, '0');
+        END IF;
+    END LOOP;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.generate_unique_order_token() TO authenticated;
+
+-- 8d. Trigger: auto-assign unique token on INSERT if missing
+CREATE OR REPLACE FUNCTION public.auto_assign_order_token()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    IF NEW."orderToken" IS NULL OR length(trim(NEW."orderToken")) = 0 THEN
+        NEW."orderToken" := public.generate_unique_order_token();
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_auto_order_token ON public."Order";
+CREATE TRIGGER trg_auto_order_token
+    BEFORE INSERT ON public."Order"
+    FOR EACH ROW
+    EXECUTE FUNCTION public.auto_assign_order_token();
+
+-- 8e. Audit log table for order status changes
+CREATE TABLE IF NOT EXISTS public."AuditLog" (
+    id text PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    "tableName" text NOT NULL,
+    "recordId" text NOT NULL,
+    action text NOT NULL,            -- INSERT, UPDATE, DELETE
+    "oldData" jsonb,
+    "newData" jsonb,
+    "changedBy" text,                -- auth.uid()
+    "createdAt" timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_table ON public."AuditLog"("tableName");
+CREATE INDEX IF NOT EXISTS idx_audit_record ON public."AuditLog"("recordId");
+CREATE INDEX IF NOT EXISTS idx_audit_created ON public."AuditLog"("createdAt" DESC);
+
+-- Audit trigger for Order status changes
+CREATE OR REPLACE FUNCTION public.audit_order_changes()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    IF TG_OP = 'UPDATE' AND OLD.status IS DISTINCT FROM NEW.status THEN
+        INSERT INTO public."AuditLog" ("tableName", "recordId", action, "oldData", "newData", "changedBy")
+        VALUES (
+            'Order',
+            NEW.id,
+            'STATUS_CHANGE',
+            jsonb_build_object('status', OLD.status, 'updatedAt', OLD."updatedAt"),
+            jsonb_build_object('status', NEW.status, 'updatedAt', NEW."updatedAt"),
+            auth.uid()::text
+        );
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_audit_order ON public."Order";
+CREATE TRIGGER trg_audit_order
+    AFTER UPDATE ON public."Order"
+    FOR EACH ROW
+    EXECUTE FUNCTION public.audit_order_changes();
+
+-- AuditLog RLS
+ALTER TABLE public."AuditLog" ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "audit_select_admin" ON public."AuditLog";
+DROP POLICY IF EXISTS "audit_insert_system" ON public."AuditLog";
+
+CREATE POLICY "audit_select_admin" ON public."AuditLog"
+    FOR SELECT TO authenticated
+    USING (public.is_admin_or_developer());
+
+-- Allow trigger to insert (SECURITY DEFINER handles this, but also grant for RPC)
+CREATE POLICY "audit_insert_system" ON public."AuditLog"
+    FOR INSERT TO authenticated
+    WITH CHECK (true);
+
 COMMIT;

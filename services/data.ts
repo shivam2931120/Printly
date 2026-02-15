@@ -154,13 +154,13 @@ export const createOrder = async (order: Order, _userRole?: string): Promise<{ s
         .from('Order')
         .insert({
             id: order.id,
-            orderToken: order.orderToken || order.id.split('-')[1],
+            orderToken: order.orderToken || Math.floor(1000 + Math.random() * 9000).toString(), // DB trigger auto-assigns unique token if empty
             userId: finalUserId || null,
             userEmail: resolvedEmail,
             userName: resolvedName,
             totalAmount: order.totalAmount,
-            status: (['PENDING', 'PRINTING', 'READY', 'COMPLETED', 'CANCELLED'].includes(order.status.toUpperCase()) ? order.status.toUpperCase() : 'PENDING'),
-            paymentStatus: (['PAID', 'UNPAID', 'REFUNDED'].includes(order.paymentStatus.toUpperCase()) ? order.paymentStatus.toUpperCase() : 'UNPAID'),
+            status: (['PENDING', 'PRINTING', 'READY', 'COMPLETED'].includes(order.status.toUpperCase()) ? order.status.toUpperCase() : 'PENDING'),
+            paymentStatus: (['PAID', 'UNPAID'].includes(order.paymentStatus.toUpperCase()) ? order.paymentStatus.toUpperCase() : 'UNPAID'),
             shopId: shopId || null,
             items: itemsJson,
             createdAt: new Date().toISOString(),
@@ -175,25 +175,7 @@ export const createOrder = async (order: Order, _userRole?: string): Promise<{ s
     return { success: true };
 };
 
-export const cancelOrder = async (orderId: string, userId: string): Promise<{ success: boolean; error?: string }> => {
-    const { data: order, error: fetchError } = await supabase
-        .from('Order')
-        .select('userId, status')
-        .eq('id', orderId)
-        .single();
-
-    if (fetchError || !order) return { success: false, error: 'Order not found.' };
-    if (order.userId !== userId) return { success: false, error: 'Unauthorized.' };
-    if (order.status.toUpperCase() !== 'PENDING') return { success: false, error: 'Cannot cancel order. It may have already been processed.' };
-
-    const { error: updateError } = await supabase
-        .from('Order')
-        .update({ status: 'CANCELLED', updatedAt: new Date().toISOString() })
-        .eq('id', orderId);
-
-    if (updateError) return { success: false, error: updateError.message };
-    return { success: true };
-};
+// cancelOrder has been removed — orders cannot be cancelled after placement.
 
 export const markOrderCollected = async (orderId: string): Promise<{ success: boolean; error?: any }> => {
     const { error } = await supabase.rpc('mark_order_collected', { order_id: orderId });
@@ -211,7 +193,18 @@ export const fetchOrders = async (userId?: string): Promise<Order[]> => {
         .eq('isDeleted', false)
         .order('createdAt', { ascending: false });
 
-    if (userId) query = query.eq('userId', userId);
+    if (userId) {
+        query = query.eq('userId', userId);
+    } else {
+        // Fallback: filter by the currently signed-in user's email
+        const { data: authData } = await supabase.auth.getUser();
+        const email = authData?.user?.email;
+        if (email) {
+            query = query.eq('userEmail', email);
+        } else {
+            return []; // No way to identify the user
+        }
+    }
 
     const { data, error } = await query;
 
@@ -620,3 +613,91 @@ export const uploadFile = async (file: File): Promise<string | null> => {
         return null;
     }
 };
+
+// ===== AUDIT LOG =====
+export interface AuditLogEntry {
+    id: string;
+    tableName: string;
+    recordId: string;
+    action: string;
+    oldData: Record<string, any> | null;
+    newData: Record<string, any> | null;
+    changedBy: string | null;
+    createdAt: string;
+}
+
+export const fetchAuditLog = async (limit = 100): Promise<AuditLogEntry[]> => {
+    const { data, error } = await supabase
+        .from('AuditLog')
+        .select('*')
+        .order('createdAt', { ascending: false })
+        .limit(limit);
+
+    if (error) {
+        console.error('Error fetching audit log:', error);
+        return [];
+    }
+    return (data || []) as AuditLogEntry[];
+};
+
+// ===== EXPORT HELPERS =====
+export const exportToCSV = (rows: Record<string, any>[], filename: string) => {
+    if (rows.length === 0) return;
+    const headers = Object.keys(rows[0]);
+    const csvContent = [
+        headers.join(','),
+        ...rows.map(row =>
+            headers.map(h => {
+                const val = row[h];
+                if (val === null || val === undefined) return '';
+                const str = String(val);
+                // Escape CSV values containing commas, quotes, or newlines
+                return str.includes(',') || str.includes('"') || str.includes('\n')
+                    ? `"${str.replace(/"/g, '""')}"` : str;
+            }).join(',')
+        )
+    ].join('\n');
+
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' }); // BOM for Excel
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${filename}_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+};
+
+// ===== BULK ORDER OPERATIONS =====
+export const bulkUpdateOrderStatus = async (
+    orderIds: string[],
+    newStatus: OrderStatus
+): Promise<{ success: boolean; error?: any }> => {
+    const { error } = await supabase
+        .from('Order')
+        .update({ status: newStatus.toUpperCase(), updatedAt: new Date().toISOString() })
+        .in('id', orderIds);
+
+    if (error) {
+        console.error('Bulk status update failed:', error);
+        return { success: false, error };
+    }
+    return { success: true };
+};
+
+export const bulkDeleteOrders = async (
+    orderIds: string[]
+): Promise<{ success: boolean; error?: any }> => {
+    const { error } = await supabase
+        .from('Order')
+        .update({ isDeleted: true, deletedAt: new Date().toISOString() })
+        .in('id', orderIds);
+
+    if (error) {
+        console.error('Bulk delete failed:', error);
+        return { success: false, error };
+    }
+    return { success: true };
+};
+

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     CheckCircle2,
@@ -6,7 +6,9 @@ import {
     FileText,
     Receipt,
     Clock,
-    ArrowRight
+    ArrowRight,
+    Copy,
+    Check
 } from 'lucide-react';
 import { PrintOptions } from '../../types';
 import { Button } from '../ui/Button';
@@ -33,6 +35,14 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({
     onClose,
 }) => {
     const navigate = useNavigate();
+    const [copied, setCopied] = useState(false);
+
+    const handleCopyToken = () => {
+        navigator.clipboard.writeText(token).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        });
+    };
 
     const handleViewOrders = () => {
         onClose();
@@ -90,16 +100,24 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({
                         {token.split('').map((char, idx) => (
                             <div
                                 key={idx}
-                                className="w-10 h-12 bg-surface-dark rounded-xl border border-border-dark flex items-center justify-center text-2xl font-black text-primary shadow-inner"
+                                className="w-12 h-14 bg-surface-dark rounded-xl border border-border-dark flex items-center justify-center text-3xl font-black text-primary shadow-inner"
                             >
                                 {char}
                             </div>
                         ))}
                     </div>
-                    <p className="text-xs text-slate-500 text-center mt-4 flex items-center justify-center gap-1.5">
-                        <Info size={14} />
-                        Show this token at the store counter
-                    </p>
+                    <div className="flex items-center justify-center mt-4 gap-3">
+                        <p className="text-xs text-slate-500 flex items-center gap-1.5">
+                            <Info size={14} />
+                            Show this token at the counter
+                        </p>
+                        <button
+                            onClick={handleCopyToken}
+                            className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${copied ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10 hover:text-white'}`}
+                        >
+                            {copied ? <><Check size={12} /> Copied</> : <><Copy size={12} /> Copy</>}
+                        </button>
+                    </div>
                 </div>
 
                 {/* Order Details */}

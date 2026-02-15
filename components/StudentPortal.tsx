@@ -35,7 +35,6 @@ const DEFAULT_OPTIONS: PrintOptions = {
   binding: 'none',
   paperType: 'normal',
   pageSelection: 'all',
-  stapling: 'none',
   holePunch: false,
   coverPage: 'none'
 };
@@ -166,6 +165,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               options={printOptions}
               onChange={setPrintOptions}
               totalPrice={totalPrice}
+              pageCount={files.reduce((acc, f) => acc + f.pageCount, 0) || 1}
               onNext={() => { }}
             />
           </div>
@@ -216,6 +216,7 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({
               options={printOptions}
               onChange={setPrintOptions}
               totalPrice={totalPrice}
+              pageCount={files.reduce((acc, f) => acc + f.pageCount, 0) || 1}
               onNext={() => setStep(2)}
             />
           )}

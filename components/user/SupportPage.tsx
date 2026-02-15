@@ -20,19 +20,23 @@ import { ShopConfig, DEFAULT_SHOP_CONFIG } from '../../types';
 const faqs = [
     {
         question: 'How long does printing take?',
-        answer: 'Most print jobs are completed within 15-30 minutes. Larger orders or those requiring binding may take up to 2 hours.',
+        answer: 'Most print jobs are completed within 2-5 minutes. Larger orders or those requiring binding may take up to 15 minutes.',
     },
     {
         question: 'What file formats do you accept?',
         answer: 'We primarily accept PDF files. Other formats like DOCX, PPT, and images can be converted but may have formatting changes.',
     },
     {
-        question: 'Can I cancel or modify my order?',
-        answer: 'You can cancel or modify your order within 5 minutes of placing it. After that, please contact support.',
+        question: 'Can I cancel my order after placing it?',
+        answer: 'No. Once an order is placed, it cannot be cancelled. Our print shop begins processing orders immediately, so please double-check your files and settings before confirming your order.',
     },
     {
-        question: 'What binding options are available?',
-        answer: 'We offer Spiral Binding, Soft Cover Binding, and Hard Cover Binding with embossing.',
+        question: 'Do you offer refunds?',
+        answer: 'We do not offer refunds on any orders. All sales are final. Please review your print settings, file preview, and total amount carefully before placing your order.',
+    },
+    {
+        question: 'What if there is a problem with my print?',
+        answer: 'If you receive a print with a defect caused by our equipment (e.g., smudging, paper jam damage), please bring it to the counter with your OTP within the same day. We will reprint it at no extra cost. This does not apply to issues in the uploaded file itself.',
     },
 ];
 
@@ -96,6 +100,19 @@ export const SupportPage: React.FC = () => {
             <div className="text-center space-y-4">
                 <h1 className="text-4xl font-black text-white font-display tracking-tight">How can we help?</h1>
                 <p className="text-lg text-text-muted">Find answers to common questions or reach out to our team.</p>
+            </div>
+
+            {/* No Cancellation / No Refund Policy Banner */}
+            <div className="p-5 bg-red-500/10 border border-red-500/20 rounded-2xl">
+                <div className="flex items-start gap-3">
+                    <AlertCircle size={20} className="text-red-400 shrink-0 mt-0.5" />
+                    <div>
+                        <h3 className="font-bold text-white text-sm mb-1">No Cancellations &middot; No Refunds</h3>
+                        <p className="text-sm text-text-muted leading-relaxed">
+                            All orders are <span className="text-white font-semibold">final once placed</span>. We begin processing immediately and cannot cancel or refund any order. Please review your files, print settings, and total amount carefully before confirming payment.
+                        </p>
+                    </div>
+                </div>
             </div>
 
             {/* Quick Contact Cards */}

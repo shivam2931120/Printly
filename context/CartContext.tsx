@@ -43,9 +43,6 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (pricing.bindingPrices[options.binding]) {
                 cost += (pricing.bindingPrices[options.binding] * options.copies);
             }
-            if (pricing.staplingPrices && pricing.staplingPrices[options.stapling]) {
-                cost += (pricing.staplingPrices[options.stapling] * options.copies);
-            }
             if (options.holePunch && pricing.holePunchPrice) {
                 cost += (pricing.holePunchPrice * options.copies);
             }

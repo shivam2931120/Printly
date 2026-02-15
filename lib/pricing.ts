@@ -38,26 +38,95 @@ export const calculatePrintPrice = (
     const bindingFee = config.bindingPrices[options.binding] || 0;
     total += bindingFee;
 
-    // 6. Stapling Fees (Flat fee per document)
-    const staplingFee = config.staplingPrices[options.stapling] || 0;
-    total += staplingFee;
-
-    // 7. Hole Punch Fee (Flat fee per document)
+    // 6. Hole Punch Fee (Flat fee per document)
     if (options.holePunch) {
         total += config.holePunchPrice;
     }
 
-    // 8. Cover Page Fee (Flat fee? Or per page if front+back?)
-    // Usually cover page is a specific stock. Let's assume it's a flat fee for the "Cover Page Service" added to the doc.
+    // 7. Cover Page Fee
     if (options.coverPage !== 'none') {
         const covers = options.coverPage === 'front_back' ? 2 : 1;
         total += (config.coverPagePrice * covers);
     }
 
-    // 9. Multiply by Copies
+    // 8. Multiply by Copies
     total *= options.copies;
 
     return total;
+};
+
+/**
+ * Returns a line-by-line cost breakdown for a single print job.
+ */
+export interface PriceBreakdownLine {
+    label: string;
+    amount: number;
+    detail?: string;
+}
+
+export const calculatePriceBreakdown = (
+    options: PrintOptions,
+    pageCount: number,
+    config: PricingConfig
+): { lines: PriceBreakdownLine[]; total: number } => {
+    const lines: PriceBreakdownLine[] = [];
+
+    // 1. Base print cost
+    const baseRate = options.colorMode === 'color' ? config.perPageColor : config.perPageBW;
+    const baseCost = baseRate * pageCount;
+    lines.push({
+        label: options.colorMode === 'color' ? 'Color printing' : 'B&W printing',
+        amount: baseCost,
+        detail: `${pageCount} pg × ₹${baseRate}`,
+    });
+
+    // 2. Double-sided discount
+    if (options.sides === 'double' && config.doubleSidedDiscount > 0) {
+        const discount = -(config.doubleSidedDiscount * pageCount);
+        lines.push({ label: 'Double-sided discount', amount: discount, detail: `-₹${config.doubleSidedDiscount}/pg` });
+    }
+
+    // 3. Paper size surcharge
+    const sizeMulti = config.paperSizeMultiplier[options.paperSize] || 1;
+    if (sizeMulti !== 1) {
+        const pageCostSoFar = lines.reduce((s, l) => s + l.amount, 0);
+        const surcharge = pageCostSoFar * (sizeMulti - 1);
+        lines.push({ label: `${options.paperSize.toUpperCase()} paper`, amount: surcharge, detail: `×${sizeMulti}` });
+    }
+
+    // 4. Paper type fee
+    const paperFee = config.paperTypeFees[options.paperType] || 0;
+    if (paperFee > 0) {
+        lines.push({ label: `${options.paperType.charAt(0).toUpperCase() + options.paperType.slice(1)} paper`, amount: paperFee * pageCount, detail: `${pageCount} pg × ₹${paperFee}` });
+    }
+
+    // 5. Binding
+    const bindFee = config.bindingPrices[options.binding] || 0;
+    if (bindFee > 0) {
+        lines.push({ label: `${options.binding.charAt(0).toUpperCase() + options.binding.slice(1)} binding`, amount: bindFee });
+    }
+
+    // 6. Hole punch
+    if (options.holePunch && config.holePunchPrice > 0) {
+        lines.push({ label: 'Hole punch', amount: config.holePunchPrice });
+    }
+
+    // 8. Cover page
+    if (options.coverPage !== 'none') {
+        const covers = options.coverPage === 'front_back' ? 2 : 1;
+        lines.push({ label: `Cover page (${options.coverPage.replace('_', '+')})`, amount: config.coverPagePrice * covers });
+    }
+
+    // Subtotal before copies
+    const subtotalPerCopy = lines.reduce((s, l) => s + l.amount, 0);
+
+    // 9. Copies
+    if (options.copies > 1) {
+        lines.push({ label: `× ${options.copies} copies`, amount: subtotalPerCopy * (options.copies - 1) });
+    }
+
+    const total = Math.max(0, subtotalPerCopy * options.copies);
+    return { lines, total };
 };
 
 /**

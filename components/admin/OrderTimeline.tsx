@@ -77,11 +77,6 @@ export const generateOrderEvents = (order: Order): OrderEvent[] => {
                 details = 'Handed over to customer';
                 color = 'text-green-600 bg-green-100 dark:bg-green-900/30';
                 break;
-            case 'cancelled':
-                action = 'Order Cancelled';
-                details = 'Order was cancelled';
-                color = 'text-red-500 bg-red-50 dark:bg-red-900/20';
-                break;
         }
 
         if (action) {

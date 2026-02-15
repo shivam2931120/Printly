@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 import { Button } from '../ui/Button';
 import { cn } from '../../lib/utils';
 import { CartItem, Order } from '../../types';
+import { RateLimits } from '../../lib/rateLimiter';
 
 import { OrderConfirmation } from '../user/OrderConfirmation';
 
@@ -67,6 +68,13 @@ export const CartDrawer: React.FC = () => {
     const [confirmedOrder, setConfirmedOrder] = React.useState<Order | null>(null);
 
     const handlePayment = useCallback(async () => {
+        try {
+            await RateLimits.payment(async () => {});
+        } catch (err: any) {
+            toast.error(err.message || 'Too many payment attempts.');
+            return;
+        }
+
         setIsProcessing(true);
         setUploadProgress(0);
 
@@ -94,7 +102,8 @@ export const CartDrawer: React.FC = () => {
             name: "Printly",
             description: "Print Order Payment",
             handler: async (response: any) => {
-                const otp = Math.floor(100000 + Math.random() * 900000).toString();
+                // Generate a clean 6-char pickup code
+                const pickupCode = Math.floor(1000 + Math.random() * 9000).toString();
 
                 let uploadError = false;
                 const totalFiles = cart.filter(i => i.type === 'print').length;
@@ -132,8 +141,8 @@ export const CartDrawer: React.FC = () => {
                 }
 
                 const newOrder: Order = {
-                    id: response.razorpay_payment_id || Math.random().toString(36).substr(2, 9),
-                    orderToken: Math.random().toString(36).substr(2, 9).toUpperCase(),
+                    id: response.razorpay_payment_id || crypto.randomUUID(),
+                    orderToken: pickupCode,
                     userId: user?.id,
                     userEmail: user?.email || 'guest@example.com',
                     userName: user?.name || 'Guest',
@@ -143,7 +152,6 @@ export const CartDrawer: React.FC = () => {
                     status: 'pending',
                     paymentStatus: 'paid',
                     paymentId: response.razorpay_payment_id,
-                    otp: otp,
                     createdAt: new Date(),
                     updatedAt: new Date()
                 };
@@ -171,7 +179,7 @@ export const CartDrawer: React.FC = () => {
 
                 clearCart();
                 setConfirmedOrder(newOrder); // Show confirmation modal instead of direct navigation
-                toast.success(`Payment Successful! Your collection OTP is ${otp}`, { duration: 5000 });
+                toast.success(`Payment Successful! Your collection OTP is ${pickupCode}`, { duration: 5000 });
                 setIsProcessing(false);
             },
             prefill: {
@@ -389,7 +397,7 @@ export const CartDrawer: React.FC = () => {
                 <OrderConfirmation
                     order={{
                         id: confirmedOrder.id,
-                        tokenNumber: confirmedOrder.otp,
+                        tokenNumber: confirmedOrder.orderToken,
                         totalAmount: confirmedOrder.totalAmount,
                         status: confirmedOrder.status,
                         createdAt: confirmedOrder.createdAt.toISOString(),

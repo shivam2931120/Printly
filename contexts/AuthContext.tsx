@@ -191,19 +191,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setSupabaseUser(s?.user ?? null);
 
             if (s?.user) {
-                await resolveAppUser(s.user);
+                // Mark loaded immediately so the UI is never stuck on a spinner
+                if (mounted) setIsLoaded(true);
+                // Resolve full DB user in background (upgrades temp/cached user)
+                resolveAppUser(s.user);
             } else {
                 setAppUser(null);
                 setCachedUser(null);
+                if (mounted) setIsLoaded(true);
             }
-
-            if (mounted) setIsLoaded(true);
         });
 
-        // Safety: if onAuthStateChange never fires, force isLoaded after 3s
+        // Safety: if onAuthStateChange never fires, force isLoaded after 2s
         const safety = setTimeout(() => {
             if (mounted) setIsLoaded(true);
-        }, 3000);
+        }, 2000);
 
         return () => {
             mounted = false;

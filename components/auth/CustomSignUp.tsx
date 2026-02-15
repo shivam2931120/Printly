@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, ArrowRight, ArrowLeft, Loader2, CheckCircle2, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { supabase } from '../../services/supabase';
+import { RateLimits } from '../../lib/rateLimiter';
+import { isValidEmail, checkPasswordStrength, stripHtml } from '../../lib/security';
 
 export const CustomSignUp = () => {
     const [email, setEmail] = useState('');
@@ -18,10 +20,23 @@ export const CustomSignUp = () => {
     const [isVerifying, setIsVerifying] = useState(false);
     const navigate = useNavigate();
 
+    const passwordStrength = checkPasswordStrength(password);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
         setError('');
+
+        // Sanitize inputs
+        const cleanEmail = email.trim().toLowerCase();
+        const cleanFirst = stripHtml(firstName.trim());
+        const cleanLast = stripHtml(lastName.trim());
+
+        if (!isValidEmail(cleanEmail)) {
+            setError('Please enter a valid email address');
+            setIsLoading(false);
+            return;
+        }
 
         if (password !== confirmPassword) {
             setError('Passwords do not match');
@@ -36,9 +51,18 @@ export const CustomSignUp = () => {
         }
 
         try {
-            const fullName = `${firstName} ${lastName}`.trim();
+            // Rate limit signup attempts
+            try {
+                await RateLimits.signup(async () => {});
+            } catch (err: any) {
+                setError(err.message);
+                setIsLoading(false);
+                return;
+            }
+
+            const fullName = `${cleanFirst} ${cleanLast}`.trim();
             const { error: signUpError } = await supabase.auth.signUp({
-                email,
+                email: cleanEmail,
                 password,
                 options: {
                     data: { name: fullName, full_name: fullName },
@@ -288,6 +312,30 @@ export const CustomSignUp = () => {
                                         {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                                     </button>
                                 </div>
+                                {/* Password Strength Indicator */}
+                                {password.length > 0 && (
+                                    <div className="mt-2 space-y-1.5">
+                                        <div className="flex gap-1">
+                                            {[0, 1, 2, 3].map((i) => (
+                                                <div
+                                                    key={i}
+                                                    className={`h-1 flex-1 rounded-full transition-all duration-300 ${
+                                                        i < passwordStrength.score
+                                                            ? passwordStrength.score <= 1 ? 'bg-red-500' :
+                                                              passwordStrength.score <= 2 ? 'bg-amber-500' :
+                                                              passwordStrength.score <= 3 ? 'bg-blue-500' : 'bg-emerald-500'
+                                                            : 'bg-white/10'
+                                                    }`}
+                                                />
+                                            ))}
+                                        </div>
+                                        <p className="text-[10px] text-text-muted">
+                                            {passwordStrength.score <= 1 ? 'Weak' :
+                                             passwordStrength.score <= 2 ? 'Fair' :
+                                             passwordStrength.score <= 3 ? 'Strong' : 'Very Strong'}
+                                        </p>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="space-y-1.5">

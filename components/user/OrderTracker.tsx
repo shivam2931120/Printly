@@ -19,17 +19,6 @@ const steps = [
 
 export const OrderTracker: React.FC<OrderTrackerProps> = ({ status, className, onStepClick }) => {
     const currentStepIndex = steps.findIndex(s => s.id === status.toLowerCase()) ?? 0;
-    const isCancelled = status.toLowerCase() === 'cancelled';
-
-    if (isCancelled) {
-        return (
-            <div className={cn("w-full py-2", className)}>
-                <div className="flex items-center justify-center p-2 bg-red-500/10 border border-red-500/20 rounded-lg text-red-500 text-xs font-bold">
-                    Order Cancelled
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className={cn("w-full py-2", className)}>

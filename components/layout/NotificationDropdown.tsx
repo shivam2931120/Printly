@@ -1,8 +1,8 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Bell, Check, Trash2, X } from 'lucide-react';
+import { Bell, Check, X, Volume2, VolumeX, BellRing } from 'lucide-react';
 import { useNotificationStore, Notification } from '../../store/useNotificationStore';
 import { cn } from '../../lib/utils';
-import { Button } from '../ui/Button';
+import { isNotificationSupported } from '../../services/pushNotifications';
 
 export const NotificationDropdown = () => {
     const {
@@ -11,7 +11,12 @@ export const NotificationDropdown = () => {
         markAsRead,
         markAllAsRead,
         clearAll,
-        removeNotification
+        removeNotification,
+        pushPermission,
+        soundEnabled,
+        requestPushPermission,
+        refreshPermission,
+        toggleSound,
     } = useNotificationStore();
 
     const [isOpen, setIsOpen] = useState(false);
@@ -56,27 +61,50 @@ export const NotificationDropdown = () => {
             {isOpen && (
                 <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-background-card border border-border rounded-xl shadow-2xl z-50 animate-fade-in overflow-hidden">
                     {/* Header */}
-                    <div className="p-4 border-b border-border flex items-center justify-between bg-background-card/95 backdrop-blur">
-                        <h3 className="font-bold text-white text-sm">Notifications</h3>
-                        <div className="flex items-center gap-2">
-                            {unreadCount > 0 && (
+                    <div className="p-4 border-b border-border bg-background-card/95 backdrop-blur space-y-2">
+                        <div className="flex items-center justify-between">
+                            <h3 className="font-bold text-white text-sm">Notifications</h3>
+                            <div className="flex items-center gap-2">
+                                {/* Sound toggle */}
                                 <button
-                                    onClick={handleMarkAllRead}
-                                    className="text-[10px] font-bold text-primary hover:text-primary-hover transition-colors flex items-center gap-1"
+                                    onClick={toggleSound}
+                                    className="p-1 rounded text-text-muted hover:text-white transition-colors"
+                                    title={soundEnabled ? 'Mute sounds' : 'Enable sounds'}
                                 >
-                                    <Check size={12} />
-                                    Mark all read
+                                    {soundEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}
                                 </button>
-                            )}
-                            {notifications.length > 0 && (
-                                <button
-                                    onClick={clearAll}
-                                    className="text-[10px] font-bold text-red-500 hover:text-red-400 transition-colors ml-2"
-                                >
-                                    Clear
-                                </button>
-                            )}
+
+                                {unreadCount > 0 && (
+                                    <button
+                                        onClick={handleMarkAllRead}
+                                        className="text-[10px] font-bold text-primary hover:text-primary-hover transition-colors flex items-center gap-1"
+                                    >
+                                        <Check size={12} />
+                                        Mark all read
+                                    </button>
+                                )}
+                                {notifications.length > 0 && (
+                                    <button
+                                        onClick={clearAll}
+                                        className="text-[10px] font-bold text-red-500 hover:text-red-400 transition-colors ml-2"
+                                    >
+                                        Clear
+                                    </button>
+                                )}
+                            </div>
                         </div>
+
+                        {/* Push permission prompt */}
+                        {isNotificationSupported() && pushPermission !== 'granted' && pushPermission !== 'denied' && (
+                            <button
+                                onClick={requestPushPermission}
+                                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 border border-primary/20 text-xs text-primary hover:bg-primary/20 transition-colors"
+                            >
+                                <BellRing size={14} />
+                                <span className="font-bold">Enable push notifications</span>
+                                <span className="text-text-muted ml-auto">Get alerts even when tab is hidden</span>
+                            </button>
+                        )}
                     </div>
 
                     {/* List */}
