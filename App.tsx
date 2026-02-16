@@ -1,6 +1,7 @@
 import React, { useState, lazy, Suspense } from 'react';
 import { Toaster } from 'sonner';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { ClerkProvider } from '@clerk/clerk-react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { User, PricingConfig, DEFAULT_PRICING } from './types';
 import { AnimatePresence } from 'framer-motion';
@@ -8,6 +9,12 @@ import { PageTransition } from './components/layout/PageTransition';
 import { MainLayout } from './components/layout/MainLayout';
 import { CartDrawer } from './components/layout/CartDrawer';
 import { ErrorBoundary } from './components/ErrorBoundary';
+
+const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+
+if (!CLERK_PUBLISHABLE_KEY) {
+  throw new Error('Missing VITE_CLERK_PUBLISHABLE_KEY environment variable');
+}
 
 // ===== Lazy-loaded route components =====
 const StudentPortal = lazy(() => import('./components/StudentPortal').then(m => ({ default: m.StudentPortal })));
@@ -129,8 +136,8 @@ const AppContent: React.FC = () => {
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
             {/* Auth Routes — redirect away if already signed in */}
-            <Route path="/sign-in/*" element={<AuthRoute currentUser={currentUser}><CustomSignIn /></AuthRoute>} />
-            <Route path="/sign-up/*" element={<AuthRoute currentUser={currentUser}><CustomSignUp /></AuthRoute>} />
+            <Route path="/sign-in" element={<AuthRoute currentUser={currentUser}><CustomSignIn /></AuthRoute>} />
+            <Route path="/sign-up" element={<AuthRoute currentUser={currentUser}><CustomSignUp /></AuthRoute>} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/auth/callback" element={<Navigate to="/" replace />} />
@@ -186,12 +193,27 @@ const AppContent: React.FC = () => {
 export default function AppWrapper() {
   return (
     <ErrorBoundary>
-      <Router>
-        <AuthProvider>
-          <Toaster position="top-right" richColors />
-          <AppContent />
-        </AuthProvider>
-      </Router>
+      <ClerkProvider
+        publishableKey={CLERK_PUBLISHABLE_KEY}
+        appearance={{
+          variables: {
+            colorPrimary: '#ffffff',
+            colorBackground: '#0a0a0a',
+            colorText: '#ffffff',
+            colorTextSecondary: '#888888',
+            colorInputBackground: 'rgba(255,255,255,0.05)',
+            colorInputText: '#ffffff',
+            borderRadius: '1rem',
+          },
+        }}
+      >
+        <Router>
+          <AuthProvider>
+            <Toaster position="top-right" richColors />
+            <AppContent />
+          </AuthProvider>
+        </Router>
+      </ClerkProvider>
     </ErrorBoundary>
   );
 }

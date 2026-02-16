@@ -86,41 +86,25 @@ export const createOrder = async (order: Order, _userRole?: string): Promise<{ s
         shopId = shop?.id || undefined;
     }
 
-    // 2. Resolve User ID via active auth session
+    // 2. Resolve User ID — passed from caller (no Supabase Auth dependency)
     let finalUserId = order.userId;
-    const { data: authData } = await supabase.auth.getUser();
-    const authUser = authData?.user;
 
     if (!finalUserId || finalUserId.startsWith('temp_')) {
-        if (authUser?.id) {
+        // Try to find user by email
+        if (order.userEmail) {
             const { data: dbUser } = await supabase
                 .from('User')
                 .select('id')
-                .eq('authId', authUser.id)
+                .eq('email', order.userEmail.trim().toLowerCase())
                 .maybeSingle();
             if (dbUser?.id) finalUserId = dbUser.id;
         }
     }
 
-    // Fallback: find by email and backfill authId
-    if ((!finalUserId || finalUserId.startsWith('temp_')) && authUser?.email) {
-        const { data: dbUser } = await supabase
-            .from('User')
-            .select('id, authId')
-            .eq('email', authUser.email.trim().toLowerCase())
-            .maybeSingle();
-        if (dbUser?.id) {
-            finalUserId = dbUser.id;
-            if (!dbUser.authId) {
-                await supabase.from('User').update({ authId: authUser.id }).eq('id', dbUser.id);
-            }
-        }
-    }
-
     if (finalUserId?.startsWith('temp_')) finalUserId = undefined;
 
-    const resolvedEmail = authUser?.email || order.userEmail || 'guest@example.com';
-    const resolvedName = order.userName || authUser?.user_metadata?.name || resolvedEmail.split('@')[0] || 'Guest';
+    const resolvedEmail = order.userEmail || 'guest@example.com';
+    const resolvedName = order.userName || resolvedEmail.split('@')[0] || 'Guest';
 
     // 3. Serialize cart items to JSONB (inline in Order — no separate table)
     const itemsJson = order.items.map(item => {
@@ -196,14 +180,8 @@ export const fetchOrders = async (userId?: string): Promise<Order[]> => {
     if (userId) {
         query = query.eq('userId', userId);
     } else {
-        // Fallback: filter by the currently signed-in user's email
-        const { data: authData } = await supabase.auth.getUser();
-        const email = authData?.user?.email;
-        if (email) {
-            query = query.eq('userEmail', email);
-        } else {
-            return []; // No way to identify the user
-        }
+        // No userId provided — cannot identify user without Supabase Auth session
+        return [];
     }
 
     const { data, error } = await query;

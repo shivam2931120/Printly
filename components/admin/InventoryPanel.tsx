@@ -8,8 +8,8 @@ import {
     fetchStockHistory,
     InventoryRow,
     StockLogRow,
-    supabase,
 } from '../../services/data';
+import { useAuth } from '../../contexts/AuthContext';
 
 type InventoryStatus = 'good' | 'low' | 'critical';
 
@@ -36,6 +36,7 @@ const getProgressColor = (status: InventoryStatus) => {
 };
 
 export const InventoryPanel: React.FC = () => {
+    const { user } = useAuth();
     const [items, setItems] = useState<InventoryRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -82,8 +83,7 @@ export const InventoryPanel: React.FC = () => {
         if (!addStockModal || stockAmount === 0) return;
         setSaving(true);
 
-        const { data: authData } = await supabase.auth.getUser();
-        const createdBy = authData?.user?.email || 'admin';
+        const createdBy = user?.email || 'admin';
 
         const result = await updateInventoryStock(
             addStockModal.id,

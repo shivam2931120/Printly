@@ -1,230 +1,155 @@
 import React, { useState } from 'react';
-import { Icon } from '../ui/Icon';
-
-import { supabase } from '../../services/supabase';
-
-// Map database roles to frontend permissions
-const mapUserRole = (dbUser: any) => {
-    return {
-        id: dbUser.id,
-        email: dbUser.email,
-        name: dbUser.name || dbUser.email.split('@')[0],
-        isAdmin: dbUser.role === 'ADMIN' || dbUser.role === 'DEVELOPER',
-        isDeveloper: dbUser.role === 'DEVELOPER',
-        avatar: dbUser.avatar
-    };
-};
+import { useNavigate } from 'react-router-dom';
+import { useSignIn } from '@clerk/clerk-react';
+import { Lock, Mail, Loader2, X, ArrowRight } from 'lucide-react';
 
 interface SignInModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSignIn: (user: { email: string; name: string; isAdmin: boolean; isDeveloper?: boolean }) => void;
+    onSignIn?: (user: { email: string; name: string; isAdmin: boolean; isDeveloper?: boolean }) => void;
 }
 
-export const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onSignIn }) => {
-    const [isSignUp, setIsSignUp] = useState(false);
+type ModalStage = 'form' | 'verifyEmail';
+
+export const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose }) => {
+    const { signIn, isLoaded, setActive } = useSignIn();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [name, setName] = useState('');
+    const [code, setCode] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [stage, setStage] = useState<ModalStage>('form');
+    const navigate = useNavigate();
 
     if (!isOpen) return null;
 
+    const fallbackToEmailCode = async () => {
+        if (!signIn) return false;
+        try {
+            const si = await signIn.create({ identifier: email });
+            const emailFactor = si.supportedFirstFactors?.find(
+                (f: any) => f.strategy === 'email_code'
+            );
+            if (emailFactor) {
+                await signIn.prepareFirstFactor({
+                    strategy: 'email_code',
+                    emailAddressId: (emailFactor as any).emailAddressId,
+                });
+                setStage('verifyEmail');
+                return true;
+            }
+        } catch { /* fall through */ }
+        return false;
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError('');
+        if (!isLoaded || !signIn) return;
         setIsLoading(true);
+        setError('');
 
         try {
-            if (isSignUp) {
-                // Check if user already exists
-                const { data: existingUser } = await supabase
-                    .from('User')
-                    .select('email')
-                    .eq('email', email)
-                    .single();
-
-                if (existingUser) {
-                    setError('User with this email already exists');
-                    setIsLoading(false);
-                    return;
-                }
-
-                // Create new user
-                const now = new Date().toISOString();
-                const { data: newUser, error: createError } = await supabase
-                    .from('User')
-                    .insert([
-                        {
-                            id: crypto.randomUUID(),
-                            email,
-                            password, // Storing directly as per current requirement
-                            name,
-                            role: 'USER', // FORCE 'USER' role for all public signups. Admins/Devs must be promoted in DB.
-                            createdAt: now,
-                            updatedAt: now,
-                        }
-                    ])
-                    .select()
-                    .single();
-
-                if (createError) throw createError;
-
-                if (newUser) {
-                    const userData = mapUserRole(newUser);
-                    localStorage.setItem('printwise_user', JSON.stringify(userData));
-                    onSignIn(userData);
-                    onClose();
-                }
-            } else {
-                // Sign In
-                const { data: user, error: fetchError } = await supabase
-                    .from('User')
-                    .select('*')
-                    .eq('email', email)
-                    .eq('password', password)
-                    .single();
-
-                if (fetchError || !user) {
-                    setError('Invalid email or password');
-                    setIsLoading(false);
-                    return;
-                }
-
-                const userData = mapUserRole(user);
-                localStorage.setItem('printwise_user', JSON.stringify(userData));
-                onSignIn(userData);
+            const result = await signIn.create({ identifier: email, password });
+            if (result.status === 'complete') {
+                await setActive({ session: result.createdSessionId });
                 onClose();
+                return;
             }
+            if (result.status === 'needs_first_factor') {
+                const emailFactor = result.supportedFirstFactors?.find((f: any) => f.strategy === 'email_code');
+                if (emailFactor) {
+                    await signIn.prepareFirstFactor({ strategy: 'email_code', emailAddressId: (emailFactor as any).emailAddressId });
+                    setStage('verifyEmail');
+                    return;
+                }
+            }
+            setError('Unable to complete sign-in.');
         } catch (err: any) {
-            console.error('Auth error:', err);
-            setError(err.message || 'An error occurred during authentication');
+            const clerkError = err.errors?.[0];
+            const msg = clerkError?.longMessage || clerkError?.message || 'Invalid email or password';
+            if (msg.toLowerCase().includes('strategy') || msg.toLowerCase().includes('verification') || clerkError?.code === 'strategy_for_user_invalid') {
+                if (await fallbackToEmailCode()) return;
+            }
+            setError(msg);
         } finally {
             setIsLoading(false);
         }
     };
 
+    const handleVerifyCode = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!isLoaded || !signIn) return;
+        setIsLoading(true);
+        setError('');
+        try {
+            const result = await signIn.attemptFirstFactor({ strategy: 'email_code', code });
+            if (result.status === 'complete') {
+                await setActive({ session: result.createdSessionId });
+                onClose();
+            } else {
+                setError('Verification failed. Please try again.');
+            }
+        } catch (err: any) {
+            setError(err.errors?.[0]?.message || 'Invalid verification code');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    if (stage === 'verifyEmail') {
+        return (
+            <div className="fixed inset-0 z-[200] flex items-center justify-center">
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+                <div className="relative z-10 w-full max-w-md mx-4 bg-white/[0.03] border border-white/[0.05] rounded-[32px] shadow-2xl backdrop-blur-xl p-8 text-center">
+                    <button onClick={onClose} className="absolute top-6 right-6 text-text-muted hover:text-white transition-colors"><X className="w-5 h-5" /></button>
+                    <h2 className="text-2xl font-black text-white tracking-tight mb-2">Check Your Email</h2>
+                    <p className="text-text-muted text-xs mb-6">Code sent to <span className="text-white font-bold">{email}</span></p>
+                    <form onSubmit={handleVerifyCode} className="space-y-6">
+                        {error && <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-xs font-bold text-center">{error}</div>}
+                        <input type="text" value={code} onChange={(e) => setCode(e.target.value)} className="w-full px-4 py-4 bg-white/5 border border-white/10 rounded-2xl focus:border-white/30 focus:bg-white/[0.08] outline-none transition-all text-white placeholder-white/10 text-center text-2xl font-bold tracking-widest" placeholder="000000" maxLength={6} autoFocus required />
+                        <button type="submit" disabled={isLoading || !isLoaded} className="w-full py-3.5 bg-white text-black hover:opacity-90 font-black rounded-2xl text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+                            {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <span className="flex items-center justify-center gap-2">VERIFY & SIGN IN <ArrowRight className="w-4 h-4" /></span>}
+                        </button>
+                        <button type="button" onClick={() => { setStage('form'); setCode(''); setError(''); }} className="text-text-muted text-xs font-bold hover:text-white transition-colors">← Back</button>
+                    </form>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="fixed inset-0 z-[200] flex items-center justify-center">
-            {/* Backdrop */}
-            <div
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                onClick={onClose}
-            />
-
-            {/* Modal */}
-            <div className="relative w-full max-w-md mx-4 bg-surface-light dark:bg-surface-dark rounded-2xl shadow-2xl border border-border-light dark:border-border-dark overflow-hidden">
-                {/* Header */}
-                <div className="p-6 pb-4 border-b border-border-light dark:border-border-dark bg-gradient-to-br from-primary/5 to-transparent">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                            <div className="p-2 rounded-xl bg-primary/10">
-                                <Icon name="print" className="text-2xl text-primary" />
-                            </div>
-                            <span className="text-xl font-bold text-slate-900 dark:text-white">Printly</span>
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+            <div className="relative z-10 w-full max-w-md mx-4 bg-white/[0.03] border border-white/[0.05] rounded-[32px] shadow-2xl backdrop-blur-xl p-8">
+                <button onClick={onClose} className="absolute top-6 right-6 text-text-muted hover:text-white transition-colors"><X className="w-5 h-5" /></button>
+                <div className="text-center mb-8">
+                    <h2 className="text-2xl font-black text-white tracking-tight mb-2">Sign In</h2>
+                    <p className="text-text-muted text-xs">Welcome back to Printly</p>
+                </div>
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    {error && <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-xs font-bold text-center">{error}</div>}
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em] ml-1">Email</label>
+                        <div className="relative">
+                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted w-5 h-5" />
+                            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full pl-12 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-2xl focus:border-white/30 focus:bg-white/[0.08] outline-none transition-all text-white placeholder-white/10 text-sm" placeholder="you@college.edu" required />
                         </div>
-                        <button
-                            onClick={onClose}
-                            className="p-2 rounded-lg text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                        >
-                            <Icon name="close" />
-                        </button>
                     </div>
-                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-                        {isSignUp ? 'Create Account' : 'Welcome Back'}
-                    </h2>
-                    <p className="text-slate-500 dark:text-slate-400 mt-1">
-                        {isSignUp ? 'Join Printly today' : 'Sign in to continue to Printly'}
-                    </p>
-                </div>
-
-                {/* Content */}
-                <div className="p-6">
-                    {/* Form */}
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        {isSignUp && (
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                                    Full Name
-                                </label>
-                                <input
-                                    type="text"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    placeholder="John Doe"
-                                    className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-                                />
-                            </div>
-                        )}
-
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                                Email Address
-                            </label>
-                            <input
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                                placeholder="you@college.edu"
-                                className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-                            />
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em] ml-1">Password</label>
+                        <div className="relative">
+                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted w-5 h-5" />
+                            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full pl-12 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-2xl focus:border-white/30 focus:bg-white/[0.08] outline-none transition-all text-white placeholder-white/10 text-sm" placeholder="••••••••" required />
                         </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                                Password
-                            </label>
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                                placeholder="••••••••"
-                                className="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary focus:border-primary transition-all"
-                            />
-                        </div>
-
-                        {error && (
-                            <p className="text-sm text-red-500 flex items-center gap-1">
-                                <Icon name="error" className="text-sm" />
-                                {error}
-                            </p>
-                        )}
-
-                        <button
-                            type="submit"
-                            disabled={isLoading}
-                            className="w-full py-3 rounded-xl bg-primary text-white font-bold hover:bg-primary-hover disabled:opacity-50 transition-all flex items-center justify-center gap-2"
-                        >
-                            {isLoading ? (
-                                <>
-                                    <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                    Processing...
-                                </>
-                            ) : (
-                                <>
-                                    {isSignUp ? 'Create Account' : 'Sign In'}
-                                    <Icon name="arrow_forward" />
-                                </>
-                            )}
-                        </button>
-                    </form>
-
-                    {/* Toggle */}
-                    <p className="text-center text-sm text-slate-500 dark:text-slate-400 mt-6">
-                        {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
-                        <button
-                            onClick={() => setIsSignUp(!isSignUp)}
-                            className="text-primary font-medium hover:underline"
-                        >
-                            {isSignUp ? 'Sign In' : 'Sign Up'}
-                        </button>
+                    </div>
+                    <button type="submit" disabled={isLoading || !isLoaded} className="w-full py-3.5 bg-white text-black hover:opacity-90 font-black rounded-2xl text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+                        {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'SIGN IN'}
+                    </button>
+                    <p className="text-center text-text-muted text-xs">
+                        Don't have an account?{' '}
+                        <button type="button" onClick={() => { onClose(); navigate('/sign-up'); }} className="text-white font-black hover:underline">Sign Up</button>
                     </p>
-
-                </div>
+                </form>
             </div>
         </div>
     );

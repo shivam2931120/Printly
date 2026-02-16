@@ -1,124 +1,186 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Lock, Mail, ArrowRight, ArrowLeft, Loader2, Eye, EyeOff } from 'lucide-react';
+import { useSignIn } from '@clerk/clerk-react';
+import { Lock, Mail, ArrowRight, ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { supabase } from '../../services/supabase';
-import { hasAdminAccess, hasDeveloperAccess, normalizeRole } from '../../lib/utils';
-import { RateLimits } from '../../lib/rateLimiter';
+
+type Stage = 'form' | 'verifyEmail';
 
 export const CustomSignIn = () => {
+    const { signIn, isLoaded, setActive } = useSignIn();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
+    const [code, setCode] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [stage, setStage] = useState<Stage>('form');
     const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!isLoaded || !signIn) return;
+
         setIsLoading(true);
         setError('');
 
         try {
-            // Rate limit sign-in attempts
-            try {
-                await RateLimits.signin(async () => {});
-            } catch (err: any) {
-                setError(err.message);
-                setIsLoading(false);
-                return;
-            }
-
-            const { data, error: signInError } = await supabase.auth.signInWithPassword({
-                email,
+            // Step 1: Try password sign-in directly
+            const result = await signIn.create({
+                identifier: email,
                 password,
             });
 
-            if (signInError) {
-                if (signInError.message === 'Email not confirmed') {
-                    setError('Please verify your email address before signing in.');
-                } else if (signInError.message === 'Invalid login credentials') {
-                    setError('Incorrect email or password. Please try again.');
-                } else {
-                    setError(signInError.message);
-                }
-            } else {
-                const authUserId = data.user?.id;
-                const authEmail = data.user?.email;
+            if (result.status === 'complete') {
+                await setActive({ session: result.createdSessionId });
+                navigate('/');
+                return;
+            }
 
-                if (!authUserId) {
-                    navigate('/');
+            // If needs second factor or other verification
+            if (result.status === 'needs_first_factor') {
+                const emailFactor = result.supportedFirstFactors?.find(
+                    (f: any) => f.strategy === 'email_code'
+                );
+                if (emailFactor) {
+                    await signIn.prepareFirstFactor({
+                        strategy: 'email_code',
+                        emailAddressId: (emailFactor as any).emailAddressId,
+                    });
+                    setStage('verifyEmail');
                     return;
                 }
+            }
 
-                // Look up User row by authId
-                let resolvedRole = 'USER';
-                const { data: authIdRecord } = await supabase
-                    .from('User')
-                    .select('id, role')
-                    .eq('authId', authUserId)
-                    .maybeSingle();
+            setError('Unable to complete sign-in. Please try again.');
+        } catch (err: any) {
+            const clerkError = err.errors?.[0];
+            const msg = clerkError?.longMessage || clerkError?.message || 'Invalid email or password';
 
-                if (authIdRecord) {
-                    resolvedRole = authIdRecord.role || 'USER';
-                } else {
-                    // Try by email and backfill authId
-                    const { data: emailRecord } = await supabase
-                        .from('User')
-                        .select('id, role')
-                        .eq('email', email)
-                        .maybeSingle();
-
-                    if (emailRecord?.id) {
-                        resolvedRole = emailRecord.role || 'USER';
-                        await supabase
-                            .from('User')
-                            .update({ authId: authUserId })
-                            .eq('id', emailRecord.id);
-                    } else {
-                        // No User row at all — auto-create one
-                        // Prisma @default(cuid()) is client-side only, must provide id
-                        const userName = data.user?.user_metadata?.name || data.user?.user_metadata?.full_name || authEmail?.split('@')[0] || 'User';
-                        const now = new Date().toISOString();
-                        const { data: newUser, error: insertErr } = await supabase
-                            .from('User')
-                            .insert({
-                                id: crypto.randomUUID(),
-                                authId: authUserId,
-                                email: authEmail || email,
-                                name: userName,
-                                role: 'USER',
-                                createdAt: now,
-                                updatedAt: now,
-                            })
-                            .select('id, role')
-                            .single();
-                        if (insertErr) {
-                            console.warn('[SignIn] Auto-insert failed:', insertErr.message);
-                        }
-                        if (newUser) resolvedRole = newUser.role || 'USER';
+            // If password strategy not available, fall back to email code
+            if (
+                msg.toLowerCase().includes('strategy') ||
+                msg.toLowerCase().includes('verification') ||
+                clerkError?.code === 'strategy_for_user_invalid'
+            ) {
+                try {
+                    // Identify user first, then send email code
+                    const si = await signIn.create({ identifier: email });
+                    const emailFactor = si.supportedFirstFactors?.find(
+                        (f: any) => f.strategy === 'email_code'
+                    );
+                    if (emailFactor) {
+                        await signIn.prepareFirstFactor({
+                            strategy: 'email_code',
+                            emailAddressId: (emailFactor as any).emailAddressId,
+                        });
+                        setStage('verifyEmail');
+                        return;
                     }
-                }
-
-                const normalizedRole = normalizeRole(resolvedRole);
-
-                if (hasDeveloperAccess(normalizedRole)) {
-                    navigate('/developer');
-                } else if (hasAdminAccess(normalizedRole)) {
-                    navigate('/admin');
-                } else {
-                    navigate('/');
+                } catch {
+                    // Fall through to show original error
                 }
             }
-        } catch (err: any) {
-            setError(err.message || 'Failed to sign in');
+
+            setError(msg);
         } finally {
             setIsLoading(false);
         }
     };
 
+    const handleVerifyCode = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!isLoaded || !signIn) return;
+
+        setIsLoading(true);
+        setError('');
+
+        try {
+            const result = await signIn.attemptFirstFactor({
+                strategy: 'email_code',
+                code,
+            });
+
+            if (result.status === 'complete') {
+                await setActive({ session: result.createdSessionId });
+                navigate('/');
+            } else {
+                setError('Verification failed. Please try again.');
+            }
+        } catch (err: any) {
+            setError(err.errors?.[0]?.message || 'Invalid verification code');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // ====== Email verification code screen ======
+    if (stage === 'verifyEmail') {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-[#050505] relative overflow-hidden px-4">
+                <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-white/5 rounded-full blur-[120px] pointer-events-none" />
+
+                <div className="w-full max-w-sm relative z-10 animate-in">
+                    <div className="w-full bg-white/[0.03] border border-white/[0.05] p-10 rounded-[40px] shadow-2xl backdrop-blur-xl text-center">
+                        <div className="inline-flex items-center justify-center size-20 rounded-[32px] bg-white text-black mb-8 shadow-[0_0_30px_rgba(255,255,255,0.3)]">
+                            <CheckCircle2 size={40} strokeWidth={2.5} />
+                        </div>
+                        <h1 className="text-3xl font-black text-white tracking-tight mb-3 font-display">Check Your Email</h1>
+                        <p className="text-text-muted text-sm leading-relaxed mb-8">
+                            We sent a verification code to <span className="text-white font-bold">{email}</span>
+                        </p>
+
+                        <form onSubmit={handleVerifyCode} className="space-y-6">
+                            {error && (
+                                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-xs font-bold text-center">
+                                    {error}
+                                </div>
+                            )}
+
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em] ml-1">Verification Code</label>
+                                <input
+                                    type="text"
+                                    value={code}
+                                    onChange={(e) => setCode(e.target.value)}
+                                    className="w-full px-4 py-4 bg-white/5 border border-white/10 rounded-2xl focus:border-white/30 focus:bg-white/[0.08] outline-none transition-all text-white placeholder-white/10 text-center text-2xl font-bold tracking-widest"
+                                    placeholder="000000"
+                                    maxLength={6}
+                                    autoFocus
+                                    required
+                                />
+                            </div>
+
+                            <Button
+                                type="submit"
+                                disabled={isLoading || !isLoaded}
+                                className="w-full h-14 text-sm font-black bg-white text-black hover:opacity-90 shadow-lg rounded-2xl"
+                            >
+                                {isLoading ? (
+                                    <Loader2 className="h-5 w-5 animate-spin mx-auto" />
+                                ) : (
+                                    <span className="flex items-center justify-center gap-3">
+                                        VERIFY &amp; SIGN IN <ArrowRight className="w-4 h-4" />
+                                    </span>
+                                )}
+                            </Button>
+
+                            <button
+                                type="button"
+                                onClick={() => { setStage('form'); setCode(''); setError(''); }}
+                                className="text-text-muted text-xs font-bold hover:text-white transition-colors"
+                            >
+                                ← Back to sign in
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // ====== Main sign-in form ======
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[#050505] relative overflow-hidden px-4">
+        <div className="min-h-screen flex items-center justify-center bg-[#050505] relative overflow-hidden px-4 font-sans">
             {/* Background Accents */}
             <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-white/5 rounded-full blur-[120px] pointer-events-none" />
             <div className="absolute bottom-[-20%] left-[-10%] w-[500px] h-[500px] bg-white/[0.02] rounded-full blur-[100px] pointer-events-none" />
@@ -138,14 +200,12 @@ export const CustomSignIn = () => {
                 <div className="w-full bg-white/[0.03] border border-white/[0.05] p-8 rounded-[40px] shadow-2xl backdrop-blur-xl">
                     <div className="text-center mb-10">
                         <div className="flex items-center justify-center mb-6">
-                            <div className="relative group">
-                                <div className="size-16 rounded-[24px] bg-white flex items-center justify-center shadow-[0_0_25px_rgba(255,255,255,0.1)] transition-transform duration-500 group-hover:scale-110">
-                                    <img src="/Printly.png" alt="Logo" className="size-10 object-contain invert" />
-                                </div>
+                            <div className="size-16 rounded-[24px] bg-white flex items-center justify-center shadow-[0_0_25px_rgba(255,255,255,0.1)] transition-transform duration-500 hover:scale-110">
+                                <img src="/Printly.png" alt="Logo" className="size-10 object-contain invert" />
                             </div>
                         </div>
                         <h1 className="text-3xl font-black text-white tracking-tight mb-2 font-display">Welcome Back</h1>
-                        <p className="text-text-muted text-[10px] font-black uppercase tracking-[0.25em] opacity-40">Sign in to continue</p>
+                        <p className="text-text-muted text-[10px] font-black uppercase tracking-[0.25em]">Sign in to continue</p>
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
@@ -156,62 +216,46 @@ export const CustomSignIn = () => {
                         )}
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em] ml-1">Email Address</label>
+                            <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em] ml-1">Email</label>
                             <div className="relative group">
                                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-white transition-colors w-5 h-5" />
                                 <input
                                     type="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl focus:border-white/30 focus:bg-white/[0.08] outline-none transition-all text-white placeholder-white/20 text-sm font-medium"
-                                    placeholder="yourname@college.edu"
+                                    className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl focus:border-white/30 focus:bg-white/[0.08] outline-none transition-all text-white placeholder-white/10 text-sm font-medium"
+                                    placeholder="you@college.edu"
                                     required
                                 />
                             </div>
                         </div>
 
                         <div className="space-y-2">
-                            <div className="flex justify-between items-center ml-1">
-                                <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em]">Password</label>
-                                <button
-                                    type="button"
-                                    onClick={() => navigate('/forgot-password')}
-                                    className="text-[10px] font-black text-white/40 hover:text-white uppercase tracking-[0.1em] transition-colors"
-                                >
-                                    Forgot?
-                                </button>
-                            </div>
+                            <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em] ml-1">Password</label>
                             <div className="relative group">
                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-white transition-colors w-5 h-5" />
                                 <input
-                                    type={showPassword ? 'text' : 'password'}
+                                    type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full pl-12 pr-12 py-4 bg-white/5 border border-white/10 rounded-2xl focus:border-white/30 focus:bg-white/[0.08] outline-none transition-all text-white placeholder-white/20 text-sm font-medium"
+                                    className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl focus:border-white/30 focus:bg-white/[0.08] outline-none transition-all text-white placeholder-white/10 text-sm font-medium"
                                     placeholder="••••••••"
                                     required
                                 />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted hover:text-white transition-colors"
-                                >
-                                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                                </button>
                             </div>
                         </div>
 
                         <div className="pt-2">
                             <Button
                                 type="submit"
-                                disabled={isLoading}
-                                className="w-full h-14 text-sm font-black bg-white text-black hover:bg-white/90 shadow-[0_0_20px_rgba(255,255,255,0.15)] rounded-2xl transition-all active:scale-[0.98] group"
+                                disabled={isLoading || !isLoaded}
+                                className="w-full h-14 text-sm font-black bg-white text-black hover:opacity-90 shadow-[0_0_20px_rgba(255,255,255,0.15)] rounded-2xl transition-all active:scale-[0.98] group"
                             >
                                 {isLoading ? (
                                     <Loader2 className="h-5 w-5 animate-spin mx-auto" />
                                 ) : (
                                     <span className="flex items-center justify-center gap-3">
-                                        ENTER SYSTEM <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                        SIGN IN <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                                     </span>
                                 )}
                             </Button>
@@ -219,7 +263,7 @@ export const CustomSignIn = () => {
 
                         <div className="text-center space-y-4 mt-8">
                             <p className="text-text-muted text-[13px] font-medium">
-                                New here? <span onClick={() => navigate('/sign-up')} className="text-white font-black cursor-pointer hover:underline underline-offset-4 decoration-2">Create Account</span>
+                                Don't have an account? <span onClick={() => navigate('/sign-up')} className="text-white font-black cursor-pointer hover:underline underline-offset-4 decoration-2">Sign Up</span>
                             </p>
                         </div>
                     </form>
