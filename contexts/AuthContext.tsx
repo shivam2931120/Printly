@@ -123,6 +123,7 @@ async function fetchUserRecord(authUser: SupabaseUser): Promise<User> {
         }
 
         // 3. Auto-create
+        const now = new Date().toISOString();
         const { data: inserted, error: insertErr } = await queryWithTimeout(() =>
             supabase.from('User').insert({
                 id: crypto.randomUUID(),
@@ -131,6 +132,8 @@ async function fetchUserRecord(authUser: SupabaseUser): Promise<User> {
                 name: authUser.user_metadata?.name || authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'User',
                 avatar: authUser.user_metadata?.avatar_url || null,
                 role: 'USER',
+                createdAt: now,
+                updatedAt: now,
             }).select().single()
         );
 

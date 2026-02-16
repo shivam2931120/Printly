@@ -79,6 +79,7 @@ export const CustomSignIn = () => {
                         // No User row at all — auto-create one
                         // Prisma @default(cuid()) is client-side only, must provide id
                         const userName = data.user?.user_metadata?.name || data.user?.user_metadata?.full_name || authEmail?.split('@')[0] || 'User';
+                        const now = new Date().toISOString();
                         const { data: newUser, error: insertErr } = await supabase
                             .from('User')
                             .insert({
@@ -87,6 +88,8 @@ export const CustomSignIn = () => {
                                 email: authEmail || email,
                                 name: userName,
                                 role: 'USER',
+                                createdAt: now,
+                                updatedAt: now,
                             })
                             .select('id, role')
                             .single();

@@ -73,6 +73,11 @@ export const CustomSignUp = () => {
             if (signUpError) {
                 if (signUpError.message?.includes('already registered')) {
                     setError('This email is already registered. Try signing in.');
+                } else if (signUpError.message?.includes('Database') || signUpError.message?.includes('database')) {
+                    setError('Account setup issue. Please try again in a moment.');
+                    console.error('[SignUp] Database error:', signUpError.message);
+                } else if (signUpError.message?.includes('rate') || signUpError.message?.includes('Rate')) {
+                    setError('Too many attempts. Please wait a moment and try again.');
                 } else {
                     setError(signUpError.message);
                 }

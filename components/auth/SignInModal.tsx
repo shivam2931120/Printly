@@ -52,14 +52,18 @@ export const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose, onSig
                 }
 
                 // Create new user
+                const now = new Date().toISOString();
                 const { data: newUser, error: createError } = await supabase
                     .from('User')
                     .insert([
                         {
+                            id: crypto.randomUUID(),
                             email,
                             password, // Storing directly as per current requirement
                             name,
                             role: 'USER', // FORCE 'USER' role for all public signups. Admins/Devs must be promoted in DB.
+                            createdAt: now,
+                            updatedAt: now,
                         }
                     ])
                     .select()
