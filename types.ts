@@ -49,8 +49,7 @@ export interface PrintOptions {
   sides: 'single' | 'double';
   binding: 'none' | 'spiral' | 'soft' | 'hard';
   paperType: 'normal' | 'bond' | 'glossy';
-  pageSelection: 'all' | 'custom';
-  pageRange?: { from: number; to: number };
+  pageRangeText: string;
   holePunch: boolean;
   coverPage: 'none' | 'front' | 'front_back';
 }

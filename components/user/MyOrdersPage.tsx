@@ -56,7 +56,7 @@ export const MyOrdersPage: React.FC = () => {
             try {
                 // Try userId first, but also accept temp_ users by fetching via email
                 const userId = user.id.startsWith('temp_') ? undefined : user.id;
-                const data = await fetchOrders(userId);
+                const data = await fetchOrders(userId, user.email);
                 if (!cancelled) setOrders(data);
             } catch (error) {
                 console.error('Failed to sync orders:', error);

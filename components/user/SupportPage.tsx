@@ -64,7 +64,7 @@ export const SupportPage: React.FC = () => {
         setIsSubmitting(true);
 
         try {
-            const formspreeUrl = import.meta.env.VITE_FORMSPREE_ENDPOINT || 'https://formspree.io/f/YOUR_FORM_ID';
+            const formspreeUrl = import.meta.env.VITE_FORMSPREE_ENDPOINT || 'https://formspree.io/f/mgoledgz';
 
             const response = await fetch(formspreeUrl, {
                 method: 'POST',

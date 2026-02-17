@@ -14,7 +14,7 @@ import {
     Filter,
     X
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
 import { Product, PRODUCT_CATEGORIES } from '../types';
 import { fetchProducts } from '../services/data';
 import { useCartStore } from '../store/useCartStore';
@@ -94,7 +94,7 @@ export const StorePage: React.FC = () => {
         }
     };
 
-    const containerVariants = {
+    const containerVariants: Variants = {
         hidden: { opacity: 0 },
         visible: {
             opacity: 1,
@@ -104,13 +104,13 @@ export const StorePage: React.FC = () => {
         }
     };
 
-    const itemVariants = {
+    const itemVariants: Variants = {
         hidden: { opacity: 0, y: 20 },
         visible: {
             opacity: 1,
             y: 0,
             transition: {
-                type: "spring",
+                type: "spring" as const,
                 stiffness: 260,
                 damping: 20
             }

@@ -1,21 +1,21 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSignIn } from '@clerk/clerk-react';
-import { Lock, Mail, ArrowRight, ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
+import { Mail, ArrowRight, ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
 import { Button } from '../ui/Button';
 
-type Stage = 'form' | 'verifyEmail';
+type Stage = 'email' | 'verifyEmail';
 
 export const CustomSignIn = () => {
     const { signIn, isLoaded, setActive } = useSignIn();
     const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
     const [code, setCode] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [stage, setStage] = useState<Stage>('form');
+    const [stage, setStage] = useState<Stage>('email');
     const navigate = useNavigate();
 
+    /** Step 1: Enter email → send verification code */
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!isLoaded || !signIn) return;
@@ -24,69 +24,39 @@ export const CustomSignIn = () => {
         setError('');
 
         try {
-            // Step 1: Try password sign-in directly
-            const result = await signIn.create({
-                identifier: email,
-                password,
-            });
+            // Create a sign-in with just the identifier to discover available strategies
+            const si = await signIn.create({ identifier: email });
 
-            if (result.status === 'complete') {
-                await setActive({ session: result.createdSessionId });
+            if (si.status === 'complete') {
+                // Edge case: session already exists
+                await setActive({ session: si.createdSessionId });
                 navigate('/');
                 return;
             }
 
-            // If needs second factor or other verification
-            if (result.status === 'needs_first_factor') {
-                const emailFactor = result.supportedFirstFactors?.find(
-                    (f: any) => f.strategy === 'email_code'
-                );
-                if (emailFactor) {
-                    await signIn.prepareFirstFactor({
-                        strategy: 'email_code',
-                        emailAddressId: (emailFactor as any).emailAddressId,
-                    });
-                    setStage('verifyEmail');
-                    return;
-                }
-            }
+            // Find email_code factor
+            const emailFactor = si.supportedFirstFactors?.find(
+                (f: any) => f.strategy === 'email_code'
+            );
 
-            setError('Unable to complete sign-in. Please try again.');
+            if (emailFactor) {
+                await signIn.prepareFirstFactor({
+                    strategy: 'email_code',
+                    emailAddressId: (emailFactor as any).emailAddressId,
+                });
+                setStage('verifyEmail');
+            } else {
+                setError('No sign-in method available for this email. Please contact support.');
+            }
         } catch (err: any) {
-            const clerkError = err.errors?.[0];
-            const msg = clerkError?.longMessage || clerkError?.message || 'Invalid email or password';
-
-            // If password strategy not available, fall back to email code
-            if (
-                msg.toLowerCase().includes('strategy') ||
-                msg.toLowerCase().includes('verification') ||
-                clerkError?.code === 'strategy_for_user_invalid'
-            ) {
-                try {
-                    // Identify user first, then send email code
-                    const si = await signIn.create({ identifier: email });
-                    const emailFactor = si.supportedFirstFactors?.find(
-                        (f: any) => f.strategy === 'email_code'
-                    );
-                    if (emailFactor) {
-                        await signIn.prepareFirstFactor({
-                            strategy: 'email_code',
-                            emailAddressId: (emailFactor as any).emailAddressId,
-                        });
-                        setStage('verifyEmail');
-                        return;
-                    }
-                } catch {
-                    // Fall through to show original error
-                }
-            }
-
+            const msg = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || 'Account not found. Please check your email or sign up.';
             setError(msg);
         } finally {
             setIsLoading(false);
         }
     };
 
+    /** Step 2: Verify email code */
     const handleVerifyCode = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!isLoaded || !signIn) return;
@@ -166,7 +136,7 @@ export const CustomSignIn = () => {
 
                             <button
                                 type="button"
-                                onClick={() => { setStage('form'); setCode(''); setError(''); }}
+                                onClick={() => { setStage('email'); setCode(''); setError(''); }}
                                 className="text-text-muted text-xs font-bold hover:text-white transition-colors"
                             >
                                 ← Back to sign in
@@ -178,7 +148,7 @@ export const CustomSignIn = () => {
         );
     }
 
-    // ====== Main sign-in form ======
+    // ====== Main sign-in form (email only → code) ======
     return (
         <div className="min-h-screen flex items-center justify-center bg-[#050505] relative overflow-hidden px-4 font-sans">
             {/* Background Accents */}
@@ -230,20 +200,9 @@ export const CustomSignIn = () => {
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em] ml-1">Password</label>
-                            <div className="relative group">
-                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-white transition-colors w-5 h-5" />
-                                <input
-                                    type="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl focus:border-white/30 focus:bg-white/[0.08] outline-none transition-all text-white placeholder-white/10 text-sm font-medium"
-                                    placeholder="••••••••"
-                                    required
-                                />
-                            </div>
-                        </div>
+                        <p className="text-text-muted text-xs text-center">
+                            We'll send a verification code to your email
+                        </p>
 
                         <div className="pt-2">
                             <Button
@@ -255,7 +214,7 @@ export const CustomSignIn = () => {
                                     <Loader2 className="h-5 w-5 animate-spin mx-auto" />
                                 ) : (
                                     <span className="flex items-center justify-center gap-3">
-                                        SIGN IN <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                        CONTINUE <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                                     </span>
                                 )}
                             </Button>

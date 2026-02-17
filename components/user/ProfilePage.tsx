@@ -160,14 +160,14 @@ export const ProfilePage: React.FC = () => {
                 </button>
 
                 <button
-                    onClick={() => navigate('/support')}
+                    onClick={() => navigate('/contact')}
                     className="flex flex-col items-start gap-4 p-6 bg-white/[0.03] border border-white/[0.05] rounded-[32px] hover:bg-white/[0.06] transition-all group backdrop-blur-md"
                 >
                     <div className="size-12 rounded-2xl bg-white/5 flex items-center justify-center text-white group-hover:scale-110 transition-transform">
                         <HelpCircle size={24} />
                     </div>
                     <div>
-                        <p className="font-black text-white text-sm uppercase tracking-wider">Support</p>
+                        <p className="font-black text-white text-sm uppercase tracking-wider">Contact</p>
                         <p className="text-[10px] text-text-muted font-bold opacity-40 uppercase tracking-widest mt-1">Get assistance</p>
                     </div>
                 </button>

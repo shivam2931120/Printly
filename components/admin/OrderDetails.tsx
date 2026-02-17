@@ -198,6 +198,11 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ order: initialOrder,
                                                                             Binding: {item.options.binding}
                                                                         </span>
                                                                     )}
+                                                                    {item.options.pageRangeText && (
+                                                                        <span className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-900/50">
+                                                                            Pages: {item.options.pageRangeText}
+                                                                        </span>
+                                                                    )}
                                                                     {item.options.holePunch && (
                                                                         <span className="text-xs bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400 px-2 py-0.5 rounded border border-purple-200 dark:border-purple-900/50">
                                                                             Hole Punch

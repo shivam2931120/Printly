@@ -5,10 +5,10 @@ import {
     Upload,
     LogOut,
     LogIn,
-    UserCircle,
     Store,
     Receipt,
     Code,
+    Phone,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../contexts/AuthContext';
@@ -28,12 +28,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ user }) => {
     const links = [
         { name: 'Upload', path: '/', icon: Upload },
         { name: 'Store', path: '/store', icon: Store },
+        { name: 'Contact', path: '/contact', icon: Phone },
     ];
 
     if (user) {
         links.push(
-            { name: 'Orders', path: '/my-orders', icon: Receipt },
-            { name: 'Support', path: '/support', icon: UserCircle }
+            { name: 'Orders', path: '/my-orders', icon: Receipt }
         );
     }
 

@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSignUp } from '@clerk/clerk-react';
-import { Mail, Lock, User, ArrowRight, ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
+import { Mail, User, ArrowRight, ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
 import { Button } from '../ui/Button';
 
 export const CustomSignUp = () => {
     const { signUp, isLoaded, setActive } = useSignUp();
     const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
     const [error, setError] = useState('');
@@ -26,7 +25,6 @@ export const CustomSignUp = () => {
         try {
             await signUp.create({
                 emailAddress: email,
-                password,
                 firstName,
                 lastName,
             });
@@ -36,7 +34,12 @@ export const CustomSignUp = () => {
             setVerifying(true);
         } catch (err: any) {
             console.error('Sign-up error:', err);
-            setError(err.errors?.[0]?.message || 'Failed to create account');
+            const msg = err.errors?.[0]?.message || 'Failed to create account';
+            if (msg.toLowerCase().includes('taken') || msg.toLowerCase().includes('already exists')) {
+                setError('This email is already registered. Please sign in instead.');
+            } else {
+                setError(msg);
+            }
         } finally {
             setIsLoading(false);
         }
@@ -154,6 +157,15 @@ export const CustomSignUp = () => {
                         {error && (
                             <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-xs font-bold text-center animate-in">
                                 {error}
+                                {error.includes('sign in instead') && (
+                                    <button
+                                        type="button"
+                                        onClick={() => navigate('/sign-in')}
+                                        className="block mx-auto mt-2 text-white underline underline-offset-4 decoration-2 font-black text-xs hover:opacity-80 transition-opacity"
+                                    >
+                                        Go to Sign In →
+                                    </button>
+                                )}
                             </div>
                         )}
 
@@ -194,18 +206,8 @@ export const CustomSignUp = () => {
                             />
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em] ml-1">Password</label>
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-2xl focus:border-white/30 focus:bg-white/[0.08] outline-none transition-all text-white placeholder-white/10 text-sm font-medium"
-                                placeholder="••••••••"
-                                required
-                                minLength={8}
-                            />
-                        </div>
+                        {/* Clerk CAPTCHA element for bot protection */}
+                        <div id="clerk-captcha" />
 
                         <div className="pt-2">
                             <Button

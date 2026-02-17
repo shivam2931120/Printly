@@ -86,25 +86,61 @@ export const createOrder = async (order: Order, _userRole?: string): Promise<{ s
         shopId = shop?.id || undefined;
     }
 
-    // 2. Resolve User ID — passed from caller (no Supabase Auth dependency)
+    // 2. Resolve User ID — ensure user record exists in DB before FK insert
     let finalUserId = order.userId;
+    const resolvedEmail = order.userEmail || 'guest@example.com';
+    const resolvedName = order.userName || resolvedEmail.split('@')[0] || 'Guest';
 
-    if (!finalUserId || finalUserId.startsWith('temp_')) {
-        // Try to find user by email
-        if (order.userEmail) {
-            const { data: dbUser } = await supabase
-                .from('User')
-                .select('id')
-                .eq('email', order.userEmail.trim().toLowerCase())
-                .maybeSingle();
-            if (dbUser?.id) finalUserId = dbUser.id;
+    // Strip temp_ prefix (fallback users from AuthContext)
+    if (finalUserId?.startsWith('temp_')) finalUserId = undefined;
+
+    // If we have a userId, verify it exists in the User table (prevent FK violation)
+    if (finalUserId) {
+        const { data: existingUser } = await supabase
+            .from('User')
+            .select('id')
+            .eq('id', finalUserId)
+            .maybeSingle();
+
+        if (!existingUser) {
+            // userId from app state doesn't exist in DB — look up by email instead
+            finalUserId = undefined;
         }
     }
 
-    if (finalUserId?.startsWith('temp_')) finalUserId = undefined;
+    // Fallback: look up user by email if no valid userId
+    if (!finalUserId && resolvedEmail !== 'guest@example.com') {
+        const { data: emailUser } = await supabase
+            .from('User')
+            .select('id')
+            .eq('email', resolvedEmail.trim().toLowerCase())
+            .maybeSingle();
 
-    const resolvedEmail = order.userEmail || 'guest@example.com';
-    const resolvedName = order.userName || resolvedEmail.split('@')[0] || 'Guest';
+        if (emailUser?.id) {
+            finalUserId = emailUser.id;
+        } else {
+            // Auto-create user record so the order is properly linked
+            const newUserId = crypto.randomUUID();
+            const now = new Date().toISOString();
+            const { data: created } = await supabase
+                .from('User')
+                .insert({
+                    id: newUserId,
+                    email: resolvedEmail.trim().toLowerCase(),
+                    name: resolvedName,
+                    role: 'USER',
+                    createdAt: now,
+                    updatedAt: now,
+                })
+                .select('id')
+                .maybeSingle();
+
+            if (created?.id) {
+                finalUserId = created.id;
+            }
+            // If insert fails (e.g. email conflict), finalUserId stays undefined → order is still created with null userId
+        }
+    }
 
     // 3. Serialize cart items to JSONB (inline in Order — no separate table)
     const itemsJson = order.items.map(item => {
@@ -170,18 +206,22 @@ export const markOrderCollected = async (orderId: string): Promise<{ success: bo
     return { success: true };
 };
 
-export const fetchOrders = async (userId?: string): Promise<Order[]> => {
+export const fetchOrders = async (userId?: string, userEmail?: string): Promise<Order[]> => {
+    if (!userId && !userEmail) return [];
+
     let query = supabase
         .from('Order')
         .select('*, user:User(name, email, avatar)')
         .eq('isDeleted', false)
         .order('createdAt', { ascending: false });
 
-    if (userId) {
+    if (userId && userEmail) {
+        // Match by userId OR userEmail so orders are never lost
+        query = query.or(`userId.eq.${userId},userEmail.eq.${userEmail}`);
+    } else if (userId) {
         query = query.eq('userId', userId);
     } else {
-        // No userId provided — cannot identify user without Supabase Auth session
-        return [];
+        query = query.eq('userEmail', userEmail!);
     }
 
     const { data, error } = await query;

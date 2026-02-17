@@ -22,12 +22,13 @@ const StorePage = lazy(() => import('./components/StorePage').then(m => ({ defau
 const AdminDashboard = lazy(() => import('./components/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
 const DeveloperDashboard = lazy(() => import('./components/developer/DeveloperDashboard').then(m => ({ default: m.DeveloperDashboard })));
 const MyOrdersPage = lazy(() => import('./components/user/MyOrdersPage').then(m => ({ default: m.MyOrdersPage })));
-const SupportPage = lazy(() => import('./components/user/SupportPage').then(m => ({ default: m.SupportPage })));
+// SupportPage removed — users use /contact instead
 const ProfilePage = lazy(() => import('./components/user/ProfilePage').then(m => ({ default: m.ProfilePage })));
 const CustomSignIn = lazy(() => import('./components/auth/CustomSignIn').then(m => ({ default: m.CustomSignIn })));
 const CustomSignUp = lazy(() => import('./components/auth/CustomSignUp').then(m => ({ default: m.CustomSignUp })));
 const ForgotPassword = lazy(() => import('./components/auth/ForgotPassword').then(m => ({ default: m.ForgotPassword })));
 const ResetPassword = lazy(() => import('./components/auth/ResetPassword').then(m => ({ default: m.ResetPassword })));
+const ContactPage = lazy(() => import('./components/ContactPage').then(m => ({ default: m.ContactPage })));
 const NotFound = lazy(() => import('./components/NotFound').then(m => ({ default: m.NotFound })));
 
 // ===== Full-screen loading spinner =====
@@ -148,7 +149,9 @@ const AppContent: React.FC = () => {
             {/* Student Routes */}
             <Route path="/store" element={<MainLayout user={currentUser}><PageTransition><StorePage /></PageTransition></MainLayout>} />
             <Route path="/my-orders" element={<MainLayout user={currentUser}><PageTransition><MyOrdersPage /></PageTransition></MainLayout>} />
-            <Route path="/support" element={<MainLayout user={currentUser}><PageTransition><SupportPage /></PageTransition></MainLayout>} />
+            {/* /support removed — redirects to /contact */}
+            <Route path="/support" element={<Navigate to="/contact" replace />} />
+            <Route path="/contact" element={<PageTransition><ContactPage /></PageTransition>} />
             <Route path="/profile" element={<MainLayout user={currentUser}><PageTransition><ProfilePage /></PageTransition></MainLayout>} />
 
             {/* Admin */}

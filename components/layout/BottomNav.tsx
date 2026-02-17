@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Upload, Store, Receipt, UserCircle, ShoppingBag, LayoutDashboard, Code } from 'lucide-react';
+import { Upload, Store, Receipt, UserCircle, ShoppingBag, LayoutDashboard, Code, Phone } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useCartStore } from '../../store/useCartStore';
 
@@ -17,6 +17,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ user }) => {
     const links = [
         { name: 'Home', path: '/', icon: Upload },
         { name: 'Store', path: '/store', icon: Store },
+        { name: 'Contact', path: '/contact', icon: Phone },
     ];
 
     // Only show private links if logged in
