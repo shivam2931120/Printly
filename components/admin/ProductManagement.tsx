@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Icon } from '../ui/Icon';
 import { Product, PRODUCT_CATEGORIES, ProductCategory } from '../../types';
 import { fetchProducts, createProduct, updateProduct, deleteProduct } from '../../services/data';
+import { verifyAdminAction } from '../../lib/biometricAuth';
 
 interface ProductFormData {
     name: string;
@@ -87,13 +88,14 @@ export const ProductManagement: React.FC = () => {
     };
 
     const handleDeleteProduct = async (productId: string) => {
-        if (confirm('Are you sure you want to delete this product?')) {
-            const { success } = await deleteProduct(productId);
-            if (success) {
-                setProducts(prev => prev.filter(p => p.id !== productId));
-            } else {
-                alert('Failed to delete product');
-            }
+        const verified = await verifyAdminAction('delete_product');
+        if (!verified) return;
+
+        const { success } = await deleteProduct(productId);
+        if (success) {
+            setProducts(prev => prev.filter(p => p.id !== productId));
+        } else {
+            alert('Failed to delete product');
         }
     };
 
@@ -143,18 +145,15 @@ export const ProductManagement: React.FC = () => {
                     </p>
                 </div>
                 <button
-                    onClick={() => {
+                    onClick={async () => {
                         const outOfStock = products.filter(p => p.stock === 0);
                         if (outOfStock.length === 0) {
                             alert('No out-of-stock products to delete.');
                             return;
                         }
-                        const confirmMsg = `Are you sure you want to delete ${outOfStock.length} out-of-stock products? This action cannot be undone.`;
-                        if (confirm(confirmMsg)) {
-                            // double confirmation for safety
-                            if (confirm("Please confirm again: Delete ALL out-of-stock products?")) {
-                                outOfStock.forEach(p => handleDeleteProduct(p.id));
-                            }
+                        const verified = await verifyAdminAction('delete_product');
+                        if (verified) {
+                            outOfStock.forEach(p => handleDeleteProduct(p.id));
                         }
                     }}
                     className="inline-flex items-center justify-center h-10 px-4 rounded-lg bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 text-sm font-bold hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors mr-2"

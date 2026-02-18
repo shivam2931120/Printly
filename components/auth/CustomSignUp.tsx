@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSignUp } from '@clerk/clerk-react';
 import { Mail, User, ArrowRight, ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
 import { Button } from '../ui/Button';
+import { toast } from 'sonner';
+import { BiometricSetup } from './BiometricSetup';
+import { isBiometricAvailable } from '../../lib/biometricAuth';
 
 export const CustomSignUp = () => {
     const { signUp, isLoaded, setActive } = useSignUp();
@@ -13,6 +16,9 @@ export const CustomSignUp = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [verifying, setVerifying] = useState(false);
     const [code, setCode] = useState('');
+    const [resendCooldown, setResendCooldown] = useState(0);
+    const [showBiometricSetup, setShowBiometricSetup] = useState(false);
+    const [userId, setUserId] = useState<string>('');
     const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -57,17 +63,54 @@ export const CustomSignUp = () => {
 
             if (result.status === 'complete') {
                 await setActive({ session: result.createdSessionId });
-                navigate('/');
+                
+                // Check if biometric is available before navigating
+                const biometricAvailable = await isBiometricAvailable();
+                if (biometricAvailable) {
+                    setUserId(result.createdSessionId || '');
+                    setShowBiometricSetup(true);
+                } else {
+                    navigate('/');
+                }
             } else {
-                setError('Verification incomplete. Please try again.');
+                // More helpful error message
+                console.error('Sign-up status:', result.status, result);
+                setError(`Verification incomplete (status: ${result.status}). Please check your code and try again.`);
             }
         } catch (err: any) {
             console.error('Verification error:', err);
-            setError(err.errors?.[0]?.message || 'Invalid verification code');
+            const errMsg = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || 'Invalid verification code';
+            setError(errMsg);
         } finally {
             setIsLoading(false);
         }
     };
+
+    const handleResendCode = async () => {
+        if (!isLoaded || !signUp || resendCooldown > 0) return;
+        
+        setIsLoading(true);
+        setError('');
+        
+        try {
+            await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
+            toast.success('Verification code sent! Check your email.');
+            setResendCooldown(60); // 60 second cooldown
+        } catch (err: any) {
+            console.error('Resend error:', err);
+            toast.error('Failed to resend code. Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Cooldown timer
+    useEffect(() => {
+        if (resendCooldown > 0) {
+            const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [resendCooldown]);
 
     if (verifying) {
         return (
@@ -117,7 +160,44 @@ export const CustomSignUp = () => {
                                     </span>
                                 )}
                             </Button>
+
+                            <div className="flex items-center justify-center gap-2 text-xs">
+                                <span className="text-text-muted">Didn't receive code?</span>
+                                <button
+                                    type="button"
+                                    onClick={handleResendCode}
+                                    disabled={resendCooldown > 0 || isLoading}
+                                    className="text-white font-black hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {resendCooldown > 0 ? `Resend (${resendCooldown}s)` : 'Resend Code'}
+                                </button>
+                            </div>
                         </form>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Biometric setup after successful signup
+    if (showBiometricSetup) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-[#050505] relative overflow-hidden px-4">
+                <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-white/5 rounded-full blur-[120px] pointer-events-none" />
+
+                <div className="w-full max-w-md relative z-10 animate-in">
+                    <BiometricSetup
+                        userId={userId}
+                        email={email}
+                        onClose={() => navigate('/')}
+                    />
+                    <div className="text-center mt-6">
+                        <button
+                            onClick={() => navigate('/')}
+                            className="text-text-muted text-sm hover:text-white transition-colors font-medium"
+                        >
+                            Skip for now →
+                        </button>
                     </div>
                 </div>
             </div>

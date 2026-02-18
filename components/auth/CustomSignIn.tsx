@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSignIn } from '@clerk/clerk-react';
-import { Mail, ArrowRight, ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
+import { Mail, ArrowRight, ArrowLeft, Loader2, CheckCircle2, Fingerprint } from 'lucide-react';
 import { Button } from '../ui/Button';
+import { isBiometricAvailable, isBiometricEnabled, authenticateWithBiometric } from '../../lib/biometricAuth';
+import { toast } from 'sonner';
 
 type Stage = 'email' | 'verifyEmail';
 
@@ -13,7 +15,39 @@ export const CustomSignIn = () => {
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [stage, setStage] = useState<Stage>('email');
+    const [showBiometric, setShowBiometric] = useState(false);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        checkBiometric();
+    }, []);
+
+    const checkBiometric = async () => {
+        const available = await isBiometricAvailable();
+        const enabled = isBiometricEnabled();
+        setShowBiometric(available && enabled);
+    };
+
+    const handleBiometricLogin = async () => {
+        setIsLoading(true);
+        setError('');
+        
+        try {
+            const result = await authenticateWithBiometric();
+            if (result.success && result.userId) {
+                // In production, exchange userId for a session token
+                toast.success('Biometric authentication successful! 🎉');
+                // For now, ask user to complete email login
+                toast.info('Please complete email verification');
+            } else {
+                toast.error('Biometric authentication failed');
+            }
+        } catch (err) {
+            toast.error('Biometric authentication failed');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     /** Step 1: Enter email → send verification code */
     const handleSubmit = async (e: React.FormEvent) => {
@@ -49,8 +83,17 @@ export const CustomSignIn = () => {
                 setError('No sign-in method available for this email. Please contact support.');
             }
         } catch (err: any) {
-            const msg = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || 'Account not found. Please check your email or sign up.';
-            setError(msg);
+            const errMsg = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || '';
+            
+            // Check if account doesn't exist
+            if (errMsg.toLowerCase().includes("couldn't find") || 
+                errMsg.toLowerCase().includes("not found") ||
+                errMsg.toLowerCase().includes("no account") ||
+                err.errors?.[0]?.code === 'form_identifier_not_found') {
+                setError("Account doesn't exist. Please create an account first.");
+            } else {
+                setError(errMsg || 'Sign-in failed. Please try again.');
+            }
         } finally {
             setIsLoading(false);
         }
@@ -182,6 +225,46 @@ export const CustomSignIn = () => {
                         {error && (
                             <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-xs font-bold text-center animate-in">
                                 {error}
+                                {error.toLowerCase().includes("doesn't exist") && (
+                                    <div className="mt-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => navigate('/sign-up')}
+                                            className="text-white underline underline-offset-2 hover:text-red-200 transition-colors font-black"
+                                        >
+                                            Create Account →
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Biometric Quick Login */}
+                        {showBiometric && (
+                            <div className="space-y-3">
+                                <Button
+                                    type="button"
+                                    onClick={handleBiometricLogin}
+                                    disabled={isLoading}
+                                    className="w-full h-14 bg-gradient-to-r from-purple-500/20 to-blue-500/20 border border-purple-500/30 text-white hover:from-purple-500/30 hover:to-blue-500/30 font-black text-sm rounded-2xl transition-all"
+                                >
+                                    {isLoading ? (
+                                        <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+                                    ) : (
+                                        <span className="flex items-center justify-center gap-2">
+                                            <Fingerprint className="w-5 h-5" />
+                                            Sign in with Biometric
+                                        </span>
+                                    )}
+                                </Button>
+                                <div className="relative">
+                                    <div className="absolute inset-0 flex items-center">
+                                        <div className="w-full border-t border-white/10"></div>
+                                    </div>
+                                    <div className="relative flex justify-center text-xs">
+                                        <span className="px-4 bg-white/[0.03] text-text-muted font-black uppercase tracking-widest">Or</span>
+                                    </div>
+                                </div>
                             </div>
                         )}
 
