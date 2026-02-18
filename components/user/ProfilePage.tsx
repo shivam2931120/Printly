@@ -1,11 +1,9 @@
 import React from 'react';
-import { User as UserIcon, Shield, LogOut, Package, HelpCircle, LogIn, AlertTriangle, ArrowRight, LayoutDashboard, Fingerprint } from 'lucide-react';
+import { User as UserIcon, Shield, LogOut, Package, HelpCircle, LogIn, AlertTriangle, ArrowRight, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/Button';
 import { useNavigate } from 'react-router-dom';
 import { useOrderStore } from '../../store/useOrderStore';
-import { BiometricSetup } from '../auth/BiometricSetup';
-import { DeviceManager } from '../auth/DeviceManager';
 
 export const ProfilePage: React.FC = () => {
     const { user, isSignedIn, signOut } = useAuth();
@@ -220,16 +218,6 @@ export const ProfilePage: React.FC = () => {
             </div>
 
             {/* Settings & Logout */}
-            <div className="space-y-4">
-                <h3 className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] pl-4 opacity-50">Security</h3>
-
-                {/* Biometric Authentication */}
-                <BiometricSetup userId={user.id} email={user.email} />
-
-                {/* Device Manager */}
-                <DeviceManager userId={user.id} />
-            </div>
-
             <div className="space-y-4">
                 <h3 className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] pl-4 opacity-50">Account Control</h3>
                 <div className="bg-white/[0.03] border border-white/[0.05] rounded-[32px] overflow-hidden backdrop-blur-xl">

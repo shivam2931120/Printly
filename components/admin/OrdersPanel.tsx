@@ -6,7 +6,6 @@ import { OrderDetails } from './OrderDetails';
 import { Order, OrderStatus } from '../../types';
 import { fetchOrders, fetchAdminOrders, supabase, exportToCSV, bulkUpdateOrderStatus, bulkDeleteOrders } from '../../services/data';
 import { Skeleton } from '../ui/Skeleton';
-import { verifyAdminAction } from '../../lib/biometricAuth';
 
 interface OrdersPanelProps {
     currentUserId: string;
@@ -145,8 +144,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
     };
 
     const deleteOrder = async (orderId: string) => {
-        const verified = await verifyAdminAction('delete_order');
-        if (!verified) return;
+        if (!window.confirm('Are you sure you want to delete this order? It will be hidden from the dashboard but preserved for analytics.')) return;
 
         const { error } = await supabase
             .from('Order')
@@ -221,8 +219,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
     const handleBulkDelete = async () => {
         const ids = Array.from(selectedIds);
         if (ids.length === 0) return;
-        const verified = await verifyAdminAction('bulk_delete');
-        if (!verified) return;
+        if (!window.confirm(`Delete ${ids.length} orders?`)) return;
         const { success } = await bulkDeleteOrders(ids);
         if (success) {
             setOrders(prev => prev.filter(o => !ids.includes(o.id)));

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Icon } from '../ui/Icon';
 import { PricingConfig, DEFAULT_PRICING } from '../../types';
-import { verifyAdminAction } from '../../lib/biometricAuth';
 
 interface PricingSettingsProps {
     pricing: PricingConfig;
@@ -29,10 +28,7 @@ export const PricingSettings: React.FC<PricingSettingsProps> = ({ pricing, onUpd
         setSaved(false);
     };
 
-    const handleSave = async () => {
-        const verified = await verifyAdminAction('update_pricing');
-        if (!verified) return;
-
+    const handleSave = () => {
         onUpdate(localPricing);
         localStorage.setItem('printwise_pricing', JSON.stringify(localPricing));
         setSaved(true);

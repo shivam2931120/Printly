@@ -4,8 +4,6 @@ import { useSignUp } from '@clerk/clerk-react';
 import { Mail, User, ArrowRight, ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { toast } from 'sonner';
-import { BiometricSetup } from './BiometricSetup';
-import { isBiometricAvailable } from '../../lib/biometricAuth';
 
 export const CustomSignUp = () => {
     const { signUp, isLoaded, setActive } = useSignUp();
@@ -17,8 +15,6 @@ export const CustomSignUp = () => {
     const [verifying, setVerifying] = useState(false);
     const [code, setCode] = useState('');
     const [resendCooldown, setResendCooldown] = useState(0);
-    const [showBiometricSetup, setShowBiometricSetup] = useState(false);
-    const [userId, setUserId] = useState<string>('');
     const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -63,15 +59,7 @@ export const CustomSignUp = () => {
 
             if (result.status === 'complete') {
                 await setActive({ session: result.createdSessionId });
-                
-                // Check if biometric is available before navigating
-                const biometricAvailable = await isBiometricAvailable();
-                if (biometricAvailable) {
-                    setUserId(result.createdSessionId || '');
-                    setShowBiometricSetup(true);
-                } else {
-                    navigate('/');
-                }
+                navigate('/');
             } else {
                 // More helpful error message
                 console.error('Sign-up status:', result.status, result);
@@ -173,31 +161,6 @@ export const CustomSignUp = () => {
                                 </button>
                             </div>
                         </form>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    // Biometric setup after successful signup
-    if (showBiometricSetup) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-[#050505] relative overflow-hidden px-4">
-                <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-white/5 rounded-full blur-[120px] pointer-events-none" />
-
-                <div className="w-full max-w-md relative z-10 animate-in">
-                    <BiometricSetup
-                        userId={userId}
-                        email={email}
-                        onClose={() => navigate('/')}
-                    />
-                    <div className="text-center mt-6">
-                        <button
-                            onClick={() => navigate('/')}
-                            className="text-text-muted text-sm hover:text-white transition-colors font-medium"
-                        >
-                            Skip for now →
-                        </button>
                     </div>
                 </div>
             </div>

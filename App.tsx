@@ -1,4 +1,4 @@
-import React, { useState, lazy, Suspense, useEffect } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import { Toaster } from 'sonner';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { ClerkProvider } from '@clerk/clerk-react';
@@ -9,8 +9,6 @@ import { PageTransition } from './components/layout/PageTransition';
 import { MainLayout } from './components/layout/MainLayout';
 import { CartDrawer } from './components/layout/CartDrawer';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { LockScreen } from './components/auth/LockScreen';
-import { startAutoLockMonitor, isAppLocked, clearAdminVerification } from './lib/biometricAuth';
 
 const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
@@ -123,32 +121,14 @@ const AppContent: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [pricing, setPricing] = useState<PricingConfig>(DEFAULT_PRICING);
-  const [locked, setLocked] = useState(() => isAppLocked());
-
-  // Auto-lock monitor — only active in PWA mode with biometric enabled
-  useEffect(() => {
-    if (!currentUser) return;
-
-    const cleanup = startAutoLockMonitor(() => {
-      setLocked(true);
-    });
-
-    return cleanup;
-  }, [currentUser?.id]);
 
   const handleSignOut = async () => {
-    clearAdminVerification();
     await signOut();
     navigate('/');
   };
 
   if (!isLoaded) {
     return <LoadingSpinner />;
-  }
-
-  // Show lock screen overlay
-  if (locked && currentUser) {
-    return <LockScreen onUnlock={() => setLocked(false)} />;
   }
 
   return (

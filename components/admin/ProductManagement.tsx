@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Icon } from '../ui/Icon';
 import { Product, PRODUCT_CATEGORIES, ProductCategory } from '../../types';
 import { fetchProducts, createProduct, updateProduct, deleteProduct } from '../../services/data';
-import { verifyAdminAction } from '../../lib/biometricAuth';
 
 interface ProductFormData {
     name: string;
@@ -88,8 +87,7 @@ export const ProductManagement: React.FC = () => {
     };
 
     const handleDeleteProduct = async (productId: string) => {
-        const verified = await verifyAdminAction('delete_product');
-        if (!verified) return;
+        if (!confirm('Are you sure you want to delete this product?')) return;
 
         const { success } = await deleteProduct(productId);
         if (success) {
@@ -151,8 +149,7 @@ export const ProductManagement: React.FC = () => {
                             alert('No out-of-stock products to delete.');
                             return;
                         }
-                        const verified = await verifyAdminAction('delete_product');
-                        if (verified) {
+                        if (confirm(`Delete ${outOfStock.length} out-of-stock products?`)) {
                             outOfStock.forEach(p => handleDeleteProduct(p.id));
                         }
                     }}
