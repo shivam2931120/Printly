@@ -142,6 +142,17 @@ export const createOrder = async (order: Order, _userRole?: string): Promise<{ s
         }
     }
 
+    // Backfill authId (Clerk ID) on existing user record if not yet set
+    const clerkId = (order as any).clerkId as string | undefined;
+    if (clerkId && finalUserId) {
+        supabase
+            .from('User')
+            .update({ authId: clerkId, updatedAt: new Date().toISOString() })
+            .eq('id', finalUserId)
+            .is('authId', null)
+            .then(() => {}); // fire-and-forget
+    }
+
     // 3. Serialize cart items to JSONB (inline in Order — no separate table)
     const itemsJson = order.items.map(item => {
         if (item.type === 'product') {
@@ -174,8 +185,9 @@ export const createOrder = async (order: Order, _userRole?: string): Promise<{ s
         .from('Order')
         .insert({
             id: order.id,
-            orderToken: order.orderToken || Math.floor(1000 + Math.random() * 9000).toString(), // DB trigger auto-assigns unique token if empty
+            orderToken: order.orderToken || Math.floor(1000 + Math.random() * 9000).toString(),
             userId: finalUserId || null,
+            clerkId: (order as any).clerkId || null,   // Clerk user ID for cross-referencing
             userEmail: resolvedEmail,
             userName: resolvedName,
             totalAmount: order.totalAmount,
@@ -604,7 +616,96 @@ export const autoCleanupIfNeeded = async (): Promise<{
 };
 
 // ===== STORAGE =====
+
+/** Allowed MIME types for print uploads */
+const ALLOWED_TYPES = [
+    'application/pdf',
+    'image/jpeg',
+    'image/jpg',
+    'image/png',
+    'image/gif',
+    'image/bmp',
+    'image/tiff',
+    'image/webp',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // DOCX
+    'application/msword', // DOC
+];
+const MAX_FILE_SIZE_MB = 50;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
+/**
+ * Validate a file before upload:
+ *  1. Extension + MIME type allowlist
+ *  2. Size limit (50 MB)
+ *  3. Magic bytes check (PDF, JPEG, PNG, GIF, BMP, TIFF, WEBP, DOCX)
+ */
+async function validateFile(file: File): Promise<{ valid: boolean; reason?: string }> {
+    // 1. Type check
+    if (!ALLOWED_TYPES.includes(file.type)) {
+        return { valid: false, reason: `File type "${file.type}" not allowed. Accepted: PDF, JPEG, PNG, GIF, BMP, TIFF, WEBP, DOCX, DOC.` };
+    }
+
+    // 2. Size check
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+        return { valid: false, reason: `File too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Max allowed: ${MAX_FILE_SIZE_MB} MB.` };
+    }
+
+    // 3. Magic bytes — read first 12 bytes (WEBP needs 12 bytes)
+    try {
+        const header = new Uint8Array(await file.slice(0, 12).arrayBuffer());
+        
+        // Check magic bytes for each format
+        const isPdf = header[0] === 0x25 && header[1] === 0x50 && header[2] === 0x44 && header[3] === 0x46; // %PDF
+        const isJpeg = header[0] === 0xFF && header[1] === 0xD8;
+        const isPng = header[0] === 0x89 && header[1] === 0x50 && header[2] === 0x4E && header[3] === 0x47;
+        const isGif = header[0] === 0x47 && header[1] === 0x49 && header[2] === 0x46 && header[3] === 0x38; // GIF8
+        const isBmp = header[0] === 0x42 && header[1] === 0x4D; // BM
+        const isTiffLE = header[0] === 0x49 && header[1] === 0x49 && header[2] === 0x2A && header[3] === 0x00; // Little-endian TIFF
+        const isTiffBE = header[0] === 0x4D && header[1] === 0x4D && header[2] === 0x00 && header[3] === 0x2A; // Big-endian TIFF
+        const isWebp = header[0] === 0x52 && header[1] === 0x49 && header[2] === 0x46 && header[3] === 0x46 && // RIFF
+                       header[8] === 0x57 && header[9] === 0x45 && header[10] === 0x42 && header[11] === 0x50; // WEBP
+        const isZip = header[0] === 0x50 && header[1] === 0x4B && header[2] === 0x03 && header[3] === 0x04; // ZIP (DOCX)
+
+        if (file.type === 'application/pdf' && !isPdf) {
+            return { valid: false, reason: 'File does not appear to be a valid PDF.' };
+        }
+        if ((file.type === 'image/jpeg' || file.type === 'image/jpg') && !isJpeg) {
+            return { valid: false, reason: 'File does not appear to be a valid JPEG.' };
+        }
+        if (file.type === 'image/png' && !isPng) {
+            return { valid: false, reason: 'File does not appear to be a valid PNG.' };
+        }
+        if (file.type === 'image/gif' && !isGif) {
+            return { valid: false, reason: 'File does not appear to be a valid GIF.' };
+        }
+        if (file.type === 'image/bmp' && !isBmp) {
+            return { valid: false, reason: 'File does not appear to be a valid BMP.' };
+        }
+        if (file.type === 'image/tiff' && !(isTiffLE || isTiffBE)) {
+            return { valid: false, reason: 'File does not appear to be a valid TIFF.' };
+        }
+        if (file.type === 'image/webp' && !isWebp) {
+            return { valid: false, reason: 'File does not appear to be a valid WEBP.' };
+        }
+        if ((file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
+             file.type === 'application/msword') && !isZip) {
+            return { valid: false, reason: 'File does not appear to be a valid Word document.' };
+        }
+    } catch {
+        // Ignore — magic byte check is best-effort
+    }
+
+    return { valid: true };
+}
+
 export const uploadFile = async (file: File): Promise<string | null> => {
+    // Validate before uploading
+    const validation = await validateFile(file);
+    if (!validation.valid) {
+        toast.error(validation.reason || 'Invalid file.');
+        return null;
+    }
+
     try {
         const fileExt = file.name.split('.').pop();
         const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;

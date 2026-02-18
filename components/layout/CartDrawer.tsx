@@ -144,6 +144,7 @@ export const CartDrawer: React.FC = () => {
                     id: response.razorpay_payment_id || crypto.randomUUID(),
                     orderToken: pickupCode,
                     userId: user?.id,
+                    clerkId: user?.authId,   // Clerk user ID for tracing
                     userEmail: user?.email || 'guest@example.com',
                     userName: user?.name || 'Guest',
                     items: processedCart,

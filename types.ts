@@ -142,7 +142,8 @@ export type CartItem = ProductCartItem | PrintCartItem;
 
 export interface Order {
   id: string;
-  userId?: string; // Optional for guest orders
+  userId?: string;    // DB User table primary key
+  clerkId?: string;   // Clerk user ID (auth.id from Clerk) — for tracing
   userEmail: string;
   userName: string;
 

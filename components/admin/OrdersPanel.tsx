@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Icon } from '../ui/Icon';
 import { Toast } from '../ui/Toast';
@@ -22,23 +22,21 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
     const [paymentFilter, setPaymentFilter] = useState<string>('all');
+    const [realtimeStatus, setRealtimeStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
 
 
 
-    const loadOrders = async () => {
-        setLoading(true); // Set loading to true before fetching
+    const loadOrders = useCallback(async () => {
+        setLoading(true);
         try {
             let data;
             if (currentUserId) {
-                // Admin specific fetch (bypassing RLS via RPC)
                 data = await fetchAdminOrders(currentUserId);
             } else {
-                // Fallback to regular fetch (though this component is admin-only)
                 data = await fetchOrders();
             }
             setOrders(data);
 
-            // Check for new orders
             if (prevOrdersCountRef.current > 0 && data.length > prevOrdersCountRef.current) {
                 const newOrder = data[0];
                 setToastMessage({
@@ -51,38 +49,79 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
             console.error("Failed to fetch orders", error);
             setToastMessage({ message: 'Failed to load orders', type: 'error' });
         } finally {
-            setLoading(false); // Set loading to false after fetching, regardless of success or error
+            setLoading(false);
         }
-    };
+    }, [currentUserId]);
 
     useEffect(() => {
         loadOrders();
 
-        // Real-time subscription for instant updates (no polling)
-
-        // Real-time subscription for instant updates
+        // Real-time: handle each change type incrementally instead of full reload
         const channel = supabase
-            .channel('admin-orders-sync')
+            .channel('admin-orders-realtime')
             .on(
                 'postgres_changes',
-                {
-                    event: '*', // Listen for ALL changes (INSERT, UPDATE, DELETE)
-                    schema: 'public',
-                    table: 'Order'
-                },
+                { event: 'INSERT', schema: 'public', table: 'Order' },
                 (payload) => {
-                    console.log('Real-time order update received:', payload);
-                    loadOrders(); // Refresh the list
+                    const raw = payload.new as any;
+                    if (!raw?.id) return;
+                    // Full reload to get joined user info
+                    loadOrders();
+                    setToastMessage({
+                        message: `🆕 New order! Token: ${raw.orderToken || raw.id.slice(-4)}`,
+                        type: 'success'
+                    });
+                }
+            )
+            .on(
+                'postgres_changes',
+                { event: 'UPDATE', schema: 'public', table: 'Order' },
+                (payload) => {
+                    const raw = payload.new as any;
+                    if (!raw?.id) return;
+                    // Patch in-memory — no network round-trip needed
+                    setOrders(prev => prev.map(o =>
+                        o.id === raw.id
+                            ? {
+                                ...o,
+                                status: (raw.status?.toLowerCase() ?? o.status) as Order['status'],
+                                paymentStatus: (raw.paymentStatus?.toLowerCase() ?? o.paymentStatus) as Order['paymentStatus'],
+                                updatedAt: raw.updatedAt ? new Date(raw.updatedAt) : o.updatedAt,
+                            }
+                            : o
+                    ));
+                    setSelectedOrder(prev =>
+                        prev?.id === raw.id
+                            ? {
+                                ...prev,
+                                status: (raw.status?.toLowerCase() ?? prev.status) as Order['status'],
+                                paymentStatus: (raw.paymentStatus?.toLowerCase() ?? prev.paymentStatus) as Order['paymentStatus'],
+                                updatedAt: raw.updatedAt ? new Date(raw.updatedAt) : prev.updatedAt,
+                            }
+                            : prev
+                    );
+                }
+            )
+            .on(
+                'postgres_changes',
+                { event: 'DELETE', schema: 'public', table: 'Order' },
+                (payload) => {
+                    const raw = payload.old as any;
+                    if (!raw?.id) return;
+                    setOrders(prev => prev.filter(o => o.id !== raw.id));
+                    setSelectedOrder(prev => prev?.id === raw.id ? null : prev);
                 }
             )
             .subscribe((status) => {
-                console.log('Real-time subscription status:', status);
+                if (status === 'SUBSCRIBED') setRealtimeStatus('connected');
+                else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') setRealtimeStatus('error');
+                else setRealtimeStatus('connecting');
             });
 
         return () => {
             supabase.removeChannel(channel);
         };
-    }, []);
+    }, [loadOrders]);
 
     const updateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {
         const now = new Date();
@@ -251,8 +290,25 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Orders</h2>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
+                    <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 flex items-center gap-2">
                         Manage print orders and track fulfillment
+                        {/* Realtime connection indicator */}
+                        <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full
+                            ${realtimeStatus === 'connected'
+                                ? 'bg-green-500/10 text-green-500'
+                                : realtimeStatus === 'error'
+                                    ? 'bg-red-500/10 text-red-500'
+                                    : 'bg-amber-500/10 text-amber-500'
+                            }`}>
+                            <span className={`size-1.5 rounded-full inline-block
+                                ${realtimeStatus === 'connected'
+                                    ? 'bg-green-500 animate-pulse'
+                                    : realtimeStatus === 'error'
+                                        ? 'bg-red-500'
+                                        : 'bg-amber-500 animate-pulse'
+                                }`} />
+                            {realtimeStatus === 'connected' ? 'Live' : realtimeStatus === 'error' ? 'Offline' : 'Connecting…'}
+                        </span>
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
