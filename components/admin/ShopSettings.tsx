@@ -1,34 +1,42 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { Icon } from '../ui/Icon';
 import { ShopConfig, DEFAULT_SHOP_CONFIG } from '../../types';
+import { fetchShopConfig, saveShopConfig } from '../../services/data';
 
 interface ShopSettingsProps {
-    onSave?: (config: ShopConfig) => void;
+    shopConfig?: ShopConfig;
+    onUpdate?: (config: ShopConfig) => void;
 }
 
-export const ShopSettings: React.FC<ShopSettingsProps> = ({ onSave }) => {
-    const [config, setConfig] = useState<ShopConfig>(DEFAULT_SHOP_CONFIG);
+export const ShopSettings: React.FC<ShopSettingsProps> = ({ shopConfig, onUpdate }) => {
+    const [config, setConfig] = useState<ShopConfig>(shopConfig ?? DEFAULT_SHOP_CONFIG);
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
 
+    // Sync when parent pushes a fresh value (e.g. loaded from Supabase after mount)
     useEffect(() => {
-        const stored = localStorage.getItem('printwise_shop_config');
-        if (stored) {
-            try {
-                setConfig({ ...DEFAULT_SHOP_CONFIG, ...JSON.parse(stored) });
-            } catch (e) {
-                console.error('Failed to parse shop config:', e);
-            }
+        if (shopConfig) setConfig(shopConfig);
+    }, [shopConfig]);
+
+    // On first render, if no prop provided, load from Supabase
+    useEffect(() => {
+        if (!shopConfig) {
+            fetchShopConfig().then(setConfig);
         }
     }, []);
 
     const handleSave = async () => {
         setIsSaving(true);
-        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate save
-        localStorage.setItem('printwise_shop_config', JSON.stringify(config));
+        const result = await saveShopConfig(config);
         setIsSaving(false);
-        setIsEditing(false);
-        onSave?.(config);
+        if (result.success) {
+            toast.success('Shop settings saved!');
+            setIsEditing(false);
+            onUpdate?.(config);
+        } else {
+            toast.error('Failed to save shop settings');
+        }
     };
 
     const handleChange = (field: keyof ShopConfig, value: string) => {
@@ -53,7 +61,7 @@ export const ShopSettings: React.FC<ShopSettingsProps> = ({ onSave }) => {
                 ) : (
                     <div className="flex gap-2">
                         <button
-                            onClick={() => setIsEditing(false)}
+                            onClick={() => { setIsEditing(false); if (shopConfig) setConfig(shopConfig); }}
                             className="px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                         >
                             Cancel
@@ -91,13 +99,15 @@ export const ShopSettings: React.FC<ShopSettingsProps> = ({ onSave }) => {
                     value={config.operatingHours}
                     isEditing={isEditing}
                     onChange={(v) => handleChange('operatingHours', v)}
+                    placeholder="e.g. 9:00 AM - 6:00 PM (Mon-Sat)"
                 />
                 <EditableSettingRow
                     icon="location_on"
-                    title="Location"
+                    title="Location / Address"
                     value={config.location}
                     isEditing={isEditing}
                     onChange={(v) => handleChange('location', v)}
+                    placeholder="Building / Room / Campus"
                 />
                 <EditableSettingRow
                     icon="phone"
@@ -105,6 +115,7 @@ export const ShopSettings: React.FC<ShopSettingsProps> = ({ onSave }) => {
                     value={config.contact}
                     isEditing={isEditing}
                     onChange={(v) => handleChange('contact', v)}
+                    placeholder="+91 XXXXX XXXXX"
                 />
                 <EditableSettingRow
                     icon="mail"
@@ -112,6 +123,24 @@ export const ShopSettings: React.FC<ShopSettingsProps> = ({ onSave }) => {
                     value={config.email}
                     isEditing={isEditing}
                     onChange={(v) => handleChange('email', v)}
+                    placeholder="shop@example.com"
+                />
+                <EditableSettingRow
+                    icon="map"
+                    title="Directions URL"
+                    value={config.directionsUrl ?? ''}
+                    isEditing={isEditing}
+                    onChange={(v) => handleChange('directionsUrl', v)}
+                    placeholder="https://maps.app.goo.gl/..."
+                />
+                <EditableSettingRow
+                    icon="code"
+                    title="Map Embed URL"
+                    value={config.mapEmbed ?? ''}
+                    isEditing={isEditing}
+                    onChange={(v) => handleChange('mapEmbed', v)}
+                    placeholder="https://www.google.com/maps/embed?pb=..."
+                    multiline
                 />
             </div>
 
@@ -119,7 +148,7 @@ export const ShopSettings: React.FC<ShopSettingsProps> = ({ onSave }) => {
             <div className="mt-6 pt-4 border-t border-border-light dark:border-border-dark">
                 <p className="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
                     <Icon name="lock" className="text-xs" />
-                    Shop ID: {config.shopId} • Powered by Printly Platform
+                    Shop ID: {config.shopId} • Changes saved to Supabase and visible to all users immediately
                 </p>
             </div>
         </div>
@@ -133,22 +162,35 @@ const EditableSettingRow: React.FC<{
     value: string;
     isEditing: boolean;
     onChange: (value: string) => void;
-}> = ({ icon, title, value, isEditing, onChange }) => (
+    placeholder?: string;
+    multiline?: boolean;
+}> = ({ icon, title, value, isEditing, onChange, placeholder, multiline }) => (
     <div className="flex items-start gap-4 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-        <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 shrink-0">
+        <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 shrink-0 mt-0.5">
             <Icon name={icon} className="text-slate-500 dark:text-slate-400" />
         </div>
         <div className="flex-1 min-w-0">
             <p className="font-medium text-slate-900 dark:text-white text-sm mb-1">{title}</p>
             {isEditing ? (
-                <input
-                    type="text"
-                    value={value}
-                    onChange={(e) => onChange(e.target.value)}
-                    className="w-full px-3 py-1.5 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary text-slate-900 dark:text-white"
-                />
+                multiline ? (
+                    <textarea
+                        value={value}
+                        onChange={(e) => onChange(e.target.value)}
+                        placeholder={placeholder}
+                        rows={3}
+                        className="w-full px-3 py-1.5 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary text-slate-900 dark:text-white resize-none font-mono"
+                    />
+                ) : (
+                    <input
+                        type="text"
+                        value={value}
+                        onChange={(e) => onChange(e.target.value)}
+                        placeholder={placeholder}
+                        className="w-full px-3 py-1.5 text-sm bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary text-slate-900 dark:text-white"
+                    />
+                )
             ) : (
-                <p className="text-sm text-slate-500 dark:text-slate-400">{value}</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 break-all">{value || <span className="italic text-slate-400">Not set</span>}</p>
             )}
         </div>
     </div>

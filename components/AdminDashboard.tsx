@@ -8,14 +8,18 @@ import { ProductManagement } from './admin/ProductManagement';
 import { PricingSettings } from './admin/PricingSettings';
 import { ShopSettings } from './admin/ShopSettings';
 import { AuditViewer } from './admin/AuditViewer';
+import { CustomerList } from './admin/CustomerList';
+import { ServiceManagement } from './admin/ServiceManagement';
 import { Icon } from './ui/Icon';
-import { User, PricingConfig } from '../types';
+import { User, PricingConfig, ShopConfig } from '../types';
 import { useRealtimeNotifications } from '../hooks/useRealtimeNotifications';
 
 interface AdminDashboardProps {
   currentUser: User | null;
   pricing: PricingConfig;
   onPricingUpdate: (pricing: PricingConfig) => void;
+  shopConfig: ShopConfig;
+  onShopConfigUpdate: (config: ShopConfig) => void;
   onSignOut: () => void;
 }
 
@@ -23,6 +27,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   currentUser,
   pricing,
   onPricingUpdate,
+  shopConfig,
+  onShopConfigUpdate,
   onSignOut,
 }) => {
   const [activeSection, setActiveSection] = useState('dashboard');
@@ -49,12 +55,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         return <DashboardOverview onNavigate={(section) => setActiveSection(section)} />;
       case 'orders':
         return <OrdersPanel currentUserId={currentUser?.id || ''} />;
+      case 'customers':
+        return <CustomerList />;
       case 'analytics':
         return <AnalyticsDashboard />;
       case 'products':
         return <ProductManagement />;
       case 'pricing':
         return <PricingSettings pricing={pricing} onUpdate={onPricingUpdate} />;
+      case 'services':
+        return <ServiceManagement />;
       case 'inventory':
         return <InventoryPanel />;
       case 'audit':
@@ -65,6 +75,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             currentUser={currentUser}
             adminAvatar={adminAvatar}
             onAvatarChange={handleAvatarChange}
+            shopConfig={shopConfig}
+            onShopConfigUpdate={onShopConfigUpdate}
             onSignOut={onSignOut}
           />
         );
@@ -91,6 +103,8 @@ interface SettingsPanelProps {
   currentUser: User | null;
   adminAvatar: string | null;
   onAvatarChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  shopConfig: ShopConfig;
+  onShopConfigUpdate: (config: ShopConfig) => void;
   onSignOut: () => void;
 }
 
@@ -98,6 +112,8 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
   currentUser,
   adminAvatar,
   onAvatarChange,
+  shopConfig,
+  onShopConfigUpdate,
   onSignOut
 }) => (
   <div className="space-y-6">
@@ -157,7 +173,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
       </div>
 
       {/* Shop Settings (Editable) */}
-      <ShopSettings />
+      <ShopSettings shopConfig={shopConfig} onUpdate={onShopConfigUpdate} />
 
       {/* Notifications */}
       <div className="bg-surface-light/80 dark:bg-surface-dark/80 backdrop-blur-xl rounded-xl border border-border-light dark:border-border-dark p-6">

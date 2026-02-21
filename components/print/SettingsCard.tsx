@@ -11,7 +11,7 @@ import {
     RotateCcw,
     ChevronDown,
 } from 'lucide-react';
-import { PrintOptions, DEFAULT_PRICING } from '../../types';
+import { PrintOptions, PricingConfig } from '../../types';
 import { calculatePriceBreakdown, PriceBreakdownLine } from '../../lib/pricing';
 import { OptionButton } from './OptionButton';
 import { cn } from '../../lib/utils';
@@ -20,14 +20,15 @@ interface SettingsCardProps {
     options: PrintOptions;
     onChange: (opts: PrintOptions) => void;
     pageCount: number;
+    pricing: PricingConfig;
 }
 
 export const SettingsCard: React.FC<SettingsCardProps> = ({
     options,
     onChange,
     pageCount,
+    pricing,
 }) => {
-    const pricing = DEFAULT_PRICING;
 
     const update = <K extends keyof PrintOptions>(key: K, value: PrintOptions[K]) => {
         onChange({ ...options, [key]: value });

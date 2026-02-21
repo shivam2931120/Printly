@@ -66,7 +66,6 @@ export const StorePage: React.FC = () => {
         const loadProducts = async () => {
             setIsLoading(true);
             try {
-                await new Promise(resolve => setTimeout(resolve, 800));
                 const data = await fetchProducts();
                 setProducts(data);
             } catch (error) {

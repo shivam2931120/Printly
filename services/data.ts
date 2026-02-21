@@ -1,6 +1,6 @@
 import { supabase, supabaseAdmin } from './supabase';
 export { supabase };
-import { Product, Order, CartItem, OrderStatus, PaymentStatus } from '../types';
+import { Product, Order, CartItem, OrderStatus, PaymentStatus, PricingConfig, DEFAULT_PRICING, ShopConfig, DEFAULT_SHOP_CONFIG, Service, DEFAULT_SERVICES } from '../types';
 
 // ===== PRODUCTS =====
 export const fetchProducts = async (): Promise<Product[]> => {
@@ -246,9 +246,9 @@ export const fetchOrders = async (userId?: string, userEmail?: string): Promise<
     return mapOrderData(data);
 };
 
-export const fetchAdminOrders = async (adminId: string): Promise<Order[]> => {
-    const { data, error } = await supabase
-        .rpc('get_admin_orders', { requesting_user_id: adminId })
+export const fetchAdminOrders = async (_adminId?: string): Promise<Order[]> => {
+    const { data, error } = await supabaseAdmin
+        .from('Order')
         .select('*, user:User(name, email, avatar)')
         .eq('isDeleted', false)
         .order('createdAt', { ascending: false });
@@ -262,7 +262,7 @@ export const fetchAdminOrders = async (adminId: string): Promise<Order[]> => {
 };
 
 export const fetchAllOrdersForAnalytics = async (): Promise<Order[]> => {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
         .from('Order')
         .select('*, user:User(name, email, avatar)')
         .order('createdAt', { ascending: false });
@@ -618,6 +618,174 @@ export const getDailyStatsSummary = async (): Promise<{
         }),
         { totalRevenue: 0, totalOrders: 0, totalPrintJobs: 0, totalProductSales: 0, totalCustomers: 0, totalBwPages: 0, totalColorPages: 0 }
     );
+};
+
+// ===== PRICING (persisted in Shop.pricingConfig) =====
+
+/** Load pricing from the active Shop row, fall back to localStorage then DEFAULT_PRICING */
+export const fetchPricing = async (): Promise<PricingConfig> => {
+    try {
+        // Use admin client to bypass RLS on Shop table
+        const { data, error } = await supabaseAdmin
+            .from('Shop')
+            .select('pricingConfig')
+            .eq('isActive', true)
+            .limit(1)
+            .maybeSingle();
+
+        if (!error && data?.pricingConfig) {
+            return data.pricingConfig as PricingConfig;
+        }
+    } catch { /* ignore */ }
+
+    // fallback: localStorage cache (same device)
+    try {
+        const cached = localStorage.getItem('printwise_pricing');
+        if (cached) return { ...DEFAULT_PRICING, ...JSON.parse(cached) };
+    } catch { /* ignore */ }
+
+    return DEFAULT_PRICING;
+};
+
+/** Persist pricing to the active Shop row and also cache in localStorage */
+export const savePricing = async (pricing: PricingConfig): Promise<{ success: boolean; error?: any }> => {
+    // Always cache locally so same-device is instant
+    localStorage.setItem('printwise_pricing', JSON.stringify(pricing));
+
+    // Persist to Supabase so all users see the change
+    const { error } = await supabaseAdmin
+        .from('Shop')
+        .update({ pricingConfig: pricing, updatedAt: new Date().toISOString() })
+        .eq('isActive', true);
+
+    if (error) {
+        console.error('Failed to save pricing to Supabase:', error);
+        return { success: false, error };
+    }
+    return { success: true };
+};
+
+// ===== SHOP CONFIG (persisted in Shop.shopConfig) =====
+
+/** Load shop config from the active Shop row, fall back to localStorage then DEFAULT_SHOP_CONFIG */
+export const fetchShopConfig = async (): Promise<ShopConfig> => {
+    try {
+        const { data, error } = await supabaseAdmin
+            .from('Shop')
+            .select('shopConfig')
+            .eq('isActive', true)
+            .limit(1)
+            .maybeSingle();
+
+        if (!error && data?.shopConfig) {
+            return { ...DEFAULT_SHOP_CONFIG, ...(data.shopConfig as ShopConfig) };
+        }
+    } catch { /* ignore */ }
+
+    // fallback: localStorage cache
+    try {
+        const cached = localStorage.getItem('printwise_shop_config');
+        if (cached) return { ...DEFAULT_SHOP_CONFIG, ...JSON.parse(cached) };
+    } catch { /* ignore */ }
+
+    return DEFAULT_SHOP_CONFIG;
+};
+
+/** Persist shop config to the active Shop row and also cache in localStorage */
+export const saveShopConfig = async (config: ShopConfig): Promise<{ success: boolean; error?: any }> => {
+    localStorage.setItem('printwise_shop_config', JSON.stringify(config));
+
+    const { error } = await supabaseAdmin
+        .from('Shop')
+        .update({ shopConfig: config, updatedAt: new Date().toISOString() })
+        .eq('isActive', true);
+
+    if (error) {
+        console.error('Failed to save shop config to Supabase:', error);
+        return { success: false, error };
+    }
+    return { success: true };
+};
+
+// ===== CUSTOMERS (aggregated from orders) =====
+
+export interface CustomerSummary {
+    email: string;
+    name: string;
+    avatar?: string;
+    totalOrders: number;
+    totalSpent: number;
+    lastOrderAt: string;
+}
+
+/** Aggregate all non-deleted orders by customer email */
+export const fetchCustomers = async (): Promise<CustomerSummary[]> => {
+    const { data, error } = await supabaseAdmin
+        .from('Order')
+        .select('userEmail, userName, totalAmount, createdAt, user:User(name, email, avatar)')
+        .eq('isDeleted', false)
+        .order('createdAt', { ascending: false });
+
+    if (error || !data) {
+        console.error('Error fetching customers:', error);
+        return [];
+    }
+
+    const map = new Map<string, CustomerSummary>();
+    for (const row of data) {
+        const email: string = (row.user as any)?.email || row.userEmail || 'unknown';
+        const name: string = (row.user as any)?.name || row.userName || 'Unknown';
+        const avatar: string | undefined = (row.user as any)?.avatar;
+        if (map.has(email)) {
+            const c = map.get(email)!;
+            c.totalOrders += 1;
+            c.totalSpent += Number(row.totalAmount) || 0;
+        } else {
+            map.set(email, { email, name, avatar, totalOrders: 1, totalSpent: Number(row.totalAmount) || 0, lastOrderAt: row.createdAt });
+        }
+    }
+    return Array.from(map.values());
+};
+
+// ===== SERVICES (persisted in Shop.servicesConfig) =====
+
+/** Load services from the active Shop row, fall back to localStorage then DEFAULT_SERVICES */
+export const fetchServices = async (): Promise<Service[]> => {
+    try {
+        const { data, error } = await supabaseAdmin
+            .from('Shop')
+            .select('servicesConfig')
+            .eq('isActive', true)
+            .limit(1)
+            .maybeSingle();
+
+        if (!error && data?.servicesConfig) {
+            return data.servicesConfig as Service[];
+        }
+    } catch { /* ignore */ }
+
+    try {
+        const cached = localStorage.getItem('printwise_services');
+        if (cached) return JSON.parse(cached) as Service[];
+    } catch { /* ignore */ }
+
+    return DEFAULT_SERVICES;
+};
+
+/** Persist services to the active Shop row and cache in localStorage */
+export const saveServices = async (services: Service[]): Promise<{ success: boolean; error?: any }> => {
+    localStorage.setItem('printwise_services', JSON.stringify(services));
+
+    const { error } = await supabaseAdmin
+        .from('Shop')
+        .update({ servicesConfig: services, updatedAt: new Date().toISOString() })
+        .eq('isActive', true);
+
+    if (error) {
+        console.error('Failed to save services to Supabase:', error);
+        return { success: false, error };
+    }
+    return { success: true };
 };
 
 // ===== DB USAGE & AUTO-CLEANUP =====

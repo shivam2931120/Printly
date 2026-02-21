@@ -1,14 +1,15 @@
-import React, { useState, lazy, Suspense } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { Toaster } from 'sonner';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { ClerkProvider } from '@clerk/clerk-react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { User, PricingConfig, DEFAULT_PRICING } from './types';
+import { User, PricingConfig, DEFAULT_PRICING, ShopConfig, DEFAULT_SHOP_CONFIG } from './types';
 import { AnimatePresence } from 'framer-motion';
 import { PageTransition } from './components/layout/PageTransition';
 import { MainLayout } from './components/layout/MainLayout';
 import { CartDrawer } from './components/layout/CartDrawer';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { fetchPricing, fetchShopConfig } from './services/data';
 
 const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
@@ -121,6 +122,13 @@ const AppContent: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [pricing, setPricing] = useState<PricingConfig>(DEFAULT_PRICING);
+  const [shopConfig, setShopConfig] = useState<ShopConfig>(DEFAULT_SHOP_CONFIG);
+
+  // Load pricing and shop config from Supabase on mount
+  useEffect(() => {
+    fetchPricing().then(setPricing);
+    fetchShopConfig().then(setShopConfig);
+  }, []);
 
   const handleSignOut = async () => {
     await signOut();
@@ -151,7 +159,7 @@ const AppContent: React.FC = () => {
             <Route path="/my-orders" element={<MainLayout user={currentUser}><PageTransition><MyOrdersPage /></PageTransition></MainLayout>} />
             {/* /support removed — redirects to /contact */}
             <Route path="/support" element={<Navigate to="/contact" replace />} />
-            <Route path="/contact" element={<PageTransition><ContactPage /></PageTransition>} />
+            <Route path="/contact" element={<PageTransition><ContactPage shopConfig={shopConfig} /></PageTransition>} />
             <Route path="/profile" element={<MainLayout user={currentUser}><PageTransition><ProfilePage /></PageTransition></MainLayout>} />
 
             {/* Admin */}
@@ -163,6 +171,8 @@ const AppContent: React.FC = () => {
                     currentUser={currentUser}
                     pricing={pricing}
                     onPricingUpdate={setPricing}
+                    shopConfig={shopConfig}
+                    onShopConfigUpdate={setShopConfig}
                     onSignOut={handleSignOut}
                   />
                 </ProtectedRoute>

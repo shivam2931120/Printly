@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { FileText, ShoppingCart } from 'lucide-react';
-import { PrintOptions, DEFAULT_PRICING } from '../../types';
+import { PrintOptions, PricingConfig } from '../../types';
 import { calculatePriceBreakdown } from '../../lib/pricing';
 import { cn } from '../../lib/utils';
 
@@ -13,6 +13,7 @@ interface SummaryCardProps {
     hasFiles: boolean;
     onAddToCart: () => void;
     disabled?: boolean;
+    pricing: PricingConfig;
 }
 
 /* Animated counter that smoothly rolls between values */
@@ -51,8 +52,8 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
     hasFiles,
     onAddToCart,
     disabled,
+    pricing,
 }) => {
-    const pricing = DEFAULT_PRICING;
     const breakdown = calculatePriceBreakdown(options, pageCount, pricing);
 
     return (

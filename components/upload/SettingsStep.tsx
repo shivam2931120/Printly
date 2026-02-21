@@ -11,7 +11,7 @@ import {
     ChevronRight,
     RotateCcw
 } from 'lucide-react';
-import { PrintOptions, PricingConfig, DEFAULT_PRICING } from '../../types';
+import { PrintOptions, PricingConfig } from '../../types';
 import { calculatePriceBreakdown } from '../../lib/pricing';
 import { cn } from '../../lib/utils';
 import { Button } from '../ui/Button';
@@ -22,6 +22,7 @@ interface SettingsStepProps {
     totalPrice: number;
     pageCount?: number;
     onNext: () => void;
+    pricing: PricingConfig;
 }
 
 export const SettingsStep: React.FC<SettingsStepProps> = ({
@@ -29,9 +30,9 @@ export const SettingsStep: React.FC<SettingsStepProps> = ({
     onChange,
     totalPrice,
     pageCount = 1,
-    onNext
+    onNext,
+    pricing,
 }) => {
-    const pricing = DEFAULT_PRICING;
 
     const updateOption = <K extends keyof PrintOptions>(key: K, value: PrintOptions[K]) => {
         onChange({ ...options, [key]: value });

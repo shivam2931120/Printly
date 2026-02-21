@@ -128,6 +128,7 @@ export const PrintPage: React.FC<PrintPageProps> = ({ currentUser, onSignInClick
                         options={options}
                         onChange={setOptions}
                         pageCount={totalPages}
+                        pricing={pricing}
                     />
                 </div>
 
@@ -141,6 +142,7 @@ export const PrintPage: React.FC<PrintPageProps> = ({ currentUser, onSignInClick
                         hasFiles={files.length > 0 && !isDisabled}
                         onAddToCart={handleAddToCart}
                         disabled={isDisabled}
+                        pricing={pricing}
                     />
                 </div>
             </div>
@@ -204,6 +206,7 @@ export const PrintPage: React.FC<PrintPageProps> = ({ currentUser, onSignInClick
                             totalPrice={totalPrice}
                             pageCount={totalPages}
                             onNext={() => setStep(2)}
+                            pricing={pricing}
                         />
                     )}
 

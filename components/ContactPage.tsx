@@ -14,6 +14,7 @@ import {
     Navigation,
 } from 'lucide-react';
 import { Button } from './ui/Button';
+import { ShopConfig, DEFAULT_SHOP_CONFIG } from '../types';
 
 /* ─────────── helpers ─────────── */
 
@@ -52,20 +53,22 @@ const InfoCard: React.FC<{
 
 /* ─────────── main component ─────────── */
 
-export const ContactPage: React.FC = () => {
+export const ContactPage: React.FC<{ shopConfig?: ShopConfig }> = ({ shopConfig }) => {
     const navigate = useNavigate();
     const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
-    // ── Contact Info (hardcoded — no DB dependency) ──
+    const cfg = shopConfig ?? DEFAULT_SHOP_CONFIG;
+
+    // Derive contact object from shopConfig (or fallback defaults)
     const CONTACT = {
-        email: 'shivam.bgp@outlook.com',
-        phone: '+91 8618719375',
-        location: 'Akshaya RVITM Hostel, Bangalore',
-        hours: '9:00 AM - 6:00 PM (Mon-Sat)',
-        directionsUrl: 'https://maps.app.goo.gl/94RRjuc1whqWUmWQ7',
-        mapEmbed: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3889.7011850547046!2d77.57056058243771!3d12.86256658490096!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bae6bcd0e5f7aa9%3A0x6505152e96e305c7!2sAkshaya%20RVITM%20Hostel!5e0!3m2!1sen!2sin!4v1771305566041!5m2!1sen!2sin',
+        email: cfg.email || DEFAULT_SHOP_CONFIG.email,
+        phone: cfg.contact || DEFAULT_SHOP_CONFIG.contact,
+        location: cfg.location || DEFAULT_SHOP_CONFIG.location,
+        hours: cfg.operatingHours || DEFAULT_SHOP_CONFIG.operatingHours,
+        directionsUrl: cfg.directionsUrl || DEFAULT_SHOP_CONFIG.directionsUrl || '#',
+        mapEmbed: cfg.mapEmbed || DEFAULT_SHOP_CONFIG.mapEmbed || '',
     };
 
     const handleSubmit = async (e: React.FormEvent) => {

@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Icon } from '../ui/Icon';
 import { PricingConfig, DEFAULT_PRICING } from '../../types';
+import { savePricing } from '../../services/data';
+import { toast } from 'sonner';
 
 interface PricingSettingsProps {
     pricing: PricingConfig;
@@ -10,6 +12,10 @@ interface PricingSettingsProps {
 export const PricingSettings: React.FC<PricingSettingsProps> = ({ pricing, onUpdate }) => {
     const [localPricing, setLocalPricing] = useState<PricingConfig>(pricing);
     const [saved, setSaved] = useState(false);
+    const [saving, setSaving] = useState(false);
+
+    // Sync when parent loads pricing from Supabase after initial render
+    useEffect(() => { setLocalPricing(pricing); }, [pricing]);
 
     const handleChange = (path: string, value: number) => {
         const keys = path.split('.');
@@ -28,11 +34,20 @@ export const PricingSettings: React.FC<PricingSettingsProps> = ({ pricing, onUpd
         setSaved(false);
     };
 
-    const handleSave = () => {
-        onUpdate(localPricing);
-        localStorage.setItem('printwise_pricing', JSON.stringify(localPricing));
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
+    const handleSave = async () => {
+        setSaving(true);
+        const result = await savePricing(localPricing);
+        setSaving(false);
+        if (result.success) {
+            onUpdate(localPricing);
+            setSaved(true);
+            setTimeout(() => setSaved(false), 2000);
+        } else {
+            toast.error('Failed to save pricing. Changes saved locally only.');
+            onUpdate(localPricing);
+            setSaved(true);
+            setTimeout(() => setSaved(false), 2000);
+        }
     };
 
     const handleReset = () => {
@@ -56,10 +71,11 @@ export const PricingSettings: React.FC<PricingSettingsProps> = ({ pricing, onUpd
                     </button>
                     <button
                         onClick={handleSave}
-                        className="glass-btn glass-btn-primary"
+                        disabled={saving}
+                        className="glass-btn glass-btn-primary disabled:opacity-60"
                     >
-                        {saved ? <Icon name="check" /> : <Icon name="save" />}
-                        {saved ? 'Saved!' : 'Save Changes'}
+                        {saving ? <Icon name="sync" className="animate-spin" /> : saved ? <Icon name="check" /> : <Icon name="save" />}
+                        {saving ? 'Saving...' : saved ? 'Saved!' : 'Save Changes'}
                     </button>
                 </div>
             </div>
