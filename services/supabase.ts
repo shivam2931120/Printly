@@ -23,6 +23,19 @@ if (!supabaseUrl || !supabaseAnonKey) {
  */
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// NOTE: The SERVICE_ROLE_KEY should NEVER be used in the frontend.
-// User synchronization is now handled via Supabase Database Triggers.
-// SMTP configuration is handled in the Supabase Dashboard.
+/**
+ * Admin client — bypasses RLS using service role key.
+ * ONLY used for admin-gated operations (analytics read/write, snapshot).
+ * Falls back to the anon client if the key is not set.
+ */
+const serviceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+export const supabaseAdmin = serviceRoleKey
+    ? createClient(supabaseUrl, serviceRoleKey, {
+        auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+            detectSessionInUrl: false,
+            storageKey: 'supabase-admin-auth',   // separate storage key — no collision with main client
+        },
+    })
+    : supabase;

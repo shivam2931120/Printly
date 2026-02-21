@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase, supabaseAdmin } from './supabase';
 export { supabase };
 import { Product, Order, CartItem, OrderStatus, PaymentStatus } from '../types';
 
@@ -494,7 +494,7 @@ export const fetchDailyStats = async (
     from?: string,
     to?: string
 ): Promise<DailyStatsRow[]> => {
-    let query = supabase
+    let query = supabaseAdmin
         .from('DailyStats')
         .select('*')
         .order('date', { ascending: true });
@@ -512,20 +512,87 @@ export const fetchDailyStats = async (
     return data as DailyStatsRow[];
 };
 
-/** Call the snapshot_daily_stats RPC to aggregate current orders into DailyStats */
+/** Compute daily stats from Order table and upsert into DailyStats */
 export const snapshotDailyStats = async (): Promise<{ success: boolean; rowsUpserted?: number; error?: any }> => {
-    const { data, error } = await supabase.rpc('snapshot_daily_stats');
+    // 1. Fetch all non-deleted orders
+    const { data: orders, error: fetchErr } = await supabaseAdmin
+        .from('Order')
+        .select('id, totalAmount, items, createdAt, userEmail, shopId')
+        .eq('isDeleted', false);
 
-    if (error) {
-        if (isTableAccessError(error) || error.code === '42883') return { success: false, error };
-        console.error('Error snapshotting daily stats:', error);
-        return { success: false, error };
+    if (fetchErr) {
+        console.error('Snapshot: failed to fetch orders', fetchErr);
+        return { success: false, error: fetchErr };
     }
 
-    return {
-        success: true,
-        rowsUpserted: (data as any)?.rowsUpserted || 0,
-    };
+    if (!orders || orders.length === 0) {
+        return { success: true, rowsUpserted: 0 };
+    }
+
+    // 2. Group orders by date
+    const byDate: Record<string, {
+        revenue: number;
+        orderCount: number;
+        printJobs: number;
+        productSales: number;
+        bwPages: number;
+        colorPages: number;
+        customers: Set<string>;
+        shopId: string | null;
+    }> = {};
+
+    for (const order of orders) {
+        const date = new Date(order.createdAt).toISOString().split('T')[0];
+        if (!byDate[date]) {
+            byDate[date] = { revenue: 0, orderCount: 0, printJobs: 0, productSales: 0, bwPages: 0, colorPages: 0, customers: new Set(), shopId: order.shopId };
+        }
+        const d = byDate[date];
+        d.revenue += order.totalAmount || 0;
+        d.orderCount += 1;
+        if (order.userEmail) d.customers.add(order.userEmail);
+
+        const items: any[] = Array.isArray(order.items) ? order.items : [];
+        for (const item of items) {
+            if (item.type === 'print') {
+                d.printJobs += item.quantity || 1;
+                const cfg = item.printConfig || item.options || {};
+                const pages = (item.pageCount || 0) * (item.quantity || 1);
+                if (cfg.colorMode === 'color') d.colorPages += pages;
+                else d.bwPages += pages;
+            } else {
+                d.productSales += item.quantity || 1;
+            }
+        }
+    }
+
+    // 3. Build upsert rows
+    const rows = Object.entries(byDate).map(([date, d]) => ({
+        id: `${date}-${d.shopId ?? 'default'}`,
+        date,
+        revenue: Math.round(d.revenue * 100) / 100,
+        orderCount: d.orderCount,
+        printJobs: d.printJobs,
+        productSales: d.productSales,
+        avgOrderValue: d.orderCount > 0 ? Math.round((d.revenue / d.orderCount) * 100) / 100 : 0,
+        uniqueCustomers: d.customers.size,
+        bwPages: d.bwPages,
+        colorPages: d.colorPages,
+        shopId: d.shopId,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+    }));
+
+    // 4. Upsert into DailyStats
+    const { error: upsertErr } = await supabaseAdmin
+        .from('DailyStats')
+        .upsert(rows, { onConflict: 'id' });
+
+    if (upsertErr) {
+        console.error('Snapshot: upsert failed', upsertErr);
+        return { success: false, error: upsertErr };
+    }
+
+    return { success: true, rowsUpserted: rows.length };
 };
 
 /** Get summary totals from persisted DailyStats */

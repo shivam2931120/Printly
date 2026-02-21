@@ -15,6 +15,7 @@ import {
     Legend
 } from 'recharts';
 import { Icon } from '../ui/Icon';
+import { toast } from 'sonner';
 import {
     fetchAllOrdersForAnalytics,
     fetchDailyStats,
@@ -82,10 +83,15 @@ export const AnalyticsDashboard: React.FC = () => {
         try {
             const res = await snapshotDailyStats();
             if (res.success) {
+                toast.success(`Snapshot saved — ${res.rowsUpserted ?? 0} day(s) updated.`);
                 await loadData();
+            } else {
+                console.error('Snapshot failed:', res.error);
+                toast.error('Snapshot failed: ' + (res.error?.message || 'Unknown error'));
             }
-        } catch (e) {
+        } catch (e: any) {
             console.error('Snapshot failed:', e);
+            toast.error('Snapshot failed: ' + (e?.message || 'Unknown error'));
         } finally {
             setSnapshotting(false);
         }

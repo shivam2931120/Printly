@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSignUp } from '@clerk/clerk-react';
-import { Mail, User, ArrowRight, ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
+import { Mail, ArrowRight, ArrowLeft, Loader2, CheckCircle2, Eye, EyeOff, Lock } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { toast } from 'sonner';
 
@@ -14,6 +14,8 @@ export const CustomSignUp = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [verifying, setVerifying] = useState(false);
     const [code, setCode] = useState('');
+    const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [resendCooldown, setResendCooldown] = useState(0);
     const navigate = useNavigate();
 
@@ -25,10 +27,16 @@ export const CustomSignUp = () => {
         setError('');
 
         try {
+            // Generate a username from name + random digits to satisfy Clerk requirements
+            const base = (firstName + lastName).toLowerCase().replace(/[^a-z0-9]/g, '') || 'user';
+            const username = base + Math.floor(1000 + Math.random() * 9000);
+
             await signUp.create({
                 emailAddress: email,
                 firstName,
                 lastName,
+                username,
+                password,
             });
 
             // Send verification email
@@ -61,9 +69,8 @@ export const CustomSignUp = () => {
                 await setActive({ session: result.createdSessionId });
                 navigate('/');
             } else {
-                // More helpful error message
                 console.error('Sign-up status:', result.status, result);
-                setError(`Verification incomplete (status: ${result.status}). Please check your code and try again.`);
+                setError('Verification failed. Please check your code and try again.');
             }
         } catch (err: any) {
             console.error('Verification error:', err);
@@ -247,6 +254,30 @@ export const CustomSignUp = () => {
                                 placeholder="you@college.edu"
                                 required
                             />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.15em] ml-1">Password</label>
+                            <div className="relative group">
+                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-white transition-colors w-4 h-4" />
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full pl-11 pr-12 py-3.5 bg-white/5 border border-white/10 rounded-2xl focus:border-white/30 focus:bg-white/[0.08] outline-none transition-all text-white placeholder-white/10 text-sm font-medium"
+                                    placeholder="Min. 8 characters"
+                                    minLength={8}
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(p => !p)}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted hover:text-white transition-colors"
+                                    tabIndex={-1}
+                                >
+                                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                </button>
+                            </div>
                         </div>
 
                         {/* Clerk CAPTCHA element for bot protection */}
