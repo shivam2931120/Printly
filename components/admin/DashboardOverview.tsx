@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Icon } from '../ui/Icon';
-import { fetchAllOrdersForAnalytics, fetchInventory, autoCleanupIfNeeded, InventoryRow } from '../../services/data';
+import { fetchAllOrdersForAnalytics, fetchInventory, InventoryRow } from '../../services/data';
 import { Order } from '../../types';
 import {
     AreaChart,
@@ -55,19 +55,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
         loadData();
     }, []);
 
-    // Auto-cleanup: runs once on dashboard load, best-effort
-    useEffect(() => {
-        const checkCleanup = async () => {
-            try {
-                const result = await autoCleanupIfNeeded();
-                if (result && result.ordersDeleted && result.ordersDeleted > 0) {
-                    console.log(`[Auto-cleanup] ${result.ordersDeleted} old orders archived`);
-                    loadData(); // Refresh after cleanup
-                }
-            } catch { /* silent */ }
-        };
-        checkCleanup();
-    }, []);
+
 
     const pendingOrders = useMemo(() => orders.filter(o => ['pending', 'confirmed'].includes(o.status)), [orders]);
     const printingOrders = useMemo(() => orders.filter(o => o.status === 'printing'), [orders]);
@@ -91,19 +79,19 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
             {/* Welcome Header */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Welcome back, Admin</h2>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
+                    <h2 className="text-2xl font-bold text-white ">Welcome back, Admin</h2>
+                    <p className="text-[#666] text-sm mt-1">
                         Here's what's happening with your print shop today.
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <button className="inline-flex items-center justify-center h-10 px-4 rounded-lg border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark text-slate-700 dark:text-slate-200 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                    <button className="inline-flex items-center justify-center h-10 px-4 border border-[#333] bg-[#0A0A0A] text-[#666] text-sm font-medium hover:bg-[#0A0A0A] transition-colors">
                         <Icon name="calendar_today" className="text-lg mr-2" />
                         Today
                     </button>
                     <button
                         onClick={() => onNavigate('orders')}
-                        className="inline-flex items-center justify-center h-10 px-4 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-sm font-bold shadow-md hover:opacity-90 transition-colors"
+                        className="inline-flex items-center justify-center h-10 px-4 bg-[#0A0A0A] bg-[#0A0A0A] text-white text-sm font-bold shadow-md hover:opacity-90 transition-colors"
                     >
                         <Icon name="add" className="text-lg mr-2" />
                         Manage Orders
@@ -119,8 +107,8 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
                     change="Daily Total"
                     positive
                     icon="payments"
-                    iconBg="bg-green-50 dark:bg-green-900/20"
-                    iconColor="text-green-600 dark:text-green-400"
+                    iconBg="bg-green-900/20 bg-green-900/20"
+                    iconColor="text-green-400 "
                 />
                 <StatCard
                     title="Pending Orders"
@@ -128,8 +116,8 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
                     change={pendingOrders.length > 0 ? "Needs Attention" : "All Caught Up"}
                     positive={pendingOrders.length === 0}
                     icon="pending_actions"
-                    iconBg="bg-orange-50 dark:bg-orange-900/20"
-                    iconColor="text-orange-600 dark:text-orange-400"
+                    iconBg="bg-orange-900/20 "
+                    iconColor="text-orange-400 "
                     urgent={pendingOrders.length > 0}
                 />
                 <StatCard
@@ -138,8 +126,8 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
                     change="Active Jobs"
                     positive
                     icon="print"
-                    iconBg="bg-blue-50 dark:bg-blue-900/20"
-                    iconColor="text-blue-600 dark:text-blue-400"
+                    iconBg="bg-[#111] "
+                    iconColor="text-red-500 "
                 />
                 <StatCard
                     title="Completed Today"
@@ -147,23 +135,23 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
                     change="Finished Jobs"
                     positive
                     icon="check_circle"
-                    iconBg="bg-purple-50 dark:bg-purple-900/20"
-                    iconColor="text-purple-600 dark:text-purple-400"
+                    iconBg="bg-purple-900/20 bg-purple-900/20"
+                    iconColor="text-purple-400 "
                 />
             </div>
 
             {/* Main Content Grid */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
                 {/* Revenue Chart */}
-                <div className="xl:col-span-2 bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-6">
+                <div className="xl:col-span-2 bg-[#0A0A0A] border border-[#333] p-6">
                     <div className="flex items-center justify-between mb-4">
                         <div>
-                            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Revenue Overview</h3>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">Total Lifetime</p>
+                            <h3 className="text-lg font-bold text-white ">Revenue Overview</h3>
+                            <p className="text-sm text-[#666] ">Total Lifetime</p>
                         </div>
                         <div className="text-right">
-                            <p className="text-2xl font-bold text-slate-900 dark:text-white">₹{totalRevenue.toLocaleString()}</p>
-                            <p className="text-sm text-green-600 dark:text-green-400">Synced from Database</p>
+                            <p className="text-2xl font-bold text-white ">₹{totalRevenue.toLocaleString()}</p>
+                            <p className="text-sm text-green-400 ">Synced from Database</p>
                         </div>
                     </div>
                     <div className="h-48" style={{ minWidth: 0, minHeight: 192 }}>
@@ -189,25 +177,25 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
 
                 {/* Quick Actions + Inventory Status */}
                 <div className="space-y-6">
-                    <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-6">
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Quick Actions</h3>
+                    <div className="bg-[#0A0A0A] border border-[#333] p-6">
+                        <h3 className="text-lg font-bold text-white mb-4">Quick Actions</h3>
                         <div className="space-y-3">
-                            <QuickAction icon="print" label="Manage Orders" color="bg-blue-500" onClick={() => onNavigate('orders')} />
-                            <QuickAction icon="inventory_2" label="Add Products" color="bg-amber-500" onClick={() => onNavigate('products')} />
-                            <QuickAction icon="warehouse" label="Check Inventory" color="bg-purple-500" onClick={() => onNavigate('inventory')} />
-                            <QuickAction icon="attach_money" label="Update Pricing" color="bg-green-500" onClick={() => onNavigate('pricing')} />
-                            <QuickAction icon="settings" label="Settings" color="bg-slate-500" onClick={() => onNavigate('settings')} />
+                            <QuickAction icon="print" label="Manage Orders" color="bg-[#111]0" onClick={() => onNavigate('orders')} />
+                            <QuickAction icon="inventory_2" label="Add Products" color="bg-amber-900/200" onClick={() => onNavigate('products')} />
+                            <QuickAction icon="warehouse" label="Check Inventory" color="bg-purple-900/200" onClick={() => onNavigate('inventory')} />
+                            <QuickAction icon="attach_money" label="Update Pricing" color="bg-green-900/20" onClick={() => onNavigate('pricing')} />
+                            <QuickAction icon="settings" label="Settings" color="bg-[#0A0A0A]0" onClick={() => onNavigate('settings')} />
                         </div>
                     </div>
 
                     {/* Inventory Status Widget */}
                     {inventory.length > 0 && (
-                        <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-6">
+                        <div className="bg-[#0A0A0A] border border-[#333] p-6">
                             <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Stock Status</h3>
+                                <h3 className="text-lg font-bold text-white ">Stock Status</h3>
                                 <button
                                     onClick={() => onNavigate('inventory')}
-                                    className="text-xs text-blue-600 dark:text-blue-400 font-medium hover:underline"
+                                    className="text-xs text-red-500 font-medium hover:underline"
                                 >
                                     View All
                                 </button>
@@ -220,16 +208,16 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
                                         const isCritical = item.stock <= item.threshold * 0.3;
                                         return (
                                             <div key={item.id} className="flex items-center gap-3">
-                                                <div className={`size-2 rounded-full ${isCritical ? 'bg-red-500' : 'bg-yellow-500'}`} />
-                                                <span className="text-sm text-slate-700 dark:text-slate-300 flex-1 truncate">{item.name}</span>
-                                                <span className={`text-xs font-bold ${isCritical ? 'text-red-600 dark:text-red-400' : 'text-yellow-600 dark:text-yellow-400'}`}>
+                                                <div className={`size-2 ${isCritical ? 'bg-red-900/20' : 'bg-yellow-900/200'}`} />
+                                                <span className="text-sm text-[#666] flex-1 truncate">{item.name}</span>
+                                                <span className={`text-xs font-bold ${isCritical ? 'text-red-500 ' : 'text-yellow-400 '}`}>
                                                     {item.stock} {item.unit}
                                                 </span>
                                             </div>
                                         );
                                     })}
                                 {inventory.filter(i => i.stock <= i.threshold).length === 0 && (
-                                    <p className="text-sm text-green-600 dark:text-green-400 flex items-center gap-2">
+                                    <p className="text-sm text-green-400 flex items-center gap-2">
                                         <Icon name="check_circle" className="text-base" />
                                         All stock levels healthy
                                     </p>
@@ -241,47 +229,46 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
             </div>
 
             {/* Recent Orders */}
-            <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark overflow-hidden">
-                <div className="flex items-center justify-between p-6 border-b border-border-light dark:border-border-dark">
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">Recent Orders</h3>
+            <div className="bg-[#0A0A0A] border border-[#333] overflow-hidden">
+                <div className="flex items-center justify-between p-6 border-b border-[#333] ">
+                    <h3 className="text-lg font-bold text-white ">Recent Orders</h3>
                     <button
                         onClick={() => onNavigate('orders')}
-                        className="text-sm text-blue-600 dark:text-blue-400 font-medium hover:underline"
+                        className="text-sm text-red-500 font-medium hover:underline"
                     >
                         View All
                     </button>
                 </div>
-                <div className="divide-y divide-border-light dark:divide-border-dark">
+                <div className="divide-y divide-[#1A1A1A]">
                     {orders.length === 0 ? (
-                        <div className="py-12 text-center text-slate-400">
+                        <div className="py-12 text-center text-[#666]">
                             <Icon name="inbox" className="text-3xl mb-2" />
                             <p>No orders found</p>
                         </div>
                     ) : (
                         orders.slice(0, 4).map((order) => (
-                            <div key={order.id} className="flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                            <div key={order.id} className="flex items-center justify-between p-4 hover:bg-[#0A0A0A] /40 transition-colors">
                                 <div className="flex items-center gap-4">
-                                    <div className="size-10 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center font-bold text-blue-600 dark:text-blue-400">
+                                    <div className="size-10 bg-[#111] flex items-center justify-center font-bold text-red-500 ">
                                         {(order.userName || 'C').charAt(0).toUpperCase()}
                                     </div>
                                     <div>
-                                        <p className="font-medium text-slate-900 dark:text-white">{order.userName || 'Customer'}</p>
-                                        <p className="text-sm text-slate-500 dark:text-slate-400">{order.id.split('-')[1] || order.id}</p>
+                                        <p className="font-medium text-white ">{order.userName || 'Customer'}</p>
+                                        <p className="text-sm text-[#666] ">{order.id.split('-')[1] || order.id}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-4">
-                                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                        order.status === 'pending'
-                                            ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400'
+                                    <span className={`px-2.5 py-0.5 text-xs font-medium ${order.status === 'pending'
+                                            ? 'bg-orange-900/20 text-orange-400 '
                                             : order.status === 'confirmed'
-                                                ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                                                ? 'bg-yellow-900/20 text-yellow-400 '
                                                 : order.status === 'printing'
-                                                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-                                                    : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                                                    ? 'bg-red-900/20 text-red-400 '
+                                                    : 'bg-green-900/20 text-green-400 '
                                         }`}>
                                         {order.status}
                                     </span>
-                                    <span className="font-semibold text-slate-900 dark:text-white">
+                                    <span className="font-semibold text-white ">
                                         ₹{order.totalAmount.toLocaleString()}
                                     </span>
                                 </div>
@@ -305,21 +292,21 @@ const StatCard: React.FC<{
     iconColor: string;
     urgent?: boolean;
 }> = ({ title, value, change, positive, icon, iconBg, iconColor, urgent }) => (
-    <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-5">
+    <div className="bg-[#0A0A0A] border border-[#333] p-5">
         <div className="flex items-start justify-between mb-3">
-            <div className={`p-2.5 rounded-xl ${iconBg}`}>
+            <div className={`p-2.5 ${iconBg}`}>
                 <Icon name={icon} className={`text-xl ${iconColor}`} />
             </div>
             {urgent && (
-                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                <span className="px-2 py-0.5 text-xs font-medium bg-red-900/20 text-red-400 ">
                     Urgent
                 </span>
             )}
         </div>
-        <p className="text-2xl font-bold text-slate-900 dark:text-white">{value}</p>
+        <p className="text-2xl font-bold text-white ">{value}</p>
         <div className="flex items-center justify-between mt-1">
-            <p className="text-sm text-slate-500 dark:text-slate-400">{title}</p>
-            <span className={`text-xs font-medium ${positive ? 'text-green-600' : 'text-orange-600'}`}>
+            <p className="text-sm text-[#666] ">{title}</p>
+            <span className={`text-xs font-medium ${positive ? 'text-green-400' : 'text-orange-400'}`}>
                 {change}
             </span>
         </div>
@@ -328,11 +315,11 @@ const StatCard: React.FC<{
 
 // Quick Action Component
 const QuickAction: React.FC<{ icon: string; label: string; color: string; onClick?: () => void }> = ({ icon, label, color, onClick }) => (
-    <button onClick={onClick} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group">
-        <div className={`size-10 rounded-xl ${color} flex items-center justify-center text-white group-hover:scale-105 transition-transform`}>
+    <button onClick={onClick} className="w-full flex items-center gap-3 p-3 hover:bg-[#0A0A0A] transition-colors group">
+        <div className={`size-10 ${color} flex items-center justify-center text-white group-hover:scale-105 transition-transform`}>
             <Icon name={icon} className="text-lg" />
         </div>
-        <span className="font-medium text-slate-700 dark:text-slate-200">{label}</span>
-        <Icon name="chevron_right" className="ml-auto text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition-colors" />
+        <span className="font-medium text-[#666] ">{label}</span>
+        <Icon name="chevron_right" className="ml-auto text-[#666] group-hover:text-[#666] transition-colors" />
     </button>
 );

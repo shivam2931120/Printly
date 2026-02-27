@@ -7,5 +7,5 @@ import { Navigate } from 'react-router-dom';
  * and App.tsx redirects admins to /admin automatically.
  */
 export const AdminSignIn = () => {
-    return <Navigate to="/sign-in" replace />;
+ return <Navigate to="/sign-in" replace />;
 };

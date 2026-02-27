@@ -7,5 +7,5 @@ import { Navigate } from 'react-router-dom';
  * Admin role must be assigned in the database by an existing admin/developer.
  */
 export const AdminSignUp = () => {
-    return <Navigate to="/sign-up" replace />;
+ return <Navigate to="/sign-up" replace />;
 };

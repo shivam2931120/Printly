@@ -50,6 +50,7 @@ export const useCartStore = create<CartState>()(
                         id: Math.random().toString(36).substr(2, 9),
                         type: 'print',
                         name: f.file.name,
+                        fileName: f.file.name,
                         price: jobPrice,
                         quantity: 1, // distinct from options.copies
                         file: f.file,

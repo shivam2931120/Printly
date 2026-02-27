@@ -44,11 +44,10 @@ model Shop {
   isActive       Boolean  @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
-  
-  users          User[]
-  orders         Order[]
-  products       Product[]
-  dailyStats     DailyStats[]
+
+  users    User[]
+  orders   Order[]
+  products Product[]
 }
 
 // ===== USERS =====
@@ -59,13 +58,13 @@ model User {
   name      String?
   avatar    String?
   role      Role     @default(USER)
-  password  String?  // For direct auth
+  password  String? // For direct auth
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
-  shopId    String?
-  shop      Shop?    @relation(fields: [shopId], references: [id])
-  orders    Order[]
+
+  shopId String?
+  shop   Shop?   @relation(fields: [shopId], references: [id])
+  orders Order[]
 }
 
 // ===== PRODUCTS =====
@@ -80,9 +79,9 @@ model Product {
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
-  shopId      String?
-  shop        Shop?    @relation(fields: [shopId], references: [id])
+
+  shopId String?
+  shop   Shop?   @relation(fields: [shopId], references: [id])
 }
 
 // ===== ORDERS (items stored as JSONB — no separate OrderItem table) =====
@@ -99,11 +98,11 @@ model Order {
   deletedAt     DateTime?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
-  
-  userId        String?
-  user          User?         @relation(fields: [userId], references: [id])
-  shopId        String?
-  shop          Shop?         @relation(fields: [shopId], references: [id])
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+  shopId String?
+  shop   Shop?   @relation(fields: [shopId], references: [id])
 }
 
 // ===== INVENTORY (print shop supplies) =====
@@ -116,36 +115,18 @@ model Inventory {
   shopId    String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
-  logs      StockLog[]
+
+  logs StockLog[]
 }
 
 // ===== STOCK LOG (audit trail for inventory changes) =====
 model StockLog {
-  id          String    @id @default(cuid())
-  amount      Int       // positive = added, negative = removed
-  note        String    @default("")
-  createdBy   String    @default("")
-  createdAt   DateTime  @default(now())
-  
+  id        String   @id @default(cuid())
+  amount    Int // positive = added, negative = removed
+  note      String   @default("")
+  createdBy String   @default("")
+  createdAt DateTime @default(now())
+
   inventoryId String
   inventory   Inventory @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
-}
-
-// ===== DAILY STATS (persisted analytics — survives order deletion) =====
-model DailyStats {
-  id              String   @id @default(cuid())
-  date            DateTime @unique @db.Date
-  revenue         Float    @default(0)
-  orderCount      Int      @default(0)
-  printJobs       Int      @default(0)
-  productSales    Int      @default(0)
-  avgOrderValue   Float    @default(0)
-  uniqueCustomers Int      @default(0)
-  bwPages         Int      @default(0)
-  colorPages      Int      @default(0)
-  shopId          String?
-  shop            Shop?    @relation(fields: [shopId], references: [id])
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
 }

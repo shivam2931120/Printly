@@ -1,14 +1,14 @@
 import React from 'react';
 
 interface IconProps {
-  name: string;
-  className?: string;
+ name: string;
+ className?: string;
 }
 
 export const Icon: React.FC<IconProps> = ({ name, className = "" }) => {
-  return (
-    <span className={`material-symbols-outlined select-none ${className}`}>
-      {name}
-    </span>
-  );
+ return (
+ <span className={`material-symbols-outlined select-none ${className}`}>
+ {name}
+ </span>
+ );
 };

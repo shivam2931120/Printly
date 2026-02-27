@@ -210,13 +210,13 @@ export default function AppWrapper() {
         publishableKey={CLERK_PUBLISHABLE_KEY}
         appearance={{
           variables: {
-            colorPrimary: '#ffffff',
+            colorPrimary: '#DC2626',
             colorBackground: '#0a0a0a',
             colorText: '#ffffff',
-            colorTextSecondary: '#888888',
-            colorInputBackground: 'rgba(255,255,255,0.05)',
+            colorTextSecondary: '#666666',
+            colorInputBackground: '#111111',
             colorInputText: '#ffffff',
-            borderRadius: '1rem',
+            borderRadius: '0',
           },
         }}
       >

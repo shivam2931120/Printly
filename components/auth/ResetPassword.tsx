@@ -6,5 +6,5 @@ import { Navigate } from 'react-router-dom';
  * This route redirects to sign-in.
  */
 export const ResetPassword = () => {
-    return <Navigate to="/sign-in" replace />;
+ return <Navigate to="/sign-in" replace />;
 };

@@ -121,18 +121,18 @@ export const StorePage: React.FC = () => {
             {/* Mobile Filter Toggle */}
             <div className="lg:hidden flex items-center gap-4 mb-4">
                 <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" size={16} />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#666]" size={16} />
                     <input
                         type="text"
                         placeholder="Search products..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 bg-background-card border border-border rounded-xl text-sm text-white focus:outline-none focus:border-white/20"
+                        className="w-full pl-10 pr-4 py-2.5 bg-background-card border border-border text-sm text-white focus:outline-none focus:border-[#333]"
                     />
                 </div>
                 <button
                     onClick={() => setIsMobileFilterOpen(true)}
-                    className="p-2.5 bg-background-card border border-border rounded-xl text-text-muted hover:text-white"
+                    className="p-2.5 bg-background-card border border-border text-[#666] hover:text-white"
                 >
                     <Filter size={20} />
                 </button>
@@ -145,7 +145,7 @@ export const StorePage: React.FC = () => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[40] lg:hidden"
+                        className="fixed inset-0 bg-black/60 z-[40] lg:hidden"
                         onClick={() => setIsMobileFilterOpen(false)}
                     />
                 )}
@@ -161,7 +161,7 @@ export const StorePage: React.FC = () => {
                         <span className="font-bold text-lg text-white font-display">Filters</span>
                         <button
                             onClick={() => setIsMobileFilterOpen(false)}
-                            className="p-3 rounded-xl bg-white/5 text-white hover:bg-white/10 transition-colors"
+                            className="p-3 bg-[#111] text-white hover:bg-[#111] transition-colors"
                         >
                             <X size={24} />
                         </button>
@@ -169,27 +169,27 @@ export const StorePage: React.FC = () => {
 
                     <div className="space-y-8">
                         <div className="hidden lg:block relative group">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-white transition-colors" size={16} />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#666] group-focus-within:text-white transition-colors" size={16} />
                             <input
                                 type="text"
                                 placeholder="Search products..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2.5 bg-white/[0.03] border border-white/5 rounded-xl text-sm text-white focus:outline-none focus:border-white/20 transition-all font-medium"
+                                className="w-full pl-10 pr-4 py-2.5 bg-[#0A0A0A] border border-[#333] text-sm text-white focus:outline-none focus:border-[#333] transition-all font-medium"
                             />
                         </div>
 
                         <div className="space-y-3">
-                            <h3 className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] ml-1">Categories</h3>
+                            <h3 className="text-[10px] font-black text-[#666] uppercase tracking-[0.2em] ml-1">Categories</h3>
                             <div className="space-y-1">
                                 <Magnetic strength={0.2}>
                                     <button
                                         onClick={() => setSelectedCategory('all')}
                                         className={cn(
-                                            "w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm font-bold transition-all text-left group",
+                                            "w-full flex items-center justify-between px-3 py-2 text-sm font-bold transition-all text-left group",
                                             selectedCategory === 'all'
-                                                ? "bg-white text-black shadow-glow-primary"
-                                                : "text-text-muted hover:bg-white/5 hover:text-white"
+                                                ? "bg-red-600 text-white"
+                                                : "text-[#666] hover:bg-[#111] hover:text-white"
                                         )}
                                     >
                                         <span>All Products</span>
@@ -203,10 +203,10 @@ export const StorePage: React.FC = () => {
                                             <button
                                                 onClick={() => setSelectedCategory(cat.id)}
                                                 className={cn(
-                                                    "w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm font-bold transition-all text-left group",
+                                                    "w-full flex items-center justify-between px-3 py-2 text-sm font-bold transition-all text-left group",
                                                     selectedCategory === cat.id
-                                                        ? "bg-white text-black shadow-glow-primary"
-                                                        : "text-text-muted hover:bg-white/5 hover:text-white"
+                                                        ? "bg-red-600 text-white"
+                                                        : "text-[#666] hover:bg-[#111] hover:text-white"
                                                 )}
                                             >
                                                 <span className="flex items-center gap-2">
@@ -224,7 +224,7 @@ export const StorePage: React.FC = () => {
                         <div className="lg:hidden pt-4">
                             <Button
                                 onClick={() => setIsMobileFilterOpen(false)}
-                                className="w-full bg-white text-black font-black h-14 rounded-2xl shadow-glow-primary"
+                                className="w-full bg-red-600 text-white font-black h-14 "
                             >
                                 Apply Filters
                             </Button>
@@ -243,13 +243,13 @@ export const StorePage: React.FC = () => {
                     <h1 className="text-3xl font-black text-white font-display tracking-tight">
                         {selectedCategory === 'all' ? 'All Products' : PRODUCT_CATEGORIES.find(c => c.id === selectedCategory)?.name}
                     </h1>
-                    <span className="text-text-muted text-[10px] font-black uppercase tracking-widest opacity-50">{filteredProducts.length} items available</span>
+                    <span className="text-[#666] text-[10px] font-black uppercase tracking-widest opacity-50">{filteredProducts.length} items available</span>
                 </motion.div>
 
                 {isLoading ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-                            <div key={i} className="aspect-[3/4] rounded-[32px] bg-white/[0.03] border border-white/[0.05] relative overflow-hidden">
+                            <div key={i} className="aspect-[3/4] bg-[#0A0A0A] border border-[#333] relative overflow-hidden">
                                 <div className="absolute inset-0 shimmer" />
                             </div>
                         ))}
@@ -264,10 +264,10 @@ export const StorePage: React.FC = () => {
                         {filteredProducts.map(product => (
                             <motion.div key={product.id} variants={itemVariants}>
                                 <SpotlightCard
-                                    className="group flex flex-col bg-[#0C0C0C] border border-white/[0.05] rounded-[32px] overflow-hidden hover:border-white/20 transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(0,0,0,0.6)]"
+                                    className="group flex flex-col bg-[#0C0C0C] border border-[#333] overflow-hidden hover:border-[#333] transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(0,0,0,0.6)]"
                                 >
                                     {/* Image Area */}
-                                    <div className="aspect-[4/3] bg-white/[0.02] relative overflow-hidden">
+                                    <div className="aspect-[4/3] bg-[#0A0A0A] relative overflow-hidden">
                                         {product.image && (product.image.startsWith('http') || product.image.startsWith('/')) ? (
                                             <img
                                                 src={product.image}
@@ -275,17 +275,17 @@ export const StorePage: React.FC = () => {
                                                 className="h-full w-full object-cover transition-transform duration-700 cubic-bezier(0.16, 1, 0.3, 1) group-hover:scale-110"
                                             />
                                         ) : (
-                                            <div className="h-full w-full flex items-center justify-center text-text-muted/30">
+                                            <div className="h-full w-full flex items-center justify-center text-[#666]/30">
                                                 <Package size={48} strokeWidth={1} />
                                             </div>
                                         )}
 
-                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 backdrop-blur-[2px] hidden lg:flex items-center justify-center p-6">
+                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 hidden lg:flex items-center justify-center p-6">
                                             <Magnetic strength={0.3}>
                                                 <Button
                                                     onClick={(e) => { e.stopPropagation(); addToCartProduct(product); }}
                                                     disabled={product.stock === 0}
-                                                    className="px-8 h-12 bg-white text-black hover:bg-white/90 shadow-2xl font-black rounded-xl translate-y-4 group-hover:translate-y-0 transition-transform duration-500"
+                                                    className="px-8 h-12 bg-red-600 text-white hover:bg-red-700 shadow-2xl font-black translate-y-4 group-hover:translate-y-0 transition-transform duration-500"
                                                 >
                                                     <Plus size={20} className="mr-2 stroke-[3]" />
                                                     Quick Add
@@ -294,14 +294,14 @@ export const StorePage: React.FC = () => {
                                         </div>
 
                                         {product.stock === 0 && (
-                                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-[2px] z-10">
-                                                <span className="bg-white text-black px-4 py-2 rounded-xl text-[10px] uppercase font-black tracking-widest shadow-2xl">
+                                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
+                                                <span className="bg-red-600 text-white px-4 py-2 text-[10px] uppercase font-black tracking-widest shadow-2xl">
                                                     Sold Out
                                                 </span>
                                             </div>
                                         )}
                                         {product.stock < 5 && product.stock > 0 && (
-                                            <span className="absolute top-4 right-4 bg-orange-500 text-white text-[10px] uppercase font-black px-2.5 py-1.5 rounded-xl shadow-2xl z-20 animate-pulse">
+                                            <span className="absolute top-4 right-4 bg-red-600 text-white text-[10px] uppercase font-black px-2.5 py-1.5 shadow-2xl z-20 animate-pulse">
                                                 Only {product.stock} Left
                                             </span>
                                         )}
@@ -313,7 +313,7 @@ export const StorePage: React.FC = () => {
                                             <h3 className="text-lg font-bold text-white line-clamp-1 transition-colors group-hover:text-primary tracking-tight" title={product.name}>
                                                 {product.name}
                                             </h3>
-                                            <p className="text-[10px] text-text-muted mt-2 uppercase font-black tracking-[0.15em] opacity-40">
+                                            <p className="text-[10px] text-[#666] mt-2 uppercase font-black tracking-[0.15em] opacity-40">
                                                 {product.category}
                                             </p>
                                         </div>
@@ -325,7 +325,7 @@ export const StorePage: React.FC = () => {
                                             <button
                                                 onClick={() => addToCartProduct(product)}
                                                 disabled={product.stock === 0}
-                                                className="lg:hidden size-12 rounded-2xl bg-white flex items-center justify-center text-black shadow-xl active:scale-90 transition-transform disabled:opacity-20"
+                                                className="lg:hidden size-12 bg-red-600 flex items-center justify-center text-white shadow-xl active:scale-90 transition-transform disabled:opacity-20 hover:bg-red-700"
                                             >
                                                 <Plus size={24} strokeWidth={3} />
                                             </button>
@@ -341,16 +341,16 @@ export const StorePage: React.FC = () => {
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="flex flex-col items-center justify-center py-32 text-center border border-white/5 rounded-[40px] bg-white/[0.02]"
+                        className="flex flex-col items-center justify-center py-32 text-center border border-[#333] bg-[#0A0A0A]"
                     >
-                        <div className="size-20 rounded-[28px] bg-white/5 flex items-center justify-center mb-6 shadow-inner">
-                            <Search size={40} className="text-text-muted opacity-20" />
+                        <div className="size-20 bg-[#111] flex items-center justify-center mb-6 shadow-inner">
+                            <Search size={40} className="text-[#666] opacity-20" />
                         </div>
                         <h3 className="text-xl font-black text-white mb-2">No matches found</h3>
-                        <p className="text-text-muted text-sm max-w-xs mx-auto mb-8 font-medium">
+                        <p className="text-[#666] text-sm max-w-xs mx-auto mb-8 font-medium">
                             We couldn't find any products matching your current filters.
                         </p>
-                        <Button variant="outline" className="rounded-2xl border-white/10 text-white font-bold" onClick={() => { setSearchQuery(''); setSelectedCategory('all'); }}>
+                        <Button variant="outline" className=" border-[#333] text-white font-bold" onClick={() => { setSearchQuery(''); setSelectedCategory('all'); }}>
                             Clear all filters
                         </Button>
                     </motion.div>

@@ -150,7 +150,7 @@ export const createOrder = async (order: Order, _userRole?: string): Promise<{ s
             .update({ authId: clerkId, updatedAt: new Date().toISOString() })
             .eq('id', finalUserId)
             .is('authId', null)
-            .then(() => {}); // fire-and-forget
+            .then(() => { }); // fire-and-forget
     }
 
     // 3. Serialize cart items to JSONB (inline in Order — no separate table)
@@ -350,11 +350,11 @@ export interface StockLogRow {
 /** Silently ignore errors when table/RLS is missing (migration not yet run) */
 const isTableAccessError = (err: { code?: string; message?: string; status?: number } | null) =>
     !err ? false :
-    ['PGRST205', '42P01', '42501'].includes(err.code || '') ||
-    (err as any).status === 403 ||
-    err.message?.includes('schema cache') ||
-    err.message?.includes('permission denied') ||
-    err.message?.includes('does not exist');
+        ['PGRST205', '42P01', '42501'].includes(err.code || '') ||
+        (err as any).status === 403 ||
+        err.message?.includes('schema cache') ||
+        err.message?.includes('permission denied') ||
+        err.message?.includes('does not exist');
 
 export const fetchInventory = async (): Promise<InventoryRow[]> => {
     const { data, error } = await supabase
@@ -471,154 +471,7 @@ export const fetchStockHistory = async (inventoryId: string): Promise<StockLogRo
     return data as StockLogRow[];
 };
 
-// ===== DAILY STATS (persistent analytics) =====
 
-export interface DailyStatsRow {
-    id: string;
-    date: string;
-    revenue: number;
-    orderCount: number;
-    printJobs: number;
-    productSales: number;
-    avgOrderValue: number;
-    uniqueCustomers: number;
-    bwPages: number;
-    colorPages: number;
-    shopId: string | null;
-    createdAt: string;
-    updatedAt: string;
-}
-
-/** Fetch persisted daily stats for a date range */
-export const fetchDailyStats = async (
-    from?: string,
-    to?: string
-): Promise<DailyStatsRow[]> => {
-    let query = supabaseAdmin
-        .from('DailyStats')
-        .select('*')
-        .order('date', { ascending: true });
-
-    if (from) query = query.gte('date', from);
-    if (to) query = query.lte('date', to);
-
-    const { data, error } = await query;
-
-    if (error) {
-        if (isTableAccessError(error)) return [];
-        console.error('Error fetching daily stats:', error);
-        return [];
-    }
-    return data as DailyStatsRow[];
-};
-
-/** Compute daily stats from Order table and upsert into DailyStats */
-export const snapshotDailyStats = async (): Promise<{ success: boolean; rowsUpserted?: number; error?: any }> => {
-    // 1. Fetch all non-deleted orders
-    const { data: orders, error: fetchErr } = await supabaseAdmin
-        .from('Order')
-        .select('id, totalAmount, items, createdAt, userEmail, shopId')
-        .eq('isDeleted', false);
-
-    if (fetchErr) {
-        console.error('Snapshot: failed to fetch orders', fetchErr);
-        return { success: false, error: fetchErr };
-    }
-
-    if (!orders || orders.length === 0) {
-        return { success: true, rowsUpserted: 0 };
-    }
-
-    // 2. Group orders by date
-    const byDate: Record<string, {
-        revenue: number;
-        orderCount: number;
-        printJobs: number;
-        productSales: number;
-        bwPages: number;
-        colorPages: number;
-        customers: Set<string>;
-        shopId: string | null;
-    }> = {};
-
-    for (const order of orders) {
-        const date = new Date(order.createdAt).toISOString().split('T')[0];
-        if (!byDate[date]) {
-            byDate[date] = { revenue: 0, orderCount: 0, printJobs: 0, productSales: 0, bwPages: 0, colorPages: 0, customers: new Set(), shopId: order.shopId };
-        }
-        const d = byDate[date];
-        d.revenue += order.totalAmount || 0;
-        d.orderCount += 1;
-        if (order.userEmail) d.customers.add(order.userEmail);
-
-        const items: any[] = Array.isArray(order.items) ? order.items : [];
-        for (const item of items) {
-            if (item.type === 'print') {
-                d.printJobs += item.quantity || 1;
-                const cfg = item.printConfig || item.options || {};
-                const pages = (item.pageCount || 0) * (item.quantity || 1);
-                if (cfg.colorMode === 'color') d.colorPages += pages;
-                else d.bwPages += pages;
-            } else {
-                d.productSales += item.quantity || 1;
-            }
-        }
-    }
-
-    // 3. Build upsert rows
-    const rows = Object.entries(byDate).map(([date, d]) => ({
-        id: `${date}-${d.shopId ?? 'default'}`,
-        date,
-        revenue: Math.round(d.revenue * 100) / 100,
-        orderCount: d.orderCount,
-        printJobs: d.printJobs,
-        productSales: d.productSales,
-        avgOrderValue: d.orderCount > 0 ? Math.round((d.revenue / d.orderCount) * 100) / 100 : 0,
-        uniqueCustomers: d.customers.size,
-        bwPages: d.bwPages,
-        colorPages: d.colorPages,
-        shopId: d.shopId,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    }));
-
-    // 4. Upsert into DailyStats
-    const { error: upsertErr } = await supabaseAdmin
-        .from('DailyStats')
-        .upsert(rows, { onConflict: 'id' });
-
-    if (upsertErr) {
-        console.error('Snapshot: upsert failed', upsertErr);
-        return { success: false, error: upsertErr };
-    }
-
-    return { success: true, rowsUpserted: rows.length };
-};
-
-/** Get summary totals from persisted DailyStats */
-export const getDailyStatsSummary = async (): Promise<{
-    totalRevenue: number;
-    totalOrders: number;
-    totalPrintJobs: number;
-    totalProductSales: number;
-    totalCustomers: number;
-    totalBwPages: number;
-    totalColorPages: number;
-}> => {
-    const stats = await fetchDailyStats();
-    return stats.reduce(
-        (acc, s) => ({
-            totalRevenue: acc.totalRevenue + s.revenue,
-            totalOrders: acc.totalOrders + s.orderCount,
-            totalPrintJobs: acc.totalPrintJobs + s.printJobs,
-            totalProductSales: acc.totalProductSales + s.productSales,
-            totalCustomers: acc.totalCustomers + s.uniqueCustomers,
-            totalBwPages: acc.totalBwPages + s.bwPages,
-            totalColorPages: acc.totalColorPages + s.colorPages,
-        }),
-        { totalRevenue: 0, totalOrders: 0, totalPrintJobs: 0, totalProductSales: 0, totalCustomers: 0, totalBwPages: 0, totalColorPages: 0 }
-    );
-};
 
 // ===== PRICING (persisted in Shop.pricingConfig) =====
 
@@ -810,45 +663,7 @@ export const getDbUsage = async (): Promise<DbUsage | null> => {
     }
 };
 
-export const cleanupOldOrders = async (
-    keepDays: number = 7,
-    force: boolean = false
-): Promise<{ success: boolean; ordersDeleted?: number; freedMbApprox?: number; error?: any }> => {
-    try {
-        const { data, error } = await supabase.rpc('cleanup_old_orders', {
-            keep_days: keepDays,
-            force,
-        });
-        if (error) {
-            if (isTableAccessError(error) || error.code === '42883') return { success: false, error };
-            console.error('Error during cleanup:', error);
-            return { success: false, error };
-        }
-        return data as any;
-    } catch {
-        return { success: false };
-    }
-};
 
-export const autoCleanupIfNeeded = async (): Promise<{
-    success: boolean;
-    action?: string;
-    ordersDeleted?: number;
-    dbUsage?: DbUsage;
-} | null> => {
-    try {
-        const { data, error } = await supabase.rpc('auto_cleanup_if_needed');
-        if (error) {
-            // Silently fail if function doesn't exist yet
-            if (error.code === '42883' || error.message?.includes('does not exist')) return null;
-            console.error('Error during auto-cleanup:', error);
-            return null;
-        }
-        return data as any;
-    } catch {
-        return null;
-    }
-};
 
 // ===== STORAGE =====
 
@@ -888,7 +703,7 @@ async function validateFile(file: File): Promise<{ valid: boolean; reason?: stri
     // 3. Magic bytes — read first 12 bytes (WEBP needs 12 bytes)
     try {
         const header = new Uint8Array(await file.slice(0, 12).arrayBuffer());
-        
+
         // Check magic bytes for each format
         const isPdf = header[0] === 0x25 && header[1] === 0x50 && header[2] === 0x44 && header[3] === 0x46; // %PDF
         const isJpeg = header[0] === 0xFF && header[1] === 0xD8;
@@ -898,7 +713,7 @@ async function validateFile(file: File): Promise<{ valid: boolean; reason?: stri
         const isTiffLE = header[0] === 0x49 && header[1] === 0x49 && header[2] === 0x2A && header[3] === 0x00; // Little-endian TIFF
         const isTiffBE = header[0] === 0x4D && header[1] === 0x4D && header[2] === 0x00 && header[3] === 0x2A; // Big-endian TIFF
         const isWebp = header[0] === 0x52 && header[1] === 0x49 && header[2] === 0x46 && header[3] === 0x46 && // RIFF
-                       header[8] === 0x57 && header[9] === 0x45 && header[10] === 0x42 && header[11] === 0x50; // WEBP
+            header[8] === 0x57 && header[9] === 0x45 && header[10] === 0x42 && header[11] === 0x50; // WEBP
         const isZip = header[0] === 0x50 && header[1] === 0x4B && header[2] === 0x03 && header[3] === 0x04; // ZIP (DOCX)
 
         if (file.type === 'application/pdf' && !isPdf) {
@@ -922,8 +737,8 @@ async function validateFile(file: File): Promise<{ valid: boolean; reason?: stri
         if (file.type === 'image/webp' && !isWebp) {
             return { valid: false, reason: 'File does not appear to be a valid WEBP.' };
         }
-        if ((file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
-             file.type === 'application/msword') && !isZip) {
+        if ((file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+            file.type === 'application/msword') && !isZip) {
             return { valid: false, reason: 'File does not appear to be a valid Word document.' };
         }
     } catch {

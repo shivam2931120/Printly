@@ -8,27 +8,31 @@
   :root {
     --background: 5 5 5;
     --foreground: 255 255 255;
-    --card: 12 12 12;
+    --card: 10 10 10;
     --card-foreground: 255 255 255;
-    --popover: 12 12 12;
+    --popover: 10 10 10;
     --popover-foreground: 255 255 255;
-    --primary: 255 255 255;
-    --primary-foreground: 0 0 0;
+    --primary: 220 38 38;
+    --primary-foreground: 255 255 255;
     --secondary: 18 18 18;
     --secondary-foreground: 255 255 255;
-    --muted: 30 30 30;
-    --muted-foreground: 160 160 160;
-    --accent: 255 255 255;
-    --accent-foreground: 0 0 0;
+    --muted: 26 26 26;
+    --muted-foreground: 102 102 102;
+    --accent: 220 38 38;
+    --accent-foreground: 255 255 255;
     --destructive: 239 68 68;
     --destructive-foreground: 255 255 255;
-    --border: 32 32 32;
-    --input: 32 32 32;
-    --ring: 255 255 255;
+    --border: 26 26 26;
+    --input: 26 26 26;
+    --ring: 220 38 38;
+  }
+
+  * {
+    border-radius: 0 !important;
   }
 
   body {
-    @apply bg-background text-white font-sans antialiased selection:bg-white/20;
+    @apply bg-background text-white font-sans antialiased;
     background-color: #050505;
     color: #FFFFFF;
     -webkit-font-smoothing: antialiased;
@@ -70,90 +74,43 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #202020;
-    border-radius: 10px;
+    background: #1A1A1A;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #303030;
-  }
-
-  /* Premium Utilities */
-  .glass {
-    @apply bg-white/[0.03] backdrop-blur-xl border border-white/10;
-  }
-
-  .glass-dark {
-    @apply bg-black/40 backdrop-blur-2xl border border-white/5;
-  }
-
-  .shadow-glow {
-    box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
-  }
-
-  .shadow-glow-primary {
-    box-shadow: 0 0 25px rgba(255, 255, 255, 0.1);
-  }
-
-  .border-glow {
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.02);
-  }
-
-  /* Shimmer Effect */
-  .shimmer {
-    background: linear-gradient(90deg,
-        rgba(255, 255, 255, 0) 0%,
-        rgba(255, 255, 255, 0.05) 50%,
-        rgba(255, 255, 255, 0) 100%);
-    background-size: 200% 100%;
-    animation: shimmer 2s infinite;
-  }
-
-  @keyframes shimmer {
-    0% {
-      background-position: -200% 0;
-    }
-
-    100% {
-      background-position: 200% 0;
-    }
-  }
-
-  .text-glow {
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+    background: #333333;
   }
 
   /* Dark select dropdown options */
   select option {
-    background-color: #111117;
+    background-color: #0A0A0A;
     color: #ffffff;
   }
 }
 
 @layer components {
-  .glass-btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-2.5 bg-white/[0.06] border border-white/15 text-white font-bold transition-all duration-200 hover:bg-white/[0.12] hover:border-white/25 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+  .btn-flat {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[#111] border border-[#333] text-white font-bold transition-all duration-200 hover:bg-[#1A1A1A] hover:border-[#333] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
-  .glass-btn-primary {
-    @apply bg-white text-black border-white shadow-glow-primary hover:bg-white/90;
+  .btn-primary {
+    @apply bg-red-600 text-white border-red-600 hover:bg-red-700 hover:border-red-700;
   }
 
-  .glass-btn-danger {
-    @apply bg-red-500/10 border-red-500/25 text-red-400 hover:bg-red-500/15 hover:border-red-500/40;
+  .btn-danger {
+    @apply bg-transparent border-red-500/30 text-red-500 hover:bg-red-500/10 hover:border-red-500/50;
   }
 }
 
 /* Animations */
 .animate-in {
-  animation: animate-in 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: animate-in 0.3s ease-out;
 }
 
 @keyframes animate-in {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(8px);
   }
 
   to {

@@ -9,146 +9,146 @@ import { NotificationDropdown } from '../layout/NotificationDropdown';
 import { useRealtimeNotifications } from '../../hooks/useRealtimeNotifications';
 
 interface DeveloperDashboardProps {
-    currentUser: User | null;
-    onSignOut: () => void;
+ currentUser: User | null;
+ onSignOut: () => void;
 }
 
 type DevSection = 'shops' | 'sales' | 'storage';
 
 const NAV_ITEMS: { id: DevSection; label: string; icon: string }[] = [
-    { id: 'shops', label: 'Shops', icon: 'store' },
-    { id: 'sales', label: 'Sales', icon: 'analytics' },
-    { id: 'storage', label: 'Storage', icon: 'database' },
+ { id: 'shops', label: 'Shops', icon: 'store' },
+ { id: 'sales', label: 'Sales', icon: 'analytics' },
+ { id: 'storage', label: 'Storage', icon: 'database' },
 ];
 
 export const DeveloperDashboard: React.FC<DeveloperDashboardProps> = ({
-    currentUser,
-    onSignOut,
+ currentUser,
+ onSignOut,
 }) => {
-    const navigate = useNavigate();
-    const [activeSection, setActiveSection] = useState<DevSection>('shops');
+ const navigate = useNavigate();
+ const [activeSection, setActiveSection] = useState<DevSection>('shops');
 
-    // Real-time push notifications for developer
-    useRealtimeNotifications({ userId: currentUser?.id, role: 'developer', enabled: !!currentUser });
+ // Real-time push notifications for developer
+ useRealtimeNotifications({ userId: currentUser?.id, role: 'developer', enabled: !!currentUser });
 
-    const renderContent = () => {
-        switch (activeSection) {
-            case 'shops':
-                return <ShopsManagement onManageShop={() => navigate('/admin')} />;
-            case 'sales':
-                return <SalesOverview />;
-            case 'storage':
-                return <StoragePanel />;
-            default:
-                return <ShopsManagement />;
-        }
-    };
+ const renderContent = () => {
+ switch (activeSection) {
+ case 'shops':
+ return <ShopsManagement onManageShop={() => navigate('/admin')} />;
+ case 'sales':
+ return <SalesOverview />;
+ case 'storage':
+ return <StoragePanel />;
+ default:
+ return <ShopsManagement />;
+ }
+ };
 
-    return (
-        <div className="min-h-screen bg-[#050505] text-text-primary font-sans transition-colors duration-300">
-            {/* Header */}
-            <header className="sticky top-0 z-50 w-full border-b border-white/[0.06] bg-black/85 backdrop-blur-xl">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center justify-between h-16">
-                        <div className="flex items-center gap-3">
-                            <div className="flex items-center justify-center size-10 rounded-xl bg-white/[0.03] border border-white/10 text-white shadow-[0_0_20px_rgba(255,255,255,0.06)]">
-                                <Icon name="code" className="text-xl" />
-                            </div>
-                            <div>
-                                <h1 className="text-lg font-bold text-white tracking-tight">Developer Panel</h1>
-                                <p className="text-xs text-text-muted font-medium">Printly Platform</p>
-                            </div>
-                        </div>
+ return (
+ <div className="min-h-screen bg-[#050505] text-text-primary font-sans transition-colors duration-300">
+ {/* Header */}
+ <header className="sticky top-0 z-50 w-full border-b border-[#333]/[0.06] bg-black/85">
+ <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+ <div className="flex items-center justify-between h-16">
+ <div className="flex items-center gap-3">
+ <div className="flex items-center justify-center size-10 bg-[#0A0A0A] border border-[#333] text-white shadow-[0_0_20px_rgba(255,255,255,0.06)]">
+ <Icon name="code" className="text-xl" />
+ </div>
+ <div>
+ <h1 className="text-lg font-bold text-white tracking-tight">Developer Panel</h1>
+ <p className="text-xs text-[#666] font-medium">Printly Platform</p>
+ </div>
+ </div>
 
-                        <div className="flex items-center gap-3">
-                            {/* Navigation Shortcuts */}
-                            <div className="hidden md:flex items-center gap-2 mr-4 border-r border-white/[0.08] pr-4">
-                                <a
-                                    href="/?view=student"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-medium text-text-secondary hover:text-white hover:bg-white/[0.05] border border-transparent hover:border-white/10 transition-all duration-200"
-                                >
-                                    <Icon name="school" className="text-lg" />
-                                    Student Portal
-                                </a>
-                                <a
-                                    href="/admin"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-medium text-text-secondary hover:text-white hover:bg-white/[0.05] border border-transparent hover:border-white/10 transition-all duration-200"
-                                >
-                                    <Icon name="admin_panel_settings" className="text-lg" />
-                                    Admin Console
-                                </a>
-                            </div>
+ <div className="flex items-center gap-3">
+ {/* Navigation Shortcuts */}
+ <div className="hidden md:flex items-center gap-2 mr-4 border-r border-[#333] pr-4">
+ <a
+ href="/?view=student"
+ target="_blank"
+ rel="noopener noreferrer"
+ className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-text-secondary hover:text-white hover:bg-[#111] border border-transparent hover:border-[#333] transition-all duration-200"
+ >
+ <Icon name="school" className="text-lg" />
+ Student Portal
+ </a>
+ <a
+ href="/admin"
+ target="_blank"
+ rel="noopener noreferrer"
+ className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-text-secondary hover:text-white hover:bg-[#111] border border-transparent hover:border-[#333] transition-all duration-200"
+ >
+ <Icon name="admin_panel_settings" className="text-lg" />
+ Admin Console
+ </a>
+ </div>
 
-                            <div className="flex items-center gap-2 pl-2">
-                                {/* Notifications */}
-                                <NotificationDropdown />
-                                <span className="text-sm font-medium text-text-secondary hidden sm:block">
-                                    {currentUser?.name}
-                                </span>
-                                <button
-                                    onClick={onSignOut}
-                                    className="glass-btn glass-btn-danger p-2 rounded-xl"
-                                    title="Sign Out"
-                                >
-                                    <Icon name="logout" className="text-xl" />
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+ <div className="flex items-center gap-2 pl-2">
+ {/* Notifications */}
+ <NotificationDropdown />
+ <span className="text-sm font-medium text-text-secondary hidden sm:block">
+ {currentUser?.name}
+ </span>
+ <button
+ onClick={onSignOut}
+ className="p-2 "
+ title="Sign Out"
+ >
+ <Icon name="logout" className="text-xl" />
+ </button>
+ </div>
+ </div>
+ </div>
 
-                    <div className="md:hidden pb-3 flex items-center gap-2">
-                        <a
-                            href="/?view=student"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-text-secondary hover:text-white hover:bg-white/[0.05] border border-white/10 transition-all duration-200 active:scale-[0.98]"
-                        >
-                            <Icon name="school" className="text-base" />
-                            Student Portal
-                        </a>
-                        <a
-                            href="/admin"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-text-secondary hover:text-white hover:bg-white/[0.05] border border-white/10 transition-all duration-200 active:scale-[0.98]"
-                        >
-                            <Icon name="admin_panel_settings" className="text-base" />
-                            Admin Console
-                        </a>
-                    </div>
-                </div>
-            </header>
+ <div className="md:hidden pb-3 flex items-center gap-2">
+ <a
+ href="/?view=student"
+ target="_blank"
+ rel="noopener noreferrer"
+ className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-text-secondary hover:text-white hover:bg-[#111] border border-[#333] transition-all duration-200 active:scale-[0.98]"
+ >
+ <Icon name="school" className="text-base" />
+ Student Portal
+ </a>
+ <a
+ href="/admin"
+ target="_blank"
+ rel="noopener noreferrer"
+ className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-text-secondary hover:text-white hover:bg-[#111] border border-[#333] transition-all duration-200 active:scale-[0.98]"
+ >
+ <Icon name="admin_panel_settings" className="text-base" />
+ Admin Console
+ </a>
+ </div>
+ </div>
+ </header>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-                {/* Navigation Tabs */}
-                <div className="flex gap-1 p-1 bg-white/[0.03] border border-white/[0.08] rounded-2xl mb-6 w-fit shadow-[0_10px_30px_rgba(0,0,0,0.25)]">
-                    {NAV_ITEMS.map((item) => (
-                        <button
-                            key={item.id}
-                            onClick={() => setActiveSection(item.id)}
-                            className={`
-                                flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200
-                                ${activeSection === item.id
-                                    ? 'bg-white/15 text-white border border-white/20 shadow-[0_0_0_1px_rgba(255,255,255,0.05)]'
-                                    : 'text-text-secondary hover:text-white hover:bg-white/[0.04]'
-                                }
-                            `}
-                        >
-                            <Icon name={item.icon} className="text-lg" />
-                            {item.label}
-                        </button>
-                    ))}
-                </div>
+ <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+ {/* Navigation Tabs */}
+ <div className="flex gap-1 p-1 bg-[#0A0A0A] border border-[#333] mb-6 w-fit shadow-[0_10px_30px_rgba(0,0,0,0.25)]">
+ {NAV_ITEMS.map((item) => (
+ <button
+ key={item.id}
+ onClick={() => setActiveSection(item.id)}
+ className={`
+ flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-all duration-200
+ ${activeSection === item.id
+ ? 'bg-[#0A0A0A]/15 text-white border border-[#333] shadow-[0_0_0_1px_rgba(255,255,255,0.05)]'
+ : 'text-text-secondary hover:text-white hover:bg-[#111]'
+ }
+ `}
+ >
+ <Icon name={item.icon} className="text-lg" />
+ {item.label}
+ </button>
+ ))}
+ </div>
 
-                {/* Content */}
-                {renderContent()}
-            </div>
-        </div>
-    );
+ {/* Content */}
+ {renderContent()}
+ </div>
+ </div>
+ );
 };
 
 

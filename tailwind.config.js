@@ -12,51 +12,52 @@ export default {
             colors: {
                 background: {
                     DEFAULT: '#050505',
-                    card: '#141414',
+                    card: '#0A0A0A',
                     subtle: '#0E0E0E',
                     dark: '#0A0A0A',
                     darker: '#020202',
+                    light: '#050505',
                 },
                 foreground: {
                     DEFAULT: '#FFFFFF',
-                    muted: '#A0A0A0',
+                    muted: '#666666',
                 },
                 border: {
-                    DEFAULT: '#242424',
-                    subtle: '#1A1A1A',
-                    dark: '#2A2A2A',
+                    DEFAULT: '#1A1A1A',
+                    subtle: '#111111',
+                    dark: '#1A1A1A',
+                    light: '#1A1A1A',
                 },
                 text: {
                     primary: '#FFFFFF',
-                    secondary: '#B5B5B5',
-                    muted: '#7A7A7A',
+                    secondary: '#999999',
+                    muted: '#666666',
                 },
                 accent: {
-                    DEFAULT: '#FFFFFF',
-                    hover: '#E5E5E5',
-                    foreground: '#000000',
+                    DEFAULT: '#DC2626',
+                    hover: '#B91C1C',
+                    foreground: '#FFFFFF',
                 },
                 primary: {
-                    DEFAULT: '#FFFFFF',
-                    foreground: '#000000',
-                    hover: '#E5E5E5',
+                    DEFAULT: '#DC2626',
+                    foreground: '#FFFFFF',
+                    hover: '#B91C1C',
                 },
                 surface: {
-                    light: '#FFFFFF',
-                    dark: '#141414',
+                    light: '#0A0A0A',
+                    dark: '#0A0A0A',
                     darker: '#050505',
                 },
-                // Shadcn/UI alias mapping for index.css cleanup
                 popover: {
-                    DEFAULT: '#0C0C0C',
+                    DEFAULT: '#0A0A0A',
                     foreground: '#FFFFFF',
                 },
                 muted: {
-                    DEFAULT: '#1E1E1E',
-                    foreground: '#A0A0A0',
+                    DEFAULT: '#1A1A1A',
+                    foreground: '#666666',
                 },
                 card: {
-                    DEFAULT: '#0C0C0C',
+                    DEFAULT: '#0A0A0A',
                     foreground: '#FFFFFF',
                 },
                 // Functional colors
@@ -70,16 +71,21 @@ export default {
                 mono: ['JetBrains Mono', 'monospace'],
             },
             borderRadius: {
-                'lg': '0.5rem',
-                'xl': '0.75rem',
-                '2xl': '1rem',
-                '3xl': '1.5rem',
+                'none': '0',
+                'sm': '0',
+                'md': '0',
+                'lg': '0',
+                'xl': '0',
+                '2xl': '0',
+                '3xl': '0',
+                'full': '0',
+                DEFAULT: '0',
             },
             boxShadow: {
-                'sm': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-                'md': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                'lg': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-                'glow': '0 0 20px rgba(255, 255, 255, 0.05)', // Subtle white glow
+                'sm': '0 1px 2px 0 rgba(0, 0, 0, 0.3)',
+                'md': '0 4px 6px -1px rgba(0, 0, 0, 0.4)',
+                'lg': '0 10px 15px -3px rgba(0, 0, 0, 0.5)',
+                '2xl': '0 25px 50px -12px rgba(0, 0, 0, 0.7)',
             },
             keyframes: {
                 "accordion-down": {
@@ -110,7 +116,7 @@ export default {
             animation: {
                 "accordion-down": "accordion-down 0.2s ease-out",
                 "accordion-up": "accordion-up 0.2s ease-out",
-                "fade-in": "fade-in 0.2s ease-out forwards", // Faster 200ms
+                "fade-in": "fade-in 0.2s ease-out forwards",
                 "slide-in-right": "slide-in-right 0.25s ease-out forwards",
                 "slide-in-bottom": "slide-in-bottom 0.25s ease-out forwards",
                 "zoom-in": "zoom-in 0.2s ease-out forwards",

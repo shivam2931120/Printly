@@ -15,13 +15,7 @@ import {
     Legend
 } from 'recharts';
 import { Icon } from '../ui/Icon';
-import { toast } from 'sonner';
-import {
-    fetchAllOrdersForAnalytics,
-    fetchDailyStats,
-    snapshotDailyStats,
-    DailyStatsRow,
-} from '../../services/data';
+import { fetchAllOrdersForAnalytics } from '../../services/data';
 
 type TimePeriod = 'week' | 'month' | 'year' | 'all';
 
@@ -30,44 +24,25 @@ interface AnalyticsOrder {
     createdAt: string;
     userEmail?: string;
     options?: { colorMode?: string; paperSize?: string };
+    items?: any[];
 }
 
 export const AnalyticsDashboard: React.FC = () => {
     const [period, setPeriod] = useState<TimePeriod>('month');
-    const [dailyStats, setDailyStats] = useState<DailyStatsRow[]>([]);
-    const [todayOrders, setTodayOrders] = useState<AnalyticsOrder[]>([]);
+    const [orders, setOrders] = useState<AnalyticsOrder[]>([]);
     const [loading, setLoading] = useState(true);
-    const [snapshotting, setSnapshotting] = useState(false);
-    const [lastSnapshot, setLastSnapshot] = useState<string | null>(null);
-    const [liveOrderCount, setLiveOrderCount] = useState(0);
 
     const loadData = useCallback(async () => {
         setLoading(true);
         try {
-            const [stats, orders] = await Promise.all([
-                fetchDailyStats(),
-                fetchAllOrdersForAnalytics(),
-            ]);
-            setDailyStats(stats);
-            setLiveOrderCount(orders.length);
-
-            // Today's orders (not yet snapshotted) for live view
-            const todayStr = new Date().toISOString().split('T')[0];
-            const todayMapped = orders
-                .filter(o => new Date(o.createdAt).toISOString().split('T')[0] === todayStr)
-                .map(o => ({
-                    totalAmount: o.totalAmount,
-                    createdAt: typeof o.createdAt === 'string' ? o.createdAt : new Date(o.createdAt).toISOString(),
-                    userEmail: o.userEmail,
-                    options: o.options as any,
-                }));
-            setTodayOrders(todayMapped);
-
-            // Determine last snapshot date
-            if (stats.length > 0) {
-                const last = stats[stats.length - 1];
-                setLastSnapshot(last.date);
-            }
+            const fetchedOrders = await fetchAllOrdersForAnalytics();
+            setOrders(fetchedOrders.map(o => ({
+                totalAmount: o.totalAmount,
+                createdAt: typeof o.createdAt === 'string' ? o.createdAt : new Date(o.createdAt).toISOString(),
+                userEmail: o.userEmail,
+                options: o.options as any,
+                items: Array.isArray(o.items) ? o.items : []
+            })));
         } catch (e) {
             console.error('Failed to load analytics:', e);
         } finally {
@@ -77,28 +52,13 @@ export const AnalyticsDashboard: React.FC = () => {
 
     useEffect(() => { loadData(); }, [loadData]);
 
-    // ===== Snapshot handler =====
-    const handleSnapshot = async () => {
-        setSnapshotting(true);
-        try {
-            const res = await snapshotDailyStats();
-            if (res.success) {
-                toast.success(`Snapshot saved — ${res.rowsUpserted ?? 0} day(s) updated.`);
-                await loadData();
-            } else {
-                console.error('Snapshot failed:', res.error);
-                toast.error('Snapshot failed: ' + (res.error?.message || 'Unknown error'));
-            }
-        } catch (e: any) {
-            console.error('Snapshot failed:', e);
-            toast.error('Snapshot failed: ' + (e?.message || 'Unknown error'));
-        } finally {
-            setSnapshotting(false);
-        }
-    };
+    const todayStr = new Date().toISOString().split('T')[0];
+    const todayOrders = useMemo(() =>
+        orders.filter(o => o.createdAt.split('T')[0] === todayStr),
+        [orders, todayStr]);
 
     // ===== Filter stats by period =====
-    const filteredStats = useMemo(() => {
+    const filteredOrders = useMemo(() => {
         const now = new Date();
         let cutoff: Date;
         switch (period) {
@@ -114,64 +74,86 @@ export const AnalyticsDashboard: React.FC = () => {
             default:
                 cutoff = new Date(0);
         }
-        return dailyStats.filter(s => new Date(s.date) >= cutoff);
-    }, [dailyStats, period]);
+        return orders.filter(o => new Date(o.createdAt) >= cutoff);
+    }, [orders, period]);
 
     // ===== Aggregate totals =====
     const totals = useMemo(() => {
-        const persisted = filteredStats.reduce(
-            (a, s) => ({
-                revenue: a.revenue + s.revenue,
-                orders: a.orders + s.orderCount,
-                printJobs: a.printJobs + s.printJobs,
-                productSales: a.productSales + s.productSales,
-                customers: a.customers + s.uniqueCustomers,
-                bwPages: a.bwPages + s.bwPages,
-                colorPages: a.colorPages + s.colorPages,
-            }),
-            { revenue: 0, orders: 0, printJobs: 0, productSales: 0, customers: 0, bwPages: 0, colorPages: 0 }
-        );
+        let revenue = 0;
+        const emails = new Set<string>();
+        let printJobs = 0;
+        let productSales = 0;
+        let bwPages = 0;
+        let colorPages = 0;
 
-        // Add today's live data
-        const todayRevenue = todayOrders.reduce((s, o) => s + (o.totalAmount || 0), 0);
-        const todayEmails = new Set(todayOrders.map(o => o.userEmail));
+        for (const order of filteredOrders) {
+            revenue += order.totalAmount || 0;
+            if (order.userEmail) emails.add(order.userEmail);
 
-        return {
-            revenue: persisted.revenue + todayRevenue,
-            orders: persisted.orders + todayOrders.length,
-            avgOrderValue: (persisted.orders + todayOrders.length) > 0
-                ? (persisted.revenue + todayRevenue) / (persisted.orders + todayOrders.length) : 0,
-            customers: persisted.customers + todayEmails.size,
-            printJobs: persisted.printJobs,
-            productSales: persisted.productSales,
-            bwPages: persisted.bwPages,
-            colorPages: persisted.colorPages,
-        };
-    }, [filteredStats, todayOrders]);
-
-    // ===== Chart data: revenue by day =====
-    const revenueChartData = useMemo(() => {
-        const data = filteredStats.map(s => ({
-            date: new Date(s.date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }),
-            revenue: s.revenue,
-            orders: s.orderCount,
-        }));
-
-        // Append today's live data
-        const todayLabel = new Date().toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
-        const todayRevenue = todayOrders.reduce((s, o) => s + (o.totalAmount || 0), 0);
-        if (todayOrders.length > 0) {
-            const existing = data.find(d => d.date === todayLabel);
-            if (existing) {
-                existing.revenue += todayRevenue;
-                existing.orders += todayOrders.length;
-            } else {
-                data.push({ date: todayLabel, revenue: todayRevenue, orders: todayOrders.length });
+            const items = order.items || [];
+            for (const item of items) {
+                if (item.type === 'print') {
+                    printJobs += item.quantity || 1;
+                    const cfg = item.printConfig || item.options || {};
+                    const pages = (item.pageCount || 0) * (item.quantity || 1);
+                    if (cfg.colorMode === 'color') colorPages += pages;
+                    else bwPages += pages;
+                } else {
+                    productSales += item.quantity || 1;
+                }
             }
         }
 
-        return data;
-    }, [filteredStats, todayOrders]);
+        return {
+            revenue,
+            orders: filteredOrders.length,
+            avgOrderValue: filteredOrders.length > 0 ? revenue / filteredOrders.length : 0,
+            customers: emails.size,
+            printJobs,
+            productSales,
+            bwPages,
+            colorPages,
+        };
+    }, [filteredOrders]);
+
+    // ===== Chart data: revenue by day =====
+    const revenueChartData = useMemo(() => {
+        const byDate: Record<string, { revenue: number, orders: number }> = {};
+        for (const order of filteredOrders) {
+            const dateStr = new Date(order.createdAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
+            if (!byDate[dateStr]) {
+                byDate[dateStr] = { revenue: 0, orders: 0 };
+            }
+            byDate[dateStr].revenue += order.totalAmount || 0;
+            byDate[dateStr].orders += 1;
+        }
+
+        // Convert to array and sort by actual date
+        const sortedDates = Object.keys(byDate).sort((a, b) => {
+            // Basic sort, assuming data falls within a year, or we can just sort by original order creation date
+            return 0; // The original orders were already sorted, but if we need chronological graph we should sort.
+        });
+
+        // Better way: group by YYYY-MM-DD then map to label
+        const ISObyDate: Record<string, { revenue: number, orders: number }> = {};
+        for (const order of filteredOrders) {
+            const d = new Date(order.createdAt);
+            const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            if (!ISObyDate[iso]) ISObyDate[iso] = { revenue: 0, orders: 0 };
+            ISObyDate[iso].revenue += order.totalAmount || 0;
+            ISObyDate[iso].orders += 1;
+        }
+
+        const sortedIsos = Object.keys(ISObyDate).sort();
+        return sortedIsos.map(iso => {
+            const d = new Date(iso);
+            return {
+                date: d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }),
+                revenue: ISObyDate[iso].revenue,
+                orders: ISObyDate[iso].orders
+            };
+        });
+    }, [filteredOrders]);
 
     // ===== Print type distribution =====
     const printTypeData = useMemo(() => {
@@ -207,10 +189,20 @@ export const AnalyticsDashboard: React.FC = () => {
     const paperSizeData = useMemo(() => {
         const sizeCount: Record<string, number> = { a4: 0, a3: 0, letter: 0, legal: 0 };
         todayOrders.forEach(order => {
-            const size = order.options?.paperSize || 'a4';
-            sizeCount[size] = (sizeCount[size] || 0) + 1;
+            const items = order.items || [];
+            items.forEach(item => {
+                if (item.type === 'print') {
+                    const cfg = item.printConfig || item.options || {};
+                    const size = (cfg.paperSize || 'a4').toLowerCase();
+                    if (sizeCount[size] !== undefined) {
+                        sizeCount[size] += (item.quantity || 1);
+                    } else {
+                        sizeCount['a4'] += (item.quantity || 1);
+                    }
+                }
+            });
         });
-        const total = todayOrders.length || 1;
+        const total = Object.values(sizeCount).reduce((a, b) => a + b, 0) || 1;
         return [
             { name: 'A4', value: Math.round((sizeCount.a4 / total) * 100), color: '#2b7cee' },
             { name: 'A3', value: Math.round((sizeCount.a3 / total) * 100), color: '#8b5cf6' },
@@ -224,33 +216,23 @@ export const AnalyticsDashboard: React.FC = () => {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Analytics Overview</h2>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
-                        Persistent revenue data — safe to delete old orders
+                    <h2 className="text-2xl font-bold text-white ">Analytics Overview</h2>
+                    <p className="text-[#666] text-sm mt-1">
+                        Live analytics generated from real-time orders
                     </p>
                 </div>
 
                 <div className="flex items-center gap-3">
-                    {/* Snapshot Button */}
-                    <button
-                        onClick={handleSnapshot}
-                        disabled={snapshotting || loading}
-                        className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white rounded-lg font-medium text-sm transition-colors shadow-sm"
-                    >
-                        <Icon name={snapshotting ? 'sync' : 'backup'} className={`text-lg ${snapshotting ? 'animate-spin' : ''}`} />
-                        {snapshotting ? 'Saving...' : 'Snapshot Data'}
-                    </button>
-
                     {/* Period Selector */}
-                    <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-lg">
+                    <div className="flex p-1 bg-[#1A1A1A] ">
                         {(['week', 'month', 'year', 'all'] as TimePeriod[]).map((p) => (
                             <button
                                 key={p}
                                 onClick={() => setPeriod(p)}
-                                className={`px-3 py-2 text-sm font-medium rounded-md capitalize transition-all
+                                className={`px-3 py-2 text-sm font-medium capitalize transition-all
                                     ${period === p
-                                        ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
-                                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                        ? 'bg-[#0A0A0A] text-white shadow-sm'
+                                        : 'text-[#666] hover:text-white '
                                     }`}
                             >
                                 {p}
@@ -260,27 +242,11 @@ export const AnalyticsDashboard: React.FC = () => {
                 </div>
             </div>
 
-            {/* Snapshot Info Banner */}
-            {liveOrderCount > 0 && (
-                <div className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
-                    <Icon name="info" className="text-amber-600 dark:text-amber-400 text-xl shrink-0" />
-                    <div className="flex-1 text-sm">
-                        <span className="font-medium text-amber-800 dark:text-amber-300">
-                            {liveOrderCount} orders in database.
-                        </span>
-                        <span className="text-amber-700 dark:text-amber-400 ml-1">
-                            Click &quot;Snapshot Data&quot; to persist analytics before deleting orders.
-                            {lastSnapshot && ` Last snapshot: ${new Date(lastSnapshot).toLocaleDateString('en-IN')}`}
-                        </span>
-                    </div>
-                </div>
-            )}
-
             {/* Stats Cards */}
             {loading ? (
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     {[1, 2, 3, 4].map(i => (
-                        <div key={i} className="h-28 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse" />
+                        <div key={i} className="h-28 bg-[#1A1A1A] animate-pulse" />
                     ))}
                 </div>
             ) : (
@@ -316,17 +282,17 @@ export const AnalyticsDashboard: React.FC = () => {
             {!loading && (
                 <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
                     {/* Revenue Chart */}
-                    <div className="xl:col-span-2 bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-6">
+                    <div className="xl:col-span-2 bg-[#0A0A0A] border border-[#333] p-6">
                         <div className="flex items-center justify-between mb-6">
                             <div>
-                                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Revenue Trend</h3>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">
+                                <h3 className="text-lg font-bold text-white ">Revenue Trend</h3>
+                                <p className="text-sm text-[#666] ">
                                     Daily revenue ({period === 'all' ? 'all time' : `last ${period}`})
                                 </p>
                             </div>
                             <div className="flex items-center gap-2 text-sm">
-                                <div className="size-3 rounded-full bg-blue-600 dark:bg-blue-400" />
-                                <span className="text-slate-600 dark:text-slate-400">Revenue</span>
+                                <div className="size-3 bg-[#DC2626]" />
+                                <span className="text-[#666] ">Revenue</span>
                             </div>
                         </div>
                         <div className="h-72" style={{ minWidth: 0 }}>
@@ -335,26 +301,26 @@ export const AnalyticsDashboard: React.FC = () => {
                                     <AreaChart data={revenueChartData}>
                                         <defs>
                                             <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#2b7cee" stopOpacity={0.3} />
-                                                <stop offset="95%" stopColor="#2b7cee" stopOpacity={0} />
+                                                <stop offset="5%" stopColor="#DC2626" stopOpacity={0.3} />
+                                                <stop offset="95%" stopColor="#DC2626" stopOpacity={0} />
                                             </linearGradient>
                                         </defs>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" className="dark:stroke-slate-700" />
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#1A1A1A" />
                                         <XAxis dataKey="date" stroke="#94a3b8" fontSize={12} />
                                         <YAxis stroke="#94a3b8" fontSize={12} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`} />
                                         <Tooltip
                                             contentStyle={{
-                                                backgroundColor: '#fff',
-                                                border: '1px solid #e2e8f0',
-                                                borderRadius: '8px',
-                                                boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                                                backgroundColor: '#1A1A1A',
+                                                border: '1px solid #333',
+                                                borderRadius: '0',
+                                                color: '#fff'
                                             }}
                                             formatter={(value: number) => [`₹${value.toLocaleString()}`, 'Revenue']}
                                         />
                                         <Area
                                             type="monotone"
                                             dataKey="revenue"
-                                            stroke="#2b7cee"
+                                            stroke="#DC2626"
                                             strokeWidth={2}
                                             fillOpacity={1}
                                             fill="url(#colorRev)"
@@ -362,10 +328,10 @@ export const AnalyticsDashboard: React.FC = () => {
                                     </AreaChart>
                                 </ResponsiveContainer>
                             ) : (
-                                <div className="h-full flex items-center justify-center text-slate-400 dark:text-slate-500">
+                                <div className="h-full flex items-center justify-center text-[#666]">
                                     <div className="text-center">
                                         <Icon name="analytics" className="text-4xl mb-2" />
-                                        <p className="text-sm">No data for this period. Snapshot orders first.</p>
+                                        <p className="text-sm">No data for this period.</p>
                                     </div>
                                 </div>
                             )}
@@ -373,9 +339,9 @@ export const AnalyticsDashboard: React.FC = () => {
                     </div>
 
                     {/* Print Type Distribution */}
-                    <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-6">
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Print Type</h3>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">B&W vs Color pages</p>
+                    <div className="bg-[#0A0A0A] border border-[#333] p-6">
+                        <h3 className="text-lg font-bold text-white mb-2">Print Type</h3>
+                        <p className="text-sm text-[#666] mb-4">B&W vs Color pages</p>
                         {(totals.bwPages + totals.colorPages) > 0 ? (
                             <>
                                 <div className="h-56" style={{ minWidth: 0 }}>
@@ -397,7 +363,7 @@ export const AnalyticsDashboard: React.FC = () => {
                                             <Legend
                                                 verticalAlign="bottom"
                                                 formatter={(value) => (
-                                                    <span className="text-slate-600 dark:text-slate-400 text-sm">{value}</span>
+                                                    <span className="text-[#666] text-sm">{value}</span>
                                                 )}
                                             />
                                         </PieChart>
@@ -406,14 +372,14 @@ export const AnalyticsDashboard: React.FC = () => {
                                 <div className="flex justify-center gap-6 mt-2">
                                     {printTypeData.map((item) => (
                                         <div key={item.name} className="text-center">
-                                            <p className="text-2xl font-bold text-slate-900 dark:text-white">{item.value}%</p>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400">{item.name}</p>
+                                            <p className="text-2xl font-bold text-white ">{item.value}%</p>
+                                            <p className="text-xs text-[#666] ">{item.name}</p>
                                         </div>
                                     ))}
                                 </div>
                             </>
                         ) : (
-                            <div className="h-56 flex items-center justify-center text-slate-400 dark:text-slate-500">
+                            <div className="h-56 flex items-center justify-center text-[#666]">
                                 <div className="text-center">
                                     <Icon name="print" className="text-4xl mb-2" />
                                     <p className="text-sm">No print data yet</p>
@@ -428,32 +394,33 @@ export const AnalyticsDashboard: React.FC = () => {
             {!loading && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Peak Hours (today) */}
-                    <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-6">
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Today&apos;s Peak Hours</h3>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">Order volume by hour (live)</p>
+                    <div className="bg-[#0A0A0A] border border-[#333] p-6">
+                        <h3 className="text-lg font-bold text-white mb-2">Today&apos;s Peak Hours</h3>
+                        <p className="text-sm text-[#666] mb-4">Order volume by hour (live)</p>
                         <div className="h-64" style={{ minWidth: 0 }}>
                             <ResponsiveContainer width="99%" height={250} debounce={1}>
                                 <BarChart data={peakHoursData}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" className="dark:stroke-slate-700" />
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#1A1A1A" />
                                     <XAxis dataKey="hour" stroke="#94a3b8" fontSize={11} />
                                     <YAxis stroke="#94a3b8" fontSize={12} />
                                     <Tooltip
                                         contentStyle={{
-                                            backgroundColor: '#fff',
-                                            border: '1px solid #e2e8f0',
-                                            borderRadius: '8px'
+                                            backgroundColor: '#1A1A1A',
+                                            border: '1px solid #333',
+                                            borderRadius: '0',
+                                            color: '#fff'
                                         }}
                                     />
-                                    <Bar dataKey="orders" fill="#2b7cee" radius={[4, 4, 0, 0]} />
+                                    <Bar dataKey="orders" fill="#DC2626" />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
                     </div>
 
                     {/* Summary Cards */}
-                    <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-6">
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Breakdown</h3>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">Jobs & sales summary</p>
+                    <div className="bg-[#0A0A0A] border border-[#333] p-6">
+                        <h3 className="text-lg font-bold text-white mb-2">Breakdown</h3>
+                        <p className="text-sm text-[#666] mb-4">Jobs & sales summary</p>
 
                         <div className="space-y-4">
                             <SummaryRow icon="print" label="Print Jobs" value={totals.printJobs} color="blue" />
@@ -463,19 +430,19 @@ export const AnalyticsDashboard: React.FC = () => {
                         </div>
 
                         {/* Paper Size (today) */}
-                        <div className="mt-6 pt-4 border-t border-border-light dark:border-border-dark">
-                            <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Today&apos;s Paper Sizes</h4>
+                        <div className="mt-6 pt-4 border-t border-[#333] ">
+                            <h4 className="text-sm font-semibold text-[#666] mb-3">Today&apos;s Paper Sizes</h4>
                             <div className="space-y-3">
                                 {paperSizeData.map((item) => (
                                     <div key={item.name} className="flex items-center gap-4">
-                                        <span className="w-14 text-sm font-medium text-slate-700 dark:text-slate-300">{item.name}</span>
-                                        <div className="flex-1 h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                        <span className="w-14 text-sm font-medium text-[#666] ">{item.name}</span>
+                                        <div className="flex-1 h-2.5 bg-[#1A1A1A] overflow-hidden">
                                             <div
-                                                className="h-full rounded-full transition-all duration-500"
+                                                className="h-full transition-all duration-500"
                                                 style={{ width: `${item.value}%`, backgroundColor: item.color }}
                                             />
                                         </div>
-                                        <span className="w-10 text-sm font-bold text-slate-900 dark:text-white text-right">{item.value}%</span>
+                                        <span className="w-10 text-sm font-bold text-white text-right">{item.value}%</span>
                                     </div>
                                 ))}
                             </div>
@@ -495,20 +462,20 @@ const StatsCard: React.FC<{
     accent: 'emerald' | 'blue' | 'violet' | 'amber';
 }> = ({ title, value, icon, accent }) => {
     const colors = {
-        emerald: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400',
-        blue: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400',
-        violet: 'bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400',
-        amber: 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400',
+        emerald: 'bg-emerald-900/20 text-emerald-500',
+        blue: 'bg-[#1A1A1A] text-red-500',
+        violet: 'bg-violet-900/20 text-violet-500',
+        amber: 'bg-amber-900/20 text-amber-500',
     };
 
     return (
-        <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark p-5">
+        <div className="bg-[#0A0A0A] border border-[#333] p-5">
             <div className="flex items-start justify-between">
                 <div>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">{title}</p>
-                    <p className="text-2xl font-bold text-slate-900 dark:text-white">{value}</p>
+                    <p className="text-sm text-[#666] mb-1">{title}</p>
+                    <p className="text-2xl font-bold text-white ">{value}</p>
                 </div>
-                <div className={`p-2.5 rounded-xl ${colors[accent]}`}>
+                <div className={`p-2.5 ${colors[accent]}`}>
                     <Icon name={icon} className="text-xl" />
                 </div>
             </div>
@@ -524,27 +491,27 @@ const SummaryRow: React.FC<{
     color: 'blue' | 'violet' | 'slate' | 'emerald';
 }> = ({ icon, label, value, color }) => {
     const iconColors = {
-        blue: 'text-blue-600 dark:text-blue-400',
-        violet: 'text-violet-600 dark:text-violet-400',
-        slate: 'text-slate-600 dark:text-slate-400',
-        emerald: 'text-emerald-600 dark:text-emerald-400',
+        blue: 'text-red-500',
+        violet: 'text-violet-500',
+        slate: 'text-[#666]',
+        emerald: 'text-emerald-500',
     };
     const bgColors = {
-        blue: 'bg-blue-50 dark:bg-blue-900/20',
-        violet: 'bg-violet-50 dark:bg-violet-900/20',
-        slate: 'bg-slate-100 dark:bg-slate-800',
-        emerald: 'bg-emerald-50 dark:bg-emerald-900/20',
+        blue: 'bg-[#1A1A1A]',
+        violet: 'bg-violet-900/20',
+        slate: 'bg-[#1A1A1A]',
+        emerald: 'bg-emerald-900/20',
     };
 
     return (
         <div className="flex items-center gap-4">
-            <div className={`p-2 rounded-lg ${bgColors[color]}`}>
+            <div className={`p-2 ${bgColors[color]}`}>
                 <Icon name={icon} className={`text-lg ${iconColors[color]}`} />
             </div>
             <div className="flex-1">
-                <p className="text-sm text-slate-600 dark:text-slate-400">{label}</p>
+                <p className="text-sm text-[#666] ">{label}</p>
             </div>
-            <p className="text-lg font-bold text-slate-900 dark:text-white">{value.toLocaleString()}</p>
+            <p className="text-lg font-bold text-white ">{value.toLocaleString()}</p>
         </div>
     );
 };
