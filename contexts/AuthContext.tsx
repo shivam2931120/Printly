@@ -120,7 +120,7 @@ async function fetchUserRecord(clerkUser: ClerkUserInfo): Promise<User> {
 
             if (emailRecords && Array.isArray(emailRecords) && emailRecords.length > 0) {
                 const legacy = emailRecords[0];
-                supabase.from('User').update({ authId: clerkUser.id }).eq('id', legacy.id).then(() => {}); // fire-and-forget
+                supabase.from('User').update({ authId: clerkUser.id }).eq('id', legacy.id).then(() => { }); // fire-and-forget
                 return mapDbUser({ ...legacy, authId: clerkUser.id }, clerkUser);
             }
         }
@@ -189,14 +189,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!clerkLoaded) return;
 
         if (clerkSignedIn && clerkUser) {
-            setIsLoaded(true);
+            // Do NOT setIsLoaded(true) here! We must wait for resolveAppUser to finish to avoid the logged-out screen flash.
             const clerkInfo: ClerkUserInfo = {
                 id: clerkUser.id,
                 email: clerkUser.primaryEmailAddress?.emailAddress || '',
                 name: clerkUser.fullName || clerkUser.firstName || clerkUser.primaryEmailAddress?.emailAddress?.split('@')[0] || 'User',
                 avatar: clerkUser.imageUrl || '',
             };
-            resolveAppUser(clerkInfo);
+            resolveAppUser(clerkInfo).then(() => {
+                setIsLoaded(true);
+            });
         } else {
             setAppUser(null);
             setCachedUser(null);
@@ -215,7 +217,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         <AuthContext.Provider
             value={{
                 user: appUser,
-                isLoaded,
+                // App is loaded if:
+                // 1. Clerk is loaded + guest (not signed in)
+                // 2. Clerk is loaded + signed in + we DO have the DB appUser
+                isLoaded: isLoaded && (clerkSignedIn ? appUser !== null : true),
                 isSignedIn: !!clerkSignedIn,
                 signOut: handleSignOut,
             }}
