@@ -144,7 +144,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
  <Icon name="person" className="text-4xl text-primary" />
  </div>
  )}
- <label className="absolute bottom-0 right-0 p-2 bg-primary text-white cursor-pointer hover:bg-primary-hover transition-colors shadow-lg">
+ <label className="absolute bottom-0 right-0 p-2 bg-primary text-white cursor-pointer hover:bg-primary-hover transition-colors ">
  <Icon name="camera_alt" className="text-sm" />
  <input
  type="file"
@@ -213,7 +213,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
  window.location.reload();
  }
  }}
- className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold text-sm transition-colors flex items-center gap-2 shadow-sm"
+ className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold text-sm transition-colors flex items-center gap-2 "
  >
  <Icon name="delete_forever" />
  Clear Local Cache
@@ -266,7 +266,7 @@ const ToggleSetting: React.FC<{
  }`}
  >
  <span
- className={`absolute left-0.5 top-0.5 bg-[#0A0A0A] h-5 w-5 shadow transform transition-transform duration-200 ease-in-out ${enabled ? 'translate-x-5' : 'translate-x-0'
+ className={`absolute left-0.5 top-0.5 bg-[#0A0A0A] h-5 w-5 transform transition-transform duration-200 ease-in-out ${enabled ? 'translate-x-5' : 'translate-x-0'
  }`}
  />
  </button>

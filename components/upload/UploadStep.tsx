@@ -69,7 +69,7 @@ export const UploadStep: React.FC<UploadStepProps> = ({
  {files.map((fileWrapper) => (
  <div
  key={fileWrapper.id}
- className="flex items-center gap-4 p-4 bg-background-card border border-border group"
+ className="flex items-center gap-4 p-4 bg-background-card border rounded-2xl shadow-xl border-border group"
  >
  <div className="size-10 bg-[#111] flex items-center justify-center text-white shrink-0">
  <FileText size={20} />

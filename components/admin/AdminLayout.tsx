@@ -48,7 +48,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
 
  {/* Mobile Sidebar */}
  <div className={`
- lg:hidden fixed inset-y-0 left-0 z-40 w-64 transform transition-transform duration-300 ease-out shadow-2xl
+ lg:hidden fixed inset-y-0 left-0 z-40 w-64 transform transition-transform duration-300 ease-out 
  ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
  `}>
  <AdminSidebar
@@ -95,7 +95,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
  <input
  type="text"
  placeholder="Search..."
- className="w-64 pl-10 pr-4 py-2 bg-[#0A0A0A] border border-[#333] text-sm text-white placeholder-[#666] focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none"
+ className="w-64 pl-10 pr-4 py-2 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl text-sm text-white placeholder-[#666] focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none"
  />
  </div>
  </div>

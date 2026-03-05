@@ -125,7 +125,7 @@ export const SupportPage: React.FC = () => {
  <a
  key={i}
  href={item.href}
- className="flex flex-col items-center justify-center p-6 bg-background-card border border-border hover:bg-[#111] transition-colors text-center group"
+ className="flex flex-col items-center justify-center p-6 bg-background-card border rounded-2xl shadow-xl border-border hover:bg-[#111] transition-colors text-center group"
  >
  <div className="size-12 bg-[#111] flex items-center justify-center mb-4 text-white group-hover:scale-110 transition-transform">
  <item.icon size={20} />
@@ -143,7 +143,7 @@ export const SupportPage: React.FC = () => {
  {faqs.map((faq, index) => (
  <div
  key={index}
- className="bg-background-card border border-border overflow-hidden transition-all duration-300"
+ className="bg-background-card border rounded-2xl shadow-xl border-border overflow-hidden transition-all duration-300"
  >
  <button
  onClick={() => setExpandedFaq(expandedFaq === index ? null : index)}
@@ -170,7 +170,7 @@ export const SupportPage: React.FC = () => {
  </div>
 
  {/* Contact Form */}
- <div className="bg-background-card border border-border p-8 sticky top-24">
+ <div className="bg-background-card border rounded-2xl shadow-xl border-border p-8 sticky top-24">
  <div className="flex items-center gap-3 mb-6">
  <div className="p-2 bg-[#111] text-white">
  <MessageSquare size={20} />

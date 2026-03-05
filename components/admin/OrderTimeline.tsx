@@ -106,7 +106,7 @@ export const OrderTimeline: React.FC<OrderTimelineProps> = ({ events }) => {
  )}
 
  {/* Icon */}
- <div className={`relative z-10 size-10 flex items-center justify-center flex-shrink-0 border-2 border-[#333] shadow-sm ${event.statusColor || 'text-[#666] bg-[#0A0A0A]'}`}>
+ <div className={`relative z-10 size-10 flex items-center justify-center flex-shrink-0 border-2 border-[#333] ${event.statusColor || 'text-[#666] bg-[#0A0A0A]'}`}>
  <Icon name="history" className="text-lg" />
  </div>
 

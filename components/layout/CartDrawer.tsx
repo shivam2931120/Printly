@@ -216,7 +216,7 @@ export const CartDrawer: React.FC = () => {
 
  {/* Drawer */}
  <div
- className="relative w-full max-w-[400px] bg-[#0A0A0A] h-full shadow-2xl flex flex-col border-l border-[#333] animate-slide-in-right"
+ className="relative w-full max-w-[400px] bg-[#0A0A0A] h-full flex flex-col border-l border-[#333] animate-slide-in-right"
  >
  {/* Header */}
  <div className="p-6 border-b border-[#333] flex items-center justify-between bg-[#0A0A0A] z-10">
@@ -324,7 +324,7 @@ export const CartDrawer: React.FC = () => {
 
  <div className="flex items-end justify-between mt-3">
  {/* Quantity Stepper */}
- <div className="flex items-center gap-3 bg-[#111] border border-[#333] p-1 h-8">
+ <div className="flex items-center gap-3 bg-[#111] border border-[#333] rounded-2xl shadow-2xl p-1 h-8">
  <button
  onClick={() => updateQuantity(item.id, -1)}
  className="size-6 flex items-center justify-center hover:bg-[#1A1A1A] transition-colors text-white disabled:opacity-50"

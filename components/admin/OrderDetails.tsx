@@ -59,7 +59,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ order: initialOrder,
  <div className="absolute inset-0 bg-black/50" onClick={onClose} />
 
  {/* Modal */}
- <div className="relative w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl animate-zoom-in">
+ <div className="relative w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden animate-zoom-in">
  {/* Header */}
  <div className="flex items-center justify-between p-6 border-b border-[#333] ">
  <div className="flex items-center gap-4">
@@ -141,7 +141,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ order: initialOrder,
  {/* Customer Info */}
  <section>
  <h3 className="text-xs font-semibold text-[#666] uppercase tracking-wider mb-2">Customer Details</h3>
- <div className="flex items-center gap-3 p-3 bg-[#0A0A0A] border border-[#333]">
+ <div className="flex items-center gap-3 p-3 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl">
  <div className="size-10 bg-[#111] flex items-center justify-center text-sm font-bold text-red-500 ">
  {order.userName.charAt(0).toUpperCase()}
  </div>
@@ -220,7 +220,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ order: initialOrder,
  href={item.fileUrl}
  target="_blank"
  rel="noopener noreferrer"
- className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-primary text-white hover:bg-primary/90 transition-colors shadow-sm"
+ className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-primary text-white hover:bg-primary/90 transition-colors "
  >
  <Icon name="print" className="text-base" />
  Print

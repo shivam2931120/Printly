@@ -178,7 +178,7 @@ const EditableSettingRow: React.FC<{
  onChange={(e) => onChange(e.target.value)}
  placeholder={placeholder}
  rows={3}
- className="w-full px-3 py-1.5 text-sm bg-[#0A0A0A] border border-[#333] focus:ring-2 focus:ring-primary/50 focus:border-primary text-white resize-none font-mono"
+ className="w-full px-3 py-1.5 text-sm bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl focus:ring-2 focus:ring-primary/50 focus:border-primary text-white resize-none font-mono"
  />
  ) : (
  <input
@@ -186,7 +186,7 @@ const EditableSettingRow: React.FC<{
  value={value}
  onChange={(e) => onChange(e.target.value)}
  placeholder={placeholder}
- className="w-full px-3 py-1.5 text-sm bg-[#0A0A0A] border border-[#333] focus:ring-2 focus:ring-primary/50 focus:border-primary text-white "
+ className="w-full px-3 py-1.5 text-sm bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl focus:ring-2 focus:ring-primary/50 focus:border-primary text-white "
  />
  )
  ) : (

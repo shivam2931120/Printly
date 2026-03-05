@@ -24,12 +24,12 @@ const InfoCard: React.FC<{
  lines: string[];
  action?: { label: string; href: string };
 }> = ({ icon, title, lines, action }) => (
- <div className="group relative bg-[#0A0A0A] border border-[#333]/[0.06] p-6 hover:border-[#333]/[0.12] transition-all duration-500 overflow-hidden">
+ <div className="group relative bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl/[0.06] p-6 hover:border-[#333]/[0.12] transition-all duration-500 overflow-hidden">
  {/* spotlight hover glow */}
  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none bg-[radial-gradient(300px_circle_at_50%_50%,rgba(255,255,255,0.04),transparent_70%)]" />
 
  <div className="relative z-10">
- <div className="size-12 bg-[#111] border border-[#333]/[0.06] flex items-center justify-center mb-4 text-white group-hover:bg-[#0A0A0A]/[0.1] transition-colors duration-300">
+ <div className="size-12 bg-[#111] border border-[#333] rounded-2xl shadow-2xl/[0.06] flex items-center justify-center mb-4 text-white group-hover:bg-[#0A0A0A]/[0.1] transition-colors duration-300">
  {icon}
  </div>
  <h3 className="text-sm font-black text-white uppercase tracking-widest mb-2">{title}</h3>
@@ -112,7 +112,7 @@ export const ContactPage: React.FC<{ shopConfig?: ShopConfig }> = ({ shopConfig 
  </button>
 
  <div className="text-center max-w-2xl mx-auto mb-16">
- <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#111] border border-[#333]/[0.06] text-[10px] font-black text-[#666] uppercase tracking-[0.2em] mb-6">
+ <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#111] border border-[#333] rounded-2xl shadow-2xl/[0.06] text-[10px] font-black text-[#666] uppercase tracking-[0.2em] mb-6">
  <MessageSquare size={12} />
  Get in Touch
  </div>
@@ -152,7 +152,7 @@ export const ContactPage: React.FC<{ shopConfig?: ShopConfig }> = ({ shopConfig 
  {/* ──── Map + Form ──── */}
  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
  {/* Map */}
- <div className="bg-[#0A0A0A] border border-[#333]/[0.06] overflow-hidden">
+ <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl/[0.06] overflow-hidden">
  <div className="p-5 border-b border-[#333]/[0.06] flex items-center gap-3">
  <div className="size-9 bg-[#111] flex items-center justify-center">
  <Navigation size={16} />
@@ -177,7 +177,7 @@ export const ContactPage: React.FC<{ shopConfig?: ShopConfig }> = ({ shopConfig 
  </div>
 
  {/* Contact Form */}
- <div className="bg-[#0A0A0A] border border-[#333]/[0.06] p-6 md:p-8">
+ <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl/[0.06] p-6 md:p-8">
  <div className="flex items-center gap-3 mb-8">
  <div className="size-9 bg-[#111] flex items-center justify-center">
  <Send size={16} />
@@ -218,7 +218,7 @@ export const ContactPage: React.FC<{ shopConfig?: ShopConfig }> = ({ shopConfig 
  type="text"
  value={formData.name}
  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
- className="w-full px-4 py-3.5 bg-[#111] border border-[#333] focus:border-[#333] focus:bg-[#111] outline-none transition-all text-white placeholder-[#333] text-sm font-medium"
+ className="w-full px-4 py-3.5 bg-[#111] border border-[#333] rounded-2xl shadow-2xl focus:border-[#333] focus:bg-[#111] outline-none transition-all text-white placeholder-[#333] text-sm font-medium"
  placeholder="Your name"
  required
  />
@@ -229,7 +229,7 @@ export const ContactPage: React.FC<{ shopConfig?: ShopConfig }> = ({ shopConfig 
  type="email"
  value={formData.email}
  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
- className="w-full px-4 py-3.5 bg-[#111] border border-[#333] focus:border-[#333] focus:bg-[#111] outline-none transition-all text-white placeholder-[#333] text-sm font-medium"
+ className="w-full px-4 py-3.5 bg-[#111] border border-[#333] rounded-2xl shadow-2xl focus:border-[#333] focus:bg-[#111] outline-none transition-all text-white placeholder-[#333] text-sm font-medium"
  placeholder="you@email.com"
  required
  />
@@ -242,7 +242,7 @@ export const ContactPage: React.FC<{ shopConfig?: ShopConfig }> = ({ shopConfig 
  type="text"
  value={formData.subject}
  onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
- className="w-full px-4 py-3.5 bg-[#111] border border-[#333] focus:border-[#333] focus:bg-[#111] outline-none transition-all text-white placeholder-[#333] text-sm font-medium"
+ className="w-full px-4 py-3.5 bg-[#111] border border-[#333] rounded-2xl shadow-2xl focus:border-[#333] focus:bg-[#111] outline-none transition-all text-white placeholder-[#333] text-sm font-medium"
  placeholder="How can we help?"
  required
  />
@@ -253,7 +253,7 @@ export const ContactPage: React.FC<{ shopConfig?: ShopConfig }> = ({ shopConfig 
  <textarea
  value={formData.message}
  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
- className="w-full px-4 py-3.5 bg-[#111] border border-[#333] focus:border-[#333] focus:bg-[#111] outline-none transition-all text-white placeholder-[#333] text-sm font-medium resize-none"
+ className="w-full px-4 py-3.5 bg-[#111] border border-[#333] rounded-2xl shadow-2xl focus:border-[#333] focus:bg-[#111] outline-none transition-all text-white placeholder-[#333] text-sm font-medium resize-none"
  placeholder="Tell us more..."
  rows={5}
  required

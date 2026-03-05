@@ -57,7 +57,7 @@ export const PreviewStep: React.FC<PreviewStepProps> = ({
  >
  <Page
  pageNumber={pageNumber}
- className="shadow-lg max-h-full max-w-full flex items-center justify-center [&_canvas]:!h-auto [&_canvas]:!w-auto [&_canvas]:max-h-[60vh] [&_canvas]:max-w-full [&_canvas]:object-contain"
+ className=" max-h-full max-w-full flex items-center justify-center [&_canvas]:!h-auto [&_canvas]:!w-auto [&_canvas]:max-h-[60vh] [&_canvas]:max-w-full [&_canvas]:object-contain"
  renderTextLayer={false}
  renderAnnotationLayer={false}
  height={window.innerHeight * 0.6} // Approximate height for mobile fit
@@ -95,7 +95,7 @@ export const PreviewStep: React.FC<PreviewStepProps> = ({
  {/* Sticky Action for Mobile - Above Bottom Nav */}
  <div className="fixed bottom-24 left-0 right-0 p-4 bg-transparent lg:hidden z-[100] pb-0 pointer-events-none">
  <div className="pointer-events-auto flex items-center gap-3">
- <div className="flex-1 bg-black/80 p-3 border border-[#333] flex justify-between items-center shadow-lg">
+ <div className="flex-1 bg-black/80 p-3 border border-[#333] flex justify-between items-center ">
  <p className="text-xs text-[#666] uppercase font-bold">Total</p>
  <p className="text-xl font-bold text-white">₹{totalPrice.toFixed(0)}</p>
  </div>

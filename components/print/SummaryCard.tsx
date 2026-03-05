@@ -145,7 +145,7 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
  className={cn(
  'mt-auto w-full py-4 text-base font-bold items-center justify-center gap-3 transition-all duration-200 hidden lg:flex',
  hasFiles && !disabled
- ? 'bg-red-600 text-white hover:shadow-[0_0_30px_rgba(255,255,255,0.12)] cursor-pointer'
+ ? 'bg-red-600 text-white -[0_0_30px_rgba(255,255,255,0.12)] cursor-pointer'
  : 'bg-[#111] text-[#666] cursor-not-allowed',
  )}
  >

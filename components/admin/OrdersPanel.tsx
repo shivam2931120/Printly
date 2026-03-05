@@ -312,7 +312,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  <div className="flex items-center gap-3">
  <button
  onClick={handleExport}
- className="inline-flex items-center justify-center h-10 px-4 border border-[#333] bg-[#0A0A0A] text-[#666] text-sm font-medium hover:bg-[#0A0A0A] transition-colors shadow-sm"
+ className="inline-flex items-center justify-center h-10 px-4 border border-[#333] bg-[#0A0A0A] text-[#666] text-sm font-medium hover:bg-[#0A0A0A] transition-colors "
  >
  <Icon name="download" className="text-lg mr-2" />
  Export
@@ -329,7 +329,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  className={`
  inline-flex items-center gap-2 px-4 py-2 text-sm font-bold whitespace-nowrap transition-all
  ${statusFilter === status
- ? 'bg-[#0A0A0A] bg-[#0A0A0A] text-white shadow-md transform scale-105'
+ ? 'bg-[#0A0A0A] bg-[#0A0A0A] text-white transform scale-105'
  : 'bg-[#0A0A0A] text-[#666] hover:bg-[#1A1A1A] border border-[#333] '
  }
  `}
@@ -354,14 +354,14 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  placeholder="Search by OTP, name, email, or file..."
  value={searchQuery}
  onChange={(e) => setSearchQuery(e.target.value)}
- className="w-full pl-10 pr-4 py-2.5 bg-[#0A0A0A] border border-[#333] text-sm text-white placeholder-slate-400 focus:ring-2 focus:ring-primary focus:border-primary"
+ className="w-full pl-10 pr-4 py-2.5 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl text-sm text-white placeholder-slate-400 focus:ring-2 focus:ring-primary focus:border-primary"
  aria-label="Search orders"
  />
  </div>
  <select
  value={dateFilter}
  onChange={(e) => setDateFilter(e.target.value as any)}
- className="px-3 py-2.5 bg-[#0A0A0A] border border-[#333] text-sm text-[#666] focus:ring-2 focus:ring-primary"
+ className="px-3 py-2.5 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl text-sm text-[#666] focus:ring-2 focus:ring-primary"
  aria-label="Filter by date"
  >
  <option value="all">All Time</option>
@@ -372,7 +372,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  <select
  value={paymentFilter}
  onChange={(e) => setPaymentFilter(e.target.value)}
- className="px-3 py-2.5 bg-[#0A0A0A] border border-[#333] text-sm text-[#666] focus:ring-2 focus:ring-primary"
+ className="px-3 py-2.5 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl text-sm text-[#666] focus:ring-2 focus:ring-primary"
  aria-label="Filter by payment"
  >
  <option value="all">All Payments</option>
@@ -406,7 +406,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  )}
 
  {/* Desktop Orders Table */}
- <div className="hidden md:block bg-[#050505] border border-[#333] overflow-hidden shadow-sm">
+ <div className="hidden md:block bg-[#050505] border border-[#333] overflow-hidden ">
  {loading ? (
  <div className="p-6 space-y-4">
  {[1, 2, 3, 4, 5].map((i) => (
@@ -600,7 +600,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  {/* Mobile Orders List (Card View) */}
  <div className="md:hidden space-y-4">
  {filteredOrders.length === 0 ? (
- <div className="py-12 text-center text-[#666] bg-[#0A0A0A] border border-[#333] ">
+ <div className="py-12 text-center text-[#666] bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl ">
  <div className="flex flex-col items-center justify-center">
  <Icon name="inbox" className="text-4xl text-[#666] mb-3" />
  <p>No orders found</p>
@@ -610,7 +610,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  filteredOrders.map((order) => (
  <div
  key={order.id}
- className="bg-[#050505] border border-[#333] p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+ className="bg-[#050505] border border-[#333] p-4  transition- cursor-pointer"
  onClick={() => setSelectedOrder(order)}
  >
  {/* Header: OTP and Status */}
@@ -677,7 +677,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  {order.status === 'confirmed' && (
  <button
  onClick={(e) => { e.stopPropagation(); updateOrderStatus(order.id, 'printing'); }}
- className="flex-1 py-2 bg-indigo-600 text-white font-bold text-xs hover:bg-indigo-700 transition-colors flex items-center justify-center gap-1.5 shadow-md shadow-indigo-500/20"
+ className="flex-1 py-2 bg-indigo-600 text-white font-bold text-xs hover:bg-indigo-700 transition-colors flex items-center justify-center gap-1.5 -500/20"
  >
  <Icon name="print" className="text-sm" />
  Print
@@ -686,7 +686,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  {order.status === 'printing' && (
  <button
  onClick={(e) => { e.stopPropagation(); updateOrderStatus(order.id, 'ready'); }}
- className="flex-1 py-2 bg-purple-600 text-white font-bold text-xs hover:bg-purple-700 transition-colors flex items-center justify-center gap-1.5 shadow-md shadow-purple-500/20"
+ className="flex-1 py-2 bg-purple-600 text-white font-bold text-xs hover:bg-purple-700 transition-colors flex items-center justify-center gap-1.5 -500/20"
  >
  <Icon name="check_circle" className="text-sm" />
  Ready
@@ -695,7 +695,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  {order.status === 'ready' && (
  <button
  onClick={(e) => { e.stopPropagation(); updateOrderStatus(order.id, 'completed'); }}
- className="flex-1 py-2 bg-green-600 text-white font-bold text-xs hover:bg-green-700 transition-colors flex items-center justify-center gap-1.5 shadow-md shadow-green-500/20"
+ className="flex-1 py-2 bg-green-600 text-white font-bold text-xs hover:bg-green-700 transition-colors flex items-center justify-center gap-1.5 -500/20"
  >
  <Icon name="done_all" className="text-sm" />
  Complete
@@ -705,7 +705,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  {order.status === 'completed' && (
  <button
  onClick={(e) => { e.stopPropagation(); deleteOrder(order.id); }}
- className="py-2 px-3 bg-red-600 text-white font-bold text-xs hover:bg-red-700 transition-colors flex items-center justify-center gap-1.5 shadow-md shadow-red-500/20"
+ className="py-2 px-3 bg-red-600 text-white font-bold text-xs hover:bg-red-700 transition-colors flex items-center justify-center gap-1.5 -500/20"
  title="Delete Order"
  >
  <Icon name="delete" className="text-lg" />

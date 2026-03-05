@@ -31,7 +31,7 @@ export const OptionButton: React.FC<OptionButtonProps> = ({
  className={cn(
  'relative flex items-center gap-1.5 px-3 py-2 text-xs font-semibold transition-all duration-200 cursor-pointer select-none border min-w-0',
  selected
- ? 'bg-[#111] text-white border-[#333] shadow-[0_0_20px_rgba(255,255,255,0.06)]'
+ ? 'bg-[#111] text-white border-[#333] -[0_0_20px_rgba(255,255,255,0.06)]'
  : 'bg-[#0A0A0A] text-gray-400 border-[#333]/[0.06] hover:bg-[#111] hover:text-white hover:border-[#333]',
  disabled && 'opacity-40 cursor-not-allowed',
  )}

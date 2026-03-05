@@ -160,7 +160,7 @@ export const ProductManagement: React.FC = () => {
  </button>
  <button
  onClick={handleAddProduct}
- className="inline-flex items-center justify-center h-10 px-4 bg-[#0A0A0A] bg-[#0A0A0A] text-white text-sm font-bold shadow-md hover:opacity-90 transition-colors"
+ className="inline-flex items-center justify-center h-10 px-4 bg-[#0A0A0A] bg-[#0A0A0A] text-white text-sm font-bold hover:opacity-90 transition-colors"
  >
  <Icon name="add" className="text-lg mr-2" />
  Add Product
@@ -169,7 +169,7 @@ export const ProductManagement: React.FC = () => {
 
  {/* Stats */}
  <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
- <div className="bg-[#0A0A0A] border border-[#333] p-5">
+ <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-5">
  <div className="flex items-center gap-3">
  <div className="p-2.5 bg-[#111] ">
  <Icon name="inventory_2" className="text-xl text-red-500 " />
@@ -180,7 +180,7 @@ export const ProductManagement: React.FC = () => {
  </div>
  </div>
  </div>
- <div className="bg-[#0A0A0A] border border-[#333] p-5">
+ <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-5">
  <div className="flex items-center gap-3">
  <div className="p-2.5 bg-green-900/20 bg-green-900/20">
  <Icon name="check_circle" className="text-xl text-green-400 " />
@@ -193,7 +193,7 @@ export const ProductManagement: React.FC = () => {
  </div>
  </div>
  </div>
- <div className="bg-[#0A0A0A] border border-[#333] p-5">
+ <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-5">
  <div className="flex items-center gap-3">
  <div className="p-2.5 bg-orange-900/20 ">
  <Icon name="warning" className="text-xl text-orange-400 " />
@@ -204,7 +204,7 @@ export const ProductManagement: React.FC = () => {
  </div>
  </div>
  </div>
- <div className="bg-[#0A0A0A] border border-[#333] p-5">
+ <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-5">
  <div className="flex items-center gap-3">
  <div className="p-2.5 bg-purple-900/20 bg-purple-900/20">
  <Icon name="payments" className="text-xl text-purple-400 " />
@@ -228,14 +228,14 @@ export const ProductManagement: React.FC = () => {
  placeholder="Search products..."
  value={searchQuery}
  onChange={(e) => setSearchQuery(e.target.value)}
- className="w-full pl-10 pr-4 py-2.5 bg-[#0A0A0A] border border-[#333] text-sm text-white placeholder-slate-400 focus:ring-2 focus:ring-primary focus:border-primary"
+ className="w-full pl-10 pr-4 py-2.5 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl text-sm text-white placeholder-slate-400 focus:ring-2 focus:ring-primary focus:border-primary"
  />
  </div>
  <div className="flex gap-2 overflow-x-auto pb-2">
  <button
  onClick={() => setSelectedCategory('all')}
  className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-all ${selectedCategory === 'all'
- ? 'bg-[#0A0A0A] bg-[#0A0A0A] text-white shadow-md transform scale-105'
+ ? 'bg-[#0A0A0A] bg-[#0A0A0A] text-white transform scale-105'
  : 'bg-[#0A0A0A] text-[#666] border border-[#333] hover:bg-[#111] '
  }`}
  >
@@ -246,7 +246,7 @@ export const ProductManagement: React.FC = () => {
  key={cat.id}
  onClick={() => setSelectedCategory(cat.id)}
  className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-all flex items-center gap-2 ${selectedCategory === cat.id
- ? 'bg-[#0A0A0A] bg-[#0A0A0A] text-white shadow-md transform scale-105'
+ ? 'bg-[#0A0A0A] bg-[#0A0A0A] text-white transform scale-105'
  : 'bg-[#0A0A0A] text-[#666] border border-[#333] hover:bg-[#111] '
  }`}
  >
@@ -262,7 +262,7 @@ export const ProductManagement: React.FC = () => {
  {filteredProducts.map((product) => (
  <div
  key={product.id}
- className={`bg-[#0A0A0A] border border-[#333] p-5 transition-all hover:shadow-lg ${!product.isActive ? 'opacity-60' : ''
+ className={`bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-5 transition-all ${!product.isActive ? 'opacity-60' : ''
  }`}
  >
  <div className="flex items-start justify-between mb-3">
@@ -358,7 +358,7 @@ export const ProductManagement: React.FC = () => {
  {/* Add/Edit Modal */}
  {isModalOpen && (
  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
- <div className="bg-[#0A0A0A] w-full max-w-md p-6 shadow-2xl">
+ <div className="bg-[#0A0A0A] w-full max-w-md p-6 ">
  <div className="flex items-center justify-between mb-6">
  <h3 className="text-xl font-bold text-white ">
  {editingProduct ? 'Edit Product' : 'Add Product'}
@@ -380,7 +380,7 @@ export const ProductManagement: React.FC = () => {
  type="text"
  value={formData.name}
  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
- className="w-full px-4 py-2.5 bg-[#0A0A0A] border border-[#333] text-white focus:ring-2 focus:ring-primary"
+ className="w-full px-4 py-2.5 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl text-white focus:ring-2 focus:ring-primary"
  placeholder="Enter product name"
  />
  </div>
@@ -392,7 +392,7 @@ export const ProductManagement: React.FC = () => {
  <textarea
  value={formData.description}
  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
- className="w-full px-4 py-2.5 bg-[#0A0A0A] border border-[#333] text-white focus:ring-2 focus:ring-primary resize-none"
+ className="w-full px-4 py-2.5 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl text-white focus:ring-2 focus:ring-primary resize-none"
  rows={2}
  placeholder="Enter description"
  />
@@ -405,7 +405,7 @@ export const ProductManagement: React.FC = () => {
  <select
  value={formData.category}
  onChange={(e) => setFormData({ ...formData, category: e.target.value as ProductCategory })}
- className="w-full px-4 py-2.5 bg-[#0A0A0A] border border-[#333] text-white focus:ring-2 focus:ring-primary"
+ className="w-full px-4 py-2.5 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl text-white focus:ring-2 focus:ring-primary"
  >
  {PRODUCT_CATEGORIES.map((cat) => (
  <option key={cat.id} value={cat.id}>{cat.name}</option>
@@ -422,7 +422,7 @@ export const ProductManagement: React.FC = () => {
  type="number"
  value={formData.price}
  onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
- className="w-full px-4 py-2.5 bg-[#0A0A0A] border border-[#333] text-white focus:ring-2 focus:ring-primary"
+ className="w-full px-4 py-2.5 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl text-white focus:ring-2 focus:ring-primary"
  min="0"
  />
  </div>
@@ -434,7 +434,7 @@ export const ProductManagement: React.FC = () => {
  type="number"
  value={formData.stock}
  onChange={(e) => setFormData({ ...formData, stock: Number(e.target.value) })}
- className="w-full px-4 py-2.5 bg-[#0A0A0A] border border-[#333] text-white focus:ring-2 focus:ring-primary"
+ className="w-full px-4 py-2.5 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl text-white focus:ring-2 focus:ring-primary"
  min="0"
  />
  </div>

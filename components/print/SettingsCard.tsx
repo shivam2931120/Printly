@@ -131,7 +131,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
  <select
  value={options.paperSize}
  onChange={(e) => update('paperSize', e.target.value as PrintOptions['paperSize'])}
- className="w-full appearance-none px-4 py-3 bg-[#0A0A0A] border border-[#333]/[0.06] text-white text-sm font-medium focus:outline-none focus:border-[#333] transition-colors cursor-pointer"
+ className="w-full appearance-none px-4 py-3 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl/[0.06] text-white text-sm font-medium focus:outline-none focus:border-[#333] transition-colors cursor-pointer"
  >
  <option value="a4">A4 (210 × 297mm)</option>
  <option value="a3">A3 (297 × 420mm)</option>
@@ -149,7 +149,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
  <motion.button
  whileTap={{ scale: 0.85 }}
  onClick={() => update('copies', Math.max(1, options.copies - 1))}
- className="size-10 bg-[#111] border border-[#333]/[0.06] flex items-center justify-center text-white hover:bg-[#111] transition-colors"
+ className="size-10 bg-[#111] border border-[#333] rounded-2xl shadow-2xl/[0.06] flex items-center justify-center text-white hover:bg-[#111] transition-colors"
  >
  <Minus size={16} />
  </motion.button>
@@ -174,7 +174,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
  value={options.pageRangeText}
  onChange={(e) => update('pageRangeText', e.target.value)}
  placeholder="e.g. All, 1-10, 5,8,12-20"
- className="w-full px-3 py-2.5 bg-[#0A0A0A] border border-[#333]/[0.06] text-white text-sm focus:outline-none focus:border-[#333] transition-colors placeholder-white/20"
+ className="w-full px-3 py-2.5 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl/[0.06] text-white text-sm focus:outline-none focus:border-[#333] transition-colors placeholder-white/20"
  />
  <p className="text-[10px] text-[#666] mt-1.5">Leave blank to print all pages</p>
  </section>

@@ -51,7 +51,7 @@ export const StudentShop: React.FC<StudentShopProps> = ({ onAddToCart }) => {
  placeholder="Search items..."
  value={searchQuery}
  onChange={(e) => setSearchQuery(e.target.value)}
- className="pl-10 pr-4 py-2 bg-[#0A0A0A] border border-[#333] text-sm text-white focus:ring-2 focus:ring-primary w-full md:w-64"
+ className="pl-10 pr-4 py-2 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl text-sm text-white focus:ring-2 focus:ring-primary w-full md:w-64"
  />
  </div>
  </div>
@@ -85,7 +85,7 @@ export const StudentShop: React.FC<StudentShopProps> = ({ onAddToCart }) => {
  {/* Product Grid */}
  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
  {filteredProducts.map(product => (
- <div key={product.id} className="group bg-[#0A0A0A] border border-[#333] overflow-hidden hover:shadow-xl hover:shadow-primary/5 hover:border-primary/50 transition-all duration-300">
+ <div key={product.id} className="group bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl overflow-hidden /5 hover:border-primary/50 transition-all duration-300">
  <div className="h-48 bg-[#111] flex items-center justify-center text-6xl text-[#666] relative overflow-hidden">
  {product.image?.startsWith('http') || product.image?.startsWith('/') ? (
  <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
@@ -124,7 +124,7 @@ export const StudentShop: React.FC<StudentShopProps> = ({ onAddToCart }) => {
  <button
  onClick={() => onAddToCart(product)}
  disabled={product.stock === 0}
- className="size-10 bg-[#0A0A0A] bg-[#0A0A0A] text-white flex items-center justify-center hover:bg-primary hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg "
+ className="size-10 bg-[#0A0A0A] bg-[#0A0A0A] text-white flex items-center justify-center hover:bg-primary hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors "
  >
  <Icon name="add_shopping_cart" />
  </button>

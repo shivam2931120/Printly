@@ -158,8 +158,8 @@ export const PrintPage: React.FC<PrintPageProps> = ({ currentUser, onSignInClick
  step === s
  ? "bg-red-600 text-white scale-110"
  : step > s
- ? "bg-green-900/20 text-white shadow-[0_0_15px_rgba(34,197,94,0.3)]"
- : "bg-[#0A0A0A] border border-[#333] text-[#666]"
+ ? "bg-green-900/20 text-white -[0_0_15px_rgba(34,197,94,0.3)]"
+ : "bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl text-[#666]"
  )}>
  {step > s ? <Check size={18} strokeWidth={3} /> : s + 1}
  </div>

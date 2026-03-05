@@ -55,7 +55,7 @@ export const AuditViewer: React.FC = () => {
  <select
  value={limit}
  onChange={(e) => setLimit(Number(e.target.value))}
- className="px-3 py-2 bg-[#0A0A0A] border border-[#333] text-sm text-[#666] focus:ring-2 focus:ring-primary"
+ className="px-3 py-2 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl text-sm text-[#666] focus:ring-2 focus:ring-primary"
  aria-label="Number of log entries to show"
  >
  <option value={25}>Last 25</option>
@@ -65,7 +65,7 @@ export const AuditViewer: React.FC = () => {
  </select>
  <button
  onClick={loadLogs}
- className="inline-flex items-center justify-center h-10 px-4 border border-[#333] bg-[#0A0A0A] text-[#666] text-sm font-medium hover:bg-[#0A0A0A] transition-colors shadow-sm"
+ className="inline-flex items-center justify-center h-10 px-4 border border-[#333] bg-[#0A0A0A] text-[#666] text-sm font-medium hover:bg-[#0A0A0A] transition-colors "
  aria-label="Refresh audit log"
  >
  <Icon name="refresh" className="text-lg mr-2" />
@@ -75,7 +75,7 @@ export const AuditViewer: React.FC = () => {
  </div>
 
  {/* Logs List */}
- <div className="bg-[#050505] border border-[#333] overflow-hidden shadow-sm">
+ <div className="bg-[#050505] border border-[#333] overflow-hidden ">
  {loading ? (
  <div className="p-6 space-y-4">
  {[1, 2, 3, 4, 5, 6].map((i) => (

@@ -18,7 +18,7 @@ export const ProfilePage: React.FC = () => {
  if (!isSignedIn || !user) {
  return (
  <div className="max-w-2xl mx-auto space-y-8 animate-fade-in pb-32 pt-10 px-6">
- <div className="bg-[#0A0A0A] border border-[#333] p-8 flex flex-col items-center text-center space-y-6">
+ <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-8 flex flex-col items-center text-center space-y-6">
  <div className="size-20 bg-yellow-900/200/10 flex items-center justify-center text-yellow-500 border border-yellow-500/20">
  <AlertTriangle size={32} />
  </div>
@@ -41,14 +41,14 @@ export const ProfilePage: React.FC = () => {
  <div className="space-y-4">
  <h3 className="text-xs font-bold text-[#666] uppercase tracking-widest pl-2">Recent Device Orders</h3>
  {orders.length === 0 ? (
- <div className="bg-background-card border border-border p-8 text-center">
+ <div className="bg-background-card border rounded-2xl shadow-xl border-border p-8 text-center">
  <p className="text-[#666]">No orders yet.</p>
  <Button variant="link" onClick={() => navigate('/')} className="text-white mt-2">
  Start Printing
  </Button>
  </div>
  ) : (
- <div className="bg-background-card border border-border overflow-hidden divide-y divide-border">
+ <div className="bg-background-card border rounded-2xl shadow-xl border-border overflow-hidden divide-y divide-border">
  {orders.slice(0, 3).map((order) => (
  <div key={order.id} className="p-5 flex items-center justify-between hover:bg-[#111] transition-colors">
  <div className="flex items-center gap-4">
@@ -87,11 +87,11 @@ export const ProfilePage: React.FC = () => {
  return (
  <div className="max-w-2xl mx-auto space-y-8 animate-fade-in pb-32">
  {/* Header / Profile Info */}
- <div className="bg-[#0A0A0A] border border-[#333] p-10 flex flex-col items-center text-center relative overflow-hidden">
+ <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-10 flex flex-col items-center text-center relative overflow-hidden">
  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
  <div className="relative mb-6">
- <div className="size-28 bg-[#111] p-1 border border-[#333] shadow-2xl">
+ <div className="size-28 bg-[#111] p-1 border border-[#333] ">
  <img
  src={user.avatar || `https://ui-avatars.com/api/?name=${user.name}&background=random`}
  alt={user.name || 'User'}
@@ -116,7 +116,7 @@ export const ProfilePage: React.FC = () => {
  <span className="px-4 py-1.5 bg-[#111]0 text-white text-[10px] font-black uppercase tracking-[0.15em]">Developer</span>
  )}
  {!user.isAdmin && !user.isDeveloper && (
- <span className="px-4 py-1.5 bg-[#111] border border-[#333] text-white/60 text-[10px] font-black uppercase tracking-[0.15em]">Member</span>
+ <span className="px-4 py-1.5 bg-[#111] border border-[#333] rounded-2xl shadow-2xl text-white/60 text-[10px] font-black uppercase tracking-[0.15em]">Member</span>
  )}
  </div>
  </div>
@@ -148,7 +148,7 @@ export const ProfilePage: React.FC = () => {
  <div className="grid grid-cols-2 gap-4">
  <button
  onClick={() => navigate('/my-orders')}
- className="flex flex-col items-start gap-4 p-6 bg-[#0A0A0A] border border-[#333] hover:bg-[#111] transition-all group"
+ className="flex flex-col items-start gap-4 p-6 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl hover:bg-[#111] transition-all group"
  >
  <div className="size-12 bg-[#111] flex items-center justify-center text-white group-hover:scale-110 transition-transform">
  <Package size={24} />
@@ -161,7 +161,7 @@ export const ProfilePage: React.FC = () => {
 
  <button
  onClick={() => navigate('/contact')}
- className="flex flex-col items-start gap-4 p-6 bg-[#0A0A0A] border border-[#333] hover:bg-[#111] transition-all group"
+ className="flex flex-col items-start gap-4 p-6 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl hover:bg-[#111] transition-all group"
  >
  <div className="size-12 bg-[#111] flex items-center justify-center text-white group-hover:scale-110 transition-transform">
  <HelpCircle size={24} />
@@ -177,14 +177,14 @@ export const ProfilePage: React.FC = () => {
  <div className="space-y-4">
  <h3 className="text-xs font-bold text-[#666] uppercase tracking-widest pl-2">Recent Orders</h3>
  {orders.length === 0 ? (
- <div className="bg-background-card border border-border p-8 text-center">
+ <div className="bg-background-card border rounded-2xl shadow-xl border-border p-8 text-center">
  <p className="text-[#666]">No orders yet.</p>
  <Button variant="link" onClick={() => navigate('/')} className="text-white mt-2">
  Start Printing
  </Button>
  </div>
  ) : (
- <div className="bg-background-card border border-border overflow-hidden divide-y divide-border">
+ <div className="bg-background-card border rounded-2xl shadow-xl border-border overflow-hidden divide-y divide-border">
  {orders.slice(0, 3).map((order) => (
  <div key={order.id} className="p-5 flex items-center justify-between hover:bg-[#111] transition-colors">
  <div className="flex items-center gap-4">
@@ -220,7 +220,7 @@ export const ProfilePage: React.FC = () => {
  {/* Settings & Logout */}
  <div className="space-y-4">
  <h3 className="text-[10px] font-black text-[#666] uppercase tracking-[0.2em] pl-4 opacity-50">Account Control</h3>
- <div className="bg-[#0A0A0A] border border-[#333] overflow-hidden">
+ <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl overflow-hidden">
  <button
  onClick={handleSignOut}
  className="w-full flex items-center justify-between p-6 text-red-400 hover:bg-red-900/20/5 transition-colors group"

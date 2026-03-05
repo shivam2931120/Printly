@@ -135,7 +135,7 @@ export const InventoryPanel: React.FC = () => {
  </div>
  <button
  onClick={() => setAddItemModal(true)}
- className="inline-flex items-center justify-center h-10 px-4 bg-[#0A0A0A] bg-[#0A0A0A] text-white text-sm font-bold shadow-md hover:opacity-90 transition-colors"
+ className="inline-flex items-center justify-center h-10 px-4 bg-[#0A0A0A] bg-[#0A0A0A] text-white text-sm font-bold hover:opacity-90 transition-colors"
  >
  <Icon name="add" className="text-lg mr-2" />
  Add Stock Item
@@ -182,7 +182,7 @@ export const InventoryPanel: React.FC = () => {
  {loading ? (
  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
  {[...Array(6)].map((_, i) => (
- <div key={i} className="bg-[#0A0A0A] border border-[#333] p-5 animate-pulse">
+ <div key={i} className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-5 animate-pulse">
  <div className="h-5 bg-[#1A1A1A] rounded w-3/4 mb-2" />
  <div className="h-3 bg-[#1A1A1A] rounded w-1/2 mb-4" />
  <div className="h-8 bg-[#1A1A1A] rounded w-1/3 mb-2" />
@@ -221,7 +221,7 @@ export const InventoryPanel: React.FC = () => {
  return (
  <div
  key={item.id}
- className="bg-[#0A0A0A] border border-[#333] p-5 group"
+ className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-5 group"
  >
  <div className="flex items-start justify-between mb-3">
  <div className="flex-1 min-w-0">
@@ -286,7 +286,7 @@ export const InventoryPanel: React.FC = () => {
  {/* ===== ADD ITEM MODAL ===== */}
  {addItemModal && (
  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setAddItemModal(false)}>
- <div className="bg-[#0A0A0A] border border-[#333] shadow-2xl w-full max-w-md" onClick={e => e.stopPropagation()}>
+ <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl w-full max-w-md" onClick={e => e.stopPropagation()}>
  <div className="flex items-center justify-between p-5 border-b border-[#333] ">
  <h3 className="text-lg font-bold text-white ">Add Stock Item</h3>
  <button onClick={() => setAddItemModal(false)} className="p-1 hover:bg-[#111] ">
@@ -363,7 +363,7 @@ export const InventoryPanel: React.FC = () => {
  {/* ===== ADD STOCK MODAL ===== */}
  {addStockModal && (
  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setAddStockModal(null)}>
- <div className="bg-[#0A0A0A] border border-[#333] shadow-2xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
+ <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
  <div className="flex items-center justify-between p-5 border-b border-[#333] ">
  <div>
  <h3 className="text-lg font-bold text-white ">Update Stock</h3>
@@ -461,7 +461,7 @@ export const InventoryPanel: React.FC = () => {
  {/* ===== HISTORY MODAL ===== */}
  {historyModal && (
  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setHistoryModal(null)}>
- <div className="bg-[#0A0A0A] border border-[#333] shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+ <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
  <div className="flex items-center justify-between p-5 border-b border-[#333] shrink-0">
  <div>
  <h3 className="text-lg font-bold text-white ">Stock History</h3>

@@ -103,7 +103,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
  {!collapsed && (
  <div
  onClick={() => onSectionChange('settings')}
- className="flex items-center gap-3 p-3 bg-[#0A0A0A] border border-[#333] mb-2 cursor-pointer hover:bg-[#111] hover:border-[#333] transition-colors"
+ className="flex items-center gap-3 p-3 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl mb-2 cursor-pointer hover:bg-[#111] hover:border-[#333] transition-colors"
  title="Go to Settings"
  >
  {adminAvatar ? (

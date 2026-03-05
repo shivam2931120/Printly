@@ -191,11 +191,11 @@ export const MyOrdersPage: React.FC = () => {
 
  {/* Stats Cards (Mini) */}
  <div className="flex gap-3">
- <div className="px-3 py-2 bg-background-card border border-border ">
+ <div className="px-3 py-2 bg-background-card border rounded-2xl shadow-xl border-border ">
  <p className="text-[10px] text-[#666] uppercase font-bold">Total Spent</p>
  <p className="text-base font-bold text-white">₹{orders.reduce((acc, o) => acc + o.totalAmount, 0).toFixed(0)}</p>
  </div>
- <div className="px-3 py-2 bg-background-card border border-border ">
+ <div className="px-3 py-2 bg-background-card border rounded-2xl shadow-xl border-border ">
  <p className="text-[10px] text-[#666] uppercase font-bold">Active Jobs</p>
  <p className="text-base font-bold text-white">{orders.filter(o => ['pending', 'printing', 'confirmed'].includes(o.status.toLowerCase())).length}</p>
  </div>
@@ -242,7 +242,7 @@ export const MyOrdersPage: React.FC = () => {
  visible: { opacity: 1, y: 0 }
  }}
  key={order.id}
- className="group relative bg-background-card border border-border overflow-hidden hover:border-[#333] transition-all duration-300"
+ className="group relative bg-background-card border rounded-2xl shadow-xl border-border overflow-hidden hover:border-[#333] transition-all duration-300"
  >
  <div className="p-4">
  {/* Top row: status icon + summary + price */}

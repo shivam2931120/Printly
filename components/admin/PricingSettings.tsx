@@ -81,7 +81,7 @@ export const PricingSettings: React.FC<PricingSettingsProps> = ({ pricing, onUpd
  </div>
 
  {/* Per Page Pricing */}
- <div className="bg-[#0A0A0A] border border-[#333] p-6">
+ <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-6">
  <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
  <Icon name="description" className="text-red-500 " />
  Per Page Pricing
@@ -97,7 +97,7 @@ export const PricingSettings: React.FC<PricingSettingsProps> = ({ pricing, onUpd
  min="0"
  value={localPricing.perPageBW}
  onChange={(e) => handleChange('perPageBW', parseFloat(e.target.value) || 0)}
- className="w-full px-4 py-2.5 bg-[#0A0A0A] border border-[#333] text-white focus:ring-2 focus:ring-red-600"
+ className="w-full px-4 py-2.5 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl text-white focus:ring-2 focus:ring-red-600"
  />
  </div>
  <div>
@@ -110,14 +110,14 @@ export const PricingSettings: React.FC<PricingSettingsProps> = ({ pricing, onUpd
  min="0"
  value={localPricing.perPageColor}
  onChange={(e) => handleChange('perPageColor', parseFloat(e.target.value) || 0)}
- className="w-full px-4 py-2.5 bg-[#0A0A0A] border border-[#333] text-white focus:ring-2 focus:ring-primary"
+ className="w-full px-4 py-2.5 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl text-white focus:ring-2 focus:ring-primary"
  />
  </div>
  </div>
  </div>
 
  {/* Discounts */}
- <div className="bg-[#0A0A0A] border border-[#333] p-6">
+ <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-6">
  <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
  <Icon name="discount" className="text-green-500" />
  Discounts
@@ -133,7 +133,7 @@ export const PricingSettings: React.FC<PricingSettingsProps> = ({ pricing, onUpd
  min="0"
  value={localPricing.doubleSidedDiscount}
  onChange={(e) => handleChange('doubleSidedDiscount', parseFloat(e.target.value) || 0)}
- className="w-full px-4 py-2.5 bg-[#0A0A0A] border border-[#333] text-white focus:ring-2 focus:ring-primary"
+ className="w-full px-4 py-2.5 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl text-white focus:ring-2 focus:ring-primary"
  />
  </div>
  <div>
@@ -146,14 +146,14 @@ export const PricingSettings: React.FC<PricingSettingsProps> = ({ pricing, onUpd
  min="0"
  value={localPricing.serviceFee}
  onChange={(e) => handleChange('serviceFee', parseFloat(e.target.value) || 0)}
- className="w-full px-4 py-2.5 bg-[#0A0A0A] border border-[#333] text-white focus:ring-2 focus:ring-primary"
+ className="w-full px-4 py-2.5 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl text-white focus:ring-2 focus:ring-primary"
  />
  </div>
  </div>
  </div>
 
  {/* Binding Prices */}
- <div className="bg-[#0A0A0A] border border-[#333] p-6">
+ <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-6">
  <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
  <Icon name="book" className="text-purple-500" />
  Binding Prices
@@ -170,7 +170,7 @@ export const PricingSettings: React.FC<PricingSettingsProps> = ({ pricing, onUpd
  min="0"
  value={localPricing.bindingPrices[type]}
  onChange={(e) => handleChange(`bindingPrices.${type}`, parseFloat(e.target.value) || 0)}
- className="w-full px-4 py-2.5 bg-[#0A0A0A] border border-[#333] text-white focus:ring-2 focus:ring-primary"
+ className="w-full px-4 py-2.5 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl text-white focus:ring-2 focus:ring-primary"
  />
  </div>
  ))}
@@ -178,7 +178,7 @@ export const PricingSettings: React.FC<PricingSettingsProps> = ({ pricing, onUpd
  </div>
 
  {/* Paper Type Fees */}
- <div className="bg-[#0A0A0A] border border-[#333] p-6">
+ <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-6">
  <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
  <Icon name="layers" className="text-indigo-500" />
  Paper Type Extra Fees (Per Page)
@@ -195,7 +195,7 @@ export const PricingSettings: React.FC<PricingSettingsProps> = ({ pricing, onUpd
  min="0"
  value={localPricing.paperTypeFees?.[type] || 0}
  onChange={(e) => handleChange(`paperTypeFees.${type}`, parseFloat(e.target.value) || 0)}
- className="w-full px-4 py-2.5 bg-[#0A0A0A] border border-[#333] text-white focus:ring-2 focus:ring-primary"
+ className="w-full px-4 py-2.5 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl text-white focus:ring-2 focus:ring-primary"
  />
  </div>
  ))}
@@ -203,7 +203,7 @@ export const PricingSettings: React.FC<PricingSettingsProps> = ({ pricing, onUpd
  </div>
 
  {/* Additional Services */}
- <div className="bg-[#0A0A0A] border border-[#333] p-6">
+ <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-6">
  <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
  <Icon name="construction" className="text-orange-500" />
  Finishing Options
@@ -220,7 +220,7 @@ export const PricingSettings: React.FC<PricingSettingsProps> = ({ pricing, onUpd
  min="0"
  value={localPricing.holePunchPrice}
  onChange={(e) => handleChange('holePunchPrice', parseFloat(e.target.value) || 0)}
- className="w-full px-4 py-2.5 bg-[#0A0A0A] border border-[#333] text-white focus:ring-2 focus:ring-primary"
+ className="w-full px-4 py-2.5 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl text-white focus:ring-2 focus:ring-primary"
  />
  </div>
  {/* Cover Page */}
@@ -234,14 +234,14 @@ export const PricingSettings: React.FC<PricingSettingsProps> = ({ pricing, onUpd
  min="0"
  value={localPricing.coverPagePrice}
  onChange={(e) => handleChange('coverPagePrice', parseFloat(e.target.value) || 0)}
- className="w-full px-4 py-2.5 bg-[#0A0A0A] border border-[#333] text-white focus:ring-2 focus:ring-primary"
+ className="w-full px-4 py-2.5 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl text-white focus:ring-2 focus:ring-primary"
  />
  </div>
  </div>
  </div>
 
  {/* Paper Size Multipliers */}
- <div className="bg-[#0A0A0A] border border-[#333] p-6">
+ <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-6">
  <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
  <Icon name="crop_portrait" className="text-red-500" />
  Paper Size Multipliers
@@ -261,7 +261,7 @@ export const PricingSettings: React.FC<PricingSettingsProps> = ({ pricing, onUpd
  min="1"
  value={localPricing.paperSizeMultiplier[size]}
  onChange={(e) => handleChange(`paperSizeMultiplier.${size}`, parseFloat(e.target.value) || 1)}
- className="w-full px-4 py-2.5 bg-[#0A0A0A] border border-[#333] text-white focus:ring-2 focus:ring-primary"
+ className="w-full px-4 py-2.5 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl text-white focus:ring-2 focus:ring-primary"
  />
  </div>
  ))}

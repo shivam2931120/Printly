@@ -80,12 +80,12 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({
  <div className="absolute inset-0 bg-black/60 animate-fade-in" onClick={handleClose} />
 
  {/* Modal */}
- <div className="relative w-full max-w-lg bg-surface-dark border border-[#333] shadow-2xl overflow-hidden animate-zoom-in">
+ <div className="relative w-full max-w-lg bg-surface-dark border rounded-2xl shadow-xl border-[#333] overflow-hidden animate-zoom-in">
  {/* Success Header */}
  <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-8 text-center text-white relative overflow-hidden">
  <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
  <div className="relative z-10">
- <div className="inline-flex items-center justify-center size-20 bg-[#1A1A1A] mb-4 shadow-lg">
+ <div className="inline-flex items-center justify-center size-20 bg-[#1A1A1A] mb-4 ">
  <CheckCircle2 className="w-10 h-10 text-white" />
  </div>
  <h2 className="text-3xl font-black mb-1 tracking-tight">Order Confirmed!</h2>
@@ -100,7 +100,7 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({
  {token.split('').map((char, idx) => (
  <div
  key={idx}
- className="w-12 h-14 bg-surface-dark border border-border-dark flex items-center justify-center text-3xl font-black text-primary shadow-inner"
+ className="w-12 h-14 bg-surface-dark border rounded-2xl shadow-xl border-border-dark flex items-center justify-center text-3xl font-black text-primary "
  >
  {char}
  </div>

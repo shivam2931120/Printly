@@ -44,7 +44,7 @@ export const CustomerList: React.FC = () => {
  </div>
  <button
  onClick={() => { setLoading(true); fetchCustomers().then(setCustomers).finally(() => setLoading(false)); }}
- className="inline-flex items-center justify-center h-10 px-4 bg-[#0A0A0A] bg-[#0A0A0A] text-white text-sm font-bold shadow-md hover:opacity-90 transition-colors gap-2"
+ className="inline-flex items-center justify-center h-10 px-4 bg-[#0A0A0A] bg-[#0A0A0A] text-white text-sm font-bold hover:opacity-90 transition-colors gap-2"
  >
  <Icon name="refresh" className="text-lg" />
  Refresh
@@ -53,19 +53,19 @@ export const CustomerList: React.FC = () => {
 
  {/* Stats */}
  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
- <div className="bg-[#0A0A0A] border border-[#333] p-5">
+ <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-5">
  <div className="flex items-center gap-3">
  <div className="p-2.5 bg-[#111] "><Icon name="people" className="text-xl text-red-500 " /></div>
  <div><p className="text-2xl font-bold text-white ">{customers.length}</p><p className="text-sm text-[#666] ">Total Customers</p></div>
  </div>
  </div>
- <div className="bg-[#0A0A0A] border border-[#333] p-5">
+ <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-5">
  <div className="flex items-center gap-3">
  <div className="p-2.5 bg-green-900/20 bg-green-900/20"><Icon name="person_check" className="text-xl text-green-400 " /></div>
  <div><p className="text-2xl font-bold text-white ">{activeThisMonth}</p><p className="text-sm text-[#666] ">Active This Month</p></div>
  </div>
  </div>
- <div className="bg-[#0A0A0A] border border-[#333] p-5">
+ <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-5">
  <div className="flex items-center gap-3">
  <div className="p-2.5 bg-purple-900/20 bg-purple-900/20"><Icon name="payments" className="text-xl text-purple-400 " /></div>
  <div><p className="text-2xl font-bold text-white ">₹{totalRevenue.toLocaleString()}</p><p className="text-sm text-[#666] ">Lifetime Revenue</p></div>
@@ -81,12 +81,12 @@ export const CustomerList: React.FC = () => {
  placeholder="Search by name or email..."
  value={searchQuery}
  onChange={(e) => setSearchQuery(e.target.value)}
- className="w-full pl-10 pr-4 py-2.5 bg-[#0A0A0A] border border-[#333] text-sm text-white placeholder-slate-400 focus:ring-2 focus:ring-primary focus:border-primary"
+ className="w-full pl-10 pr-4 py-2.5 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl text-sm text-white placeholder-slate-400 focus:ring-2 focus:ring-primary focus:border-primary"
  />
  </div>
 
  {/* Table */}
- <div className="bg-[#0A0A0A] border border-[#333] overflow-hidden">
+ <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl overflow-hidden">
  {loading ? (
  <div className="py-16 text-center">
  <div className="size-8 border-2 border-[#333] border-t-primary animate-spin mx-auto mb-3" />

@@ -109,7 +109,7 @@ export const CustomSignUp = () => {
  return (
  <div className="min-h-screen flex items-center justify-center bg-[#050505] px-4">
  <div className="w-full max-w-sm relative z-10 animate-in">
- <div className="w-full bg-[#0A0A0A] border border-[#333] p-10 text-center">
+ <div className="w-full bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-10 text-center">
  <div className="inline-flex items-center justify-center size-20 bg-red-600 text-white mb-8">
  <CheckCircle2 size={40} strokeWidth={2.5} />
  </div>
@@ -131,7 +131,7 @@ export const CustomSignUp = () => {
  type="text"
  value={code}
  onChange={(e) => setCode(e.target.value)}
- className="w-full px-4 py-4 bg-[#111] border border-[#333] focus:border-red-600 outline-none transition-all text-white placeholder-[#333] text-center text-2xl font-bold tracking-widest"
+ className="w-full px-4 py-4 bg-[#111] border border-[#333] rounded-2xl shadow-2xl focus:border-red-600 outline-none transition-all text-white placeholder-[#333] text-center text-2xl font-bold tracking-widest"
  placeholder="000000"
  maxLength={6}
  required
@@ -184,7 +184,7 @@ export const CustomSignUp = () => {
  </button>
  </div>
 
- <div className="w-full bg-[#0A0A0A] border border-[#333] p-8">
+ <div className="w-full bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-8">
  <div className="text-center mb-10">
  <div className="flex items-center justify-center mb-6">
  <div className="size-16 bg-red-600 flex items-center justify-center">
@@ -218,7 +218,7 @@ export const CustomSignUp = () => {
  type="text"
  value={firstName}
  onChange={(e) => setFirstName(e.target.value)}
- className="w-full px-4 py-3.5 bg-[#111] border border-[#333] focus:border-red-600 outline-none transition-all text-white placeholder-[#333] text-sm font-medium"
+ className="w-full px-4 py-3.5 bg-[#111] border border-[#333] rounded-2xl shadow-2xl focus:border-red-600 outline-none transition-all text-white placeholder-[#333] text-sm font-medium"
  placeholder="John"
  required
  />
@@ -229,7 +229,7 @@ export const CustomSignUp = () => {
  type="text"
  value={lastName}
  onChange={(e) => setLastName(e.target.value)}
- className="w-full px-4 py-3.5 bg-[#111] border border-[#333] focus:border-red-600 outline-none transition-all text-white placeholder-[#333] text-sm font-medium"
+ className="w-full px-4 py-3.5 bg-[#111] border border-[#333] rounded-2xl shadow-2xl focus:border-red-600 outline-none transition-all text-white placeholder-[#333] text-sm font-medium"
  placeholder="Doe"
  required
  />
@@ -242,7 +242,7 @@ export const CustomSignUp = () => {
  type="email"
  value={email}
  onChange={(e) => setEmail(e.target.value)}
- className="w-full px-4 py-3.5 bg-[#111] border border-[#333] focus:border-red-600 outline-none transition-all text-white placeholder-[#333] text-sm font-medium"
+ className="w-full px-4 py-3.5 bg-[#111] border border-[#333] rounded-2xl shadow-2xl focus:border-red-600 outline-none transition-all text-white placeholder-[#333] text-sm font-medium"
  placeholder="you@college.edu"
  required
  />
@@ -256,7 +256,7 @@ export const CustomSignUp = () => {
  type={showPassword ? 'text' : 'password'}
  value={password}
  onChange={(e) => setPassword(e.target.value)}
- className="w-full pl-11 pr-12 py-3.5 bg-[#111] border border-[#333] focus:border-red-600 outline-none transition-all text-white placeholder-[#333] text-sm font-medium"
+ className="w-full pl-11 pr-12 py-3.5 bg-[#111] border border-[#333] rounded-2xl shadow-2xl focus:border-red-600 outline-none transition-all text-white placeholder-[#333] text-sm font-medium"
  placeholder="Min. 8 characters"
  minLength={8}
  required

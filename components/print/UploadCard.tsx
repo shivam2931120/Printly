@@ -56,7 +56,7 @@ export const UploadCard: React.FC<UploadCardProps> = ({
  whileHover={{ scale: 1.05 }}
  whileTap={{ scale: 0.95 }}
  onClick={onPreview}
- className="flex items-center gap-2 px-4 py-2 bg-[#111] border border-[#333]/[0.06] text-sm font-medium text-gray-400 hover:text-white hover:border-[#333] transition-all"
+ className="flex items-center gap-2 px-4 py-2 bg-[#111] border border-[#333] rounded-2xl shadow-2xl/[0.06] text-sm font-medium text-gray-400 hover:text-white hover:border-[#333] transition-all"
  >
  <Eye size={16} />
  Preview
@@ -94,7 +94,7 @@ export const UploadCard: React.FC<UploadCardProps> = ({
  <motion.div
  animate={isDragActive ? { scale: 1.15, rotate: 5 } : { scale: 1, rotate: 0 }}
  transition={{ type: 'spring', stiffness: 300, damping: 20 }}
- className="size-14 bg-[#111] border border-[#333]/[0.06] flex items-center justify-center mb-4"
+ className="size-14 bg-[#111] border border-[#333] rounded-2xl shadow-2xl/[0.06] flex items-center justify-center mb-4"
  >
  <UploadCloud size={28} className={cn('transition-colors', isDragActive ? 'text-white' : 'text-[#666]')} />
  </motion.div>
@@ -112,7 +112,7 @@ export const UploadCard: React.FC<UploadCardProps> = ({
  const input = document.querySelector('input[type="file"]') as HTMLInputElement;
  input?.click();
  }}
- className="px-6 py-2.5 bg-[#111] border border-[#333] text-sm font-semibold text-white hover:bg-[#0A0A0A]/[0.1] transition-all"
+ className="px-6 py-2.5 bg-[#111] border border-[#333] rounded-2xl shadow-2xl text-sm font-semibold text-white hover:bg-[#0A0A0A]/[0.1] transition-all"
  >
  Browse Files
  </motion.button>

@@ -20,7 +20,7 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, pageCount, onRem
  animate={{ opacity: 1, y: 0 }}
  exit={{ opacity: 0, x: -20 }}
  transition={{ duration: 0.25, delay: index * 0.05 }}
- className="group flex items-center gap-4 p-4 bg-[#0A0A0A] border border-[#333]/[0.06] hover:bg-[#111] transition-all duration-200"
+ className="group flex items-center gap-4 p-4 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl/[0.06] hover:bg-[#111] transition-all duration-200"
  >
  {/* Icon */}
  <div className="size-11 bg-[#111] flex items-center justify-center shrink-0">

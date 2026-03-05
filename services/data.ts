@@ -187,7 +187,6 @@ export const createOrder = async (order: Order, _userRole?: string): Promise<{ s
             id: order.id,
             orderToken: order.orderToken || Math.floor(1000 + Math.random() * 9000).toString(),
             userId: finalUserId || null,
-            clerkId: (order as any).clerkId || null,   // Clerk user ID for cross-referencing
             userEmail: resolvedEmail,
             userName: resolvedName,
             totalAmount: order.totalAmount,
