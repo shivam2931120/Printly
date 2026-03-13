@@ -38,8 +38,8 @@ export const PreviewStep: React.FC<PreviewStepProps> = ({
  return (
  <div className="space-y-6 animate-fade-in pb-32 h-full flex flex-col">
  <div className="text-center space-y-2 shrink-0">
- <h2 className="text-2xl font-bold text-white font-display">Preview</h2>
- <p className="text-[#666]">Review your document before printing.</p>
+ <h2 className="text-2xl font-bold text-foreground font-display">Preview</h2>
+ <p className="text-foreground-muted">Review your document before printing.</p>
  </div>
 
  <div className="flex-1 flex flex-col items-center justify-center min-h-[400px] relative bg-background-subtle border border-border overflow-hidden">
@@ -50,7 +50,7 @@ export const PreviewStep: React.FC<PreviewStepProps> = ({
  onLoadSuccess={onDocumentLoadSuccess}
  loading={
  <div className="absolute inset-0 flex items-center justify-center">
- <Loader2 className="animate-spin text-white" size={32} />
+ <Loader2 className="animate-spin text-foreground" size={32} />
  </div>
  }
  className="flex items-center justify-center h-full w-full"
@@ -65,26 +65,26 @@ export const PreviewStep: React.FC<PreviewStepProps> = ({
  </Document>
  </div>
  ) : (
- <div className="text-[#666]">No file selected</div>
+ <div className="text-foreground-muted">No file selected</div>
  )}
 
  {/* Pagination Controls */}
  {numPages > 1 && (
- <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-black/80 px-4 py-2 border border-[#333] z-10">
+ <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-black/80 px-4 py-2 border border-border z-10">
  <button
  disabled={pageNumber <= 1}
  onClick={() => setPageNumber(prev => prev - 1)}
- className="p-1 text-white disabled:opacity-30 hover:bg-[#111] "
+ className="p-1 text-foreground disabled:opacity-30 hover:bg-background-subtle "
  >
  <ChevronLeft size={20} />
  </button>
- <span className="text-sm font-medium text-white min-w-[3rem] text-center">
+ <span className="text-sm font-medium text-foreground min-w-[3rem] text-center">
  {pageNumber} / {numPages}
  </span>
  <button
  disabled={pageNumber >= numPages}
  onClick={() => setPageNumber(prev => prev + 1)}
- className="p-1 text-white disabled:opacity-30 hover:bg-[#111] "
+ className="p-1 text-foreground disabled:opacity-30 hover:bg-background-subtle "
  >
  <ChevronRight size={20} />
  </button>
@@ -95,13 +95,13 @@ export const PreviewStep: React.FC<PreviewStepProps> = ({
  {/* Sticky Action for Mobile - Above Bottom Nav */}
  <div className="fixed bottom-24 left-0 right-0 p-4 bg-transparent lg:hidden z-[100] pb-0 pointer-events-none">
  <div className="pointer-events-auto flex items-center gap-3">
- <div className="flex-1 bg-black/80 p-3 border border-[#333] flex justify-between items-center ">
- <p className="text-xs text-[#666] uppercase font-bold">Total</p>
- <p className="text-xl font-bold text-white">₹{totalPrice.toFixed(0)}</p>
+ <div className="flex-1 bg-black/80 p-3 border border-border flex justify-between items-center ">
+ <p className="text-xs text-foreground-muted uppercase font-bold">Total</p>
+ <p className="text-xl font-bold text-foreground">₹{totalPrice.toFixed(0)}</p>
  </div>
  <Button
  onClick={onAddToCart}
- className="flex-[2] h-14 text-lg font-bold bg-red-600 text-white hover:bg-[#0A0A0A]/90 flex items-center justify-center gap-2 "
+ className="flex-[2] h-14 text-lg font-bold bg-primary text-foreground hover:bg-background-card/90 flex items-center justify-center gap-2 "
  >
  <ShoppingCart size={20} />
  Add to Cart

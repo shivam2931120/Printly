@@ -45,29 +45,29 @@ export const DeveloperDashboard: React.FC<DeveloperDashboardProps> = ({
  };
 
  return (
- <div className="min-h-screen bg-[#050505] text-text-primary font-sans transition-colors duration-300">
+ <div className="min-h-screen bg-background text-text-primary font-sans transition-colors duration-300">
  {/* Header */}
- <header className="sticky top-0 z-50 w-full border-b border-[#333]/[0.06] bg-black/85">
+ <header className="sticky top-0 z-50 w-full border-b border-border/[0.06] bg-black/85">
  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
  <div className="flex items-center justify-between h-16">
  <div className="flex items-center gap-3">
- <div className="flex items-center justify-center size-10 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl text-white -[0_0_20px_rgba(255,255,255,0.06)]">
+ <div className="flex items-center justify-center size-10 bg-background-card border border-border rounded-2xl shadow-2xl text-foreground -[0_0_20px_rgba(255,255,255,0.06)]">
  <Icon name="code" className="text-xl" />
  </div>
  <div>
- <h1 className="text-lg font-bold text-white tracking-tight">Developer Panel</h1>
- <p className="text-xs text-[#666] font-medium">Printly Platform</p>
+ <h1 className="text-lg font-bold text-foreground tracking-tight">Developer Panel</h1>
+ <p className="text-xs text-foreground-muted font-medium">Printly Platform</p>
  </div>
  </div>
 
  <div className="flex items-center gap-3">
  {/* Navigation Shortcuts */}
- <div className="hidden md:flex items-center gap-2 mr-4 border-r border-[#333] pr-4">
+ <div className="hidden md:flex items-center gap-2 mr-4 border-r border-border pr-4">
  <a
  href="/?view=student"
  target="_blank"
  rel="noopener noreferrer"
- className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-text-secondary hover:text-white hover:bg-[#111] border border-transparent hover:border-[#333] transition-all duration-200"
+ className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-text-secondary hover:text-foreground hover:bg-background-subtle border border-transparent hover:border-border transition-all duration-200"
  >
  <Icon name="school" className="text-lg" />
  Student Portal
@@ -76,7 +76,7 @@ export const DeveloperDashboard: React.FC<DeveloperDashboardProps> = ({
  href="/admin"
  target="_blank"
  rel="noopener noreferrer"
- className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-text-secondary hover:text-white hover:bg-[#111] border border-transparent hover:border-[#333] transition-all duration-200"
+ className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-text-secondary hover:text-foreground hover:bg-background-subtle border border-transparent hover:border-border transition-all duration-200"
  >
  <Icon name="admin_panel_settings" className="text-lg" />
  Admin Console
@@ -105,7 +105,7 @@ export const DeveloperDashboard: React.FC<DeveloperDashboardProps> = ({
  href="/?view=student"
  target="_blank"
  rel="noopener noreferrer"
- className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-text-secondary hover:text-white hover:bg-[#111] border border-[#333] rounded-2xl shadow-2xl transition-all duration-200 active:scale-[0.98]"
+ className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-text-secondary hover:text-foreground hover:bg-background-subtle border border-border rounded-2xl shadow-2xl transition-all duration-200 active:scale-[0.98]"
  >
  <Icon name="school" className="text-base" />
  Student Portal
@@ -114,7 +114,7 @@ export const DeveloperDashboard: React.FC<DeveloperDashboardProps> = ({
  href="/admin"
  target="_blank"
  rel="noopener noreferrer"
- className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-text-secondary hover:text-white hover:bg-[#111] border border-[#333] rounded-2xl shadow-2xl transition-all duration-200 active:scale-[0.98]"
+ className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-text-secondary hover:text-foreground hover:bg-background-subtle border border-border rounded-2xl shadow-2xl transition-all duration-200 active:scale-[0.98]"
  >
  <Icon name="admin_panel_settings" className="text-base" />
  Admin Console
@@ -125,7 +125,7 @@ export const DeveloperDashboard: React.FC<DeveloperDashboardProps> = ({
 
  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
  {/* Navigation Tabs */}
- <div className="flex gap-1 p-1 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl mb-6 w-fit -[0_10px_30px_rgba(0,0,0,0.25)]">
+ <div className="flex gap-1 p-1 bg-background-card border border-border rounded-2xl shadow-2xl mb-6 w-fit -[0_10px_30px_rgba(0,0,0,0.25)]">
  {NAV_ITEMS.map((item) => (
  <button
  key={item.id}
@@ -133,8 +133,8 @@ export const DeveloperDashboard: React.FC<DeveloperDashboardProps> = ({
  className={`
  flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-all duration-200
  ${activeSection === item.id
- ? 'bg-[#0A0A0A]/15 text-white border border-[#333] -[0_0_0_1px_rgba(255,255,255,0.05)]'
- : 'text-text-secondary hover:text-white hover:bg-[#111]'
+ ? 'bg-background-card/15 text-foreground border border-border -[0_0_0_1px_rgba(255,255,255,0.05)]'
+ : 'text-text-secondary hover:text-foreground hover:bg-background-subtle'
  }
  `}
  >

@@ -98,18 +98,18 @@ export const SupportPage: React.FC = () => {
  <div className="max-w-3xl mx-auto space-y-12 animate-fade-in pb-20">
  {/* Header */}
  <div className="text-center space-y-4">
- <h1 className="text-4xl font-black text-white font-display tracking-tight">How can we help?</h1>
- <p className="text-lg text-[#666]">Find answers to common questions or reach out to our team.</p>
+ <h1 className="text-4xl font-black text-foreground font-display tracking-tight">How can we help?</h1>
+ <p className="text-lg text-foreground-muted">Find answers to common questions or reach out to our team.</p>
  </div>
 
  {/* No Cancellation / No Refund Policy Banner */}
- <div className="p-5 bg-red-900/20/10 border border-red-500/20 ">
+ <div className="p-5 bg-red-900/20/10 border border-error/20 ">
  <div className="flex items-start gap-3">
- <AlertCircle size={20} className="text-red-400 shrink-0 mt-0.5" />
+ <AlertCircle size={20} className="text-error shrink-0 mt-0.5" />
  <div>
- <h3 className="font-bold text-white text-sm mb-1">No Cancellations &middot; No Refunds</h3>
- <p className="text-sm text-[#666] leading-relaxed">
- All orders are <span className="text-white font-semibold">final once placed</span>. We begin processing immediately and cannot cancel or refund any order. Please review your files, print settings, and total amount carefully before confirming payment.
+ <h3 className="font-bold text-foreground text-sm mb-1">No Cancellations &middot; No Refunds</h3>
+ <p className="text-sm text-foreground-muted leading-relaxed">
+ All orders are <span className="text-foreground font-semibold">final once placed</span>. We begin processing immediately and cannot cancel or refund any order. Please review your files, print settings, and total amount carefully before confirming payment.
  </p>
  </div>
  </div>
@@ -125,20 +125,20 @@ export const SupportPage: React.FC = () => {
  <a
  key={i}
  href={item.href}
- className="flex flex-col items-center justify-center p-6 bg-background-card border rounded-2xl shadow-xl border-border hover:bg-[#111] transition-colors text-center group"
+ className="flex flex-col items-center justify-center p-6 bg-background-card border rounded-2xl shadow-xl border-border hover:bg-background-subtle transition-colors text-center group"
  >
- <div className="size-12 bg-[#111] flex items-center justify-center mb-4 text-white group-hover:scale-110 transition-transform">
+ <div className="size-12 bg-background-subtle flex items-center justify-center mb-4 text-foreground group-hover:scale-110 transition-transform">
  <item.icon size={20} />
  </div>
- <h3 className="font-bold text-white mb-1">{item.title}</h3>
- <p className="text-sm text-[#666]">{item.desc}</p>
+ <h3 className="font-bold text-foreground mb-1">{item.title}</h3>
+ <p className="text-sm text-foreground-muted">{item.desc}</p>
  </a>
  ))}
  </div>
 
  {/* FAQs */}
  <div className="space-y-6">
- <h2 className="text-2xl font-bold text-white text-center font-display">Frequently Asked Questions</h2>
+ <h2 className="text-2xl font-bold text-foreground text-center font-display">Frequently Asked Questions</h2>
  <div className="space-y-3">
  {faqs.map((faq, index) => (
  <div
@@ -147,12 +147,12 @@ export const SupportPage: React.FC = () => {
  >
  <button
  onClick={() => setExpandedFaq(expandedFaq === index ? null : index)}
- className="w-full flex items-center justify-between p-5 text-left hover:bg-[#111] transition-colors"
+ className="w-full flex items-center justify-between p-5 text-left hover:bg-background-subtle transition-colors"
  >
- <span className={cn("font-bold transition-colors", expandedFaq === index ? "text-white" : "text-text-secondary")}>
+ <span className={cn("font-bold transition-colors", expandedFaq === index ? "text-foreground" : "text-text-secondary")}>
  {faq.question}
  </span>
- {expandedFaq === index ? <ChevronUp size={18} className="text-white" /> : <ChevronDown size={18} className="text-[#666]" />}
+ {expandedFaq === index ? <ChevronUp size={18} className="text-foreground" /> : <ChevronDown size={18} className="text-foreground-muted" />}
  </button>
  <div
  className={cn(
@@ -160,7 +160,7 @@ export const SupportPage: React.FC = () => {
  expandedFaq === index ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
  )}
  >
- <div className="p-5 pt-0 text-[#666] leading-relaxed text-sm">
+ <div className="p-5 pt-0 text-foreground-muted leading-relaxed text-sm">
  {faq.answer}
  </div>
  </div>
@@ -172,21 +172,21 @@ export const SupportPage: React.FC = () => {
  {/* Contact Form */}
  <div className="bg-background-card border rounded-2xl shadow-xl border-border p-8 sticky top-24">
  <div className="flex items-center gap-3 mb-6">
- <div className="p-2 bg-[#111] text-white">
+ <div className="p-2 bg-background-subtle text-foreground">
  <MessageSquare size={20} />
  </div>
  <div>
- <h2 className="text-xl font-bold text-white font-display">Send us a message</h2>
- <p className="text-sm text-[#666]">We typically reply within 2 hours.</p>
+ <h2 className="text-xl font-bold text-foreground font-display">Send us a message</h2>
+ <p className="text-sm text-foreground-muted">We typically reply within 2 hours.</p>
  </div>
  </div>
 
  {submitStatus === 'success' ? (
  <div className="p-6 bg-green-900/20/10 border border-green-500/20 text-green-400 flex flex-col items-center text-center animate-fade-in">
  <CheckCircle2 size={48} className="mb-4" />
- <h3 className="text-lg font-bold text-white mb-2">Message Sent!</h3>
+ <h3 className="text-lg font-bold text-foreground mb-2">Message Sent!</h3>
  <p className="text-sm opacity-80 mb-6">Thanks for reaching out. We'll get back to you shortly.</p>
- <Button variant="outline" onClick={() => setSubmitStatus('idle')} className="text-white border-green-500/30 hover:bg-green-900/300/20">
+ <Button variant="outline" onClick={() => setSubmitStatus('idle')} className="text-foreground border-green-500/30 hover:bg-green-900/300/20">
  Send another message
  </Button>
  </div>
@@ -194,51 +194,51 @@ export const SupportPage: React.FC = () => {
  <form onSubmit={handleSubmit} className="space-y-4">
  <div className="grid md:grid-cols-2 gap-4">
  <div className="space-y-2">
- <label className="text-xs font-bold text-[#666] uppercase">Name</label>
+ <label className="text-xs font-bold text-foreground-muted uppercase">Name</label>
  <input
  type="text"
  required
  name="name" // Added name for Formspree
  value={formData.name}
  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
- className="w-full px-4 py-3 bg-background border border-border text-white focus:outline-none focus:border-red-600 transition-colors"
+ className="w-full px-4 py-3 bg-background border border-border text-foreground focus:outline-none focus:border-primary transition-colors"
  placeholder="John Doe"
  />
  </div>
  <div className="space-y-2">
- <label className="text-xs font-bold text-[#666] uppercase">Email</label>
+ <label className="text-xs font-bold text-foreground-muted uppercase">Email</label>
  <input
  type="email"
  required
  name="email" // Added name for Formspree
  value={formData.email}
  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
- className="w-full px-4 py-3 bg-background border border-border text-white focus:outline-none focus:border-red-600 transition-colors"
+ className="w-full px-4 py-3 bg-background border border-border text-foreground focus:outline-none focus:border-primary transition-colors"
  placeholder="john@example.com"
  />
  </div>
  </div>
  <div className="space-y-2">
- <label className="text-xs font-bold text-[#666] uppercase">Message</label>
+ <label className="text-xs font-bold text-foreground-muted uppercase">Message</label>
  <textarea
  required
  rows={4}
  name="message" // Added name for Formspree
  value={formData.message}
  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
- className="w-full px-4 py-3 bg-background border border-border text-white focus:outline-none focus:border-red-600 transition-colors resize-none"
+ className="w-full px-4 py-3 bg-background border border-border text-foreground focus:outline-none focus:border-primary transition-colors resize-none"
  placeholder="How can we help you?"
  />
  </div>
  <Button
  type="submit"
  disabled={isSubmitting}
- className="w-full bg-red-600 text-white hover:bg-[#0A0A0A]/90 font-bold h-12 "
+ className="w-full bg-primary text-foreground hover:bg-background-card/90 font-bold h-12 "
  >
  {isSubmitting ? 'Sending...' : 'Send Message'}
  </Button>
  {submitStatus === 'error' && (
- <p className="text-red-500 text-sm text-center mt-2">
+ <p className="text-primary text-sm text-center mt-2">
  Something went wrong. Please try again later.
  </p>
  )}

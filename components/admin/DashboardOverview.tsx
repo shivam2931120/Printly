@@ -79,19 +79,19 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
       {/* Welcome Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-white ">Welcome back, Admin</h2>
-          <p className="text-[#666] text-sm mt-1">
+          <h2 className="text-2xl font-bold text-foreground ">Welcome back, Admin</h2>
+          <p className="text-foreground-muted text-sm mt-1">
             Here's what's happening with your print shop today.
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="inline-flex items-center justify-center h-10 px-4 border border-[#333] bg-[#0A0A0A] text-[#666] text-sm font-medium hover:bg-[#0A0A0A] transition-colors">
+          <button className="inline-flex items-center justify-center h-10 px-4 border border-border bg-background-card text-foreground-muted text-sm font-medium hover:bg-background-card transition-colors">
             <Icon name="calendar_today" className="text-lg mr-2" />
             Today
           </button>
           <button
             onClick={() => onNavigate('orders')}
-            className="inline-flex items-center justify-center h-10 px-4 bg-[#0A0A0A] bg-[#0A0A0A] text-white text-sm font-bold hover:opacity-90 transition-colors"
+            className="inline-flex items-center justify-center h-10 px-4 bg-background-card bg-background-card text-foreground text-sm font-bold hover:opacity-90 transition-colors"
           >
             <Icon name="add" className="text-lg mr-2" />
             Manage Orders
@@ -126,8 +126,8 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
           change="Active Jobs"
           positive
           icon="print"
-          iconBg="bg-[#111] "
-          iconColor="text-red-500 "
+          iconBg="bg-background-subtle "
+          iconColor="text-primary "
         />
         <StatCard
           title="Completed Today"
@@ -135,22 +135,22 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
           change="Finished Jobs"
           positive
           icon="check_circle"
-          iconBg="bg-purple-900/20 bg-purple-900/20"
-          iconColor="text-purple-400 "
+          iconBg="bg-primary/10"
+          iconColor="text-primary "
         />
       </div>
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* Revenue Chart */}
-        <div className="xl:col-span-2 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-6">
+        <div className="xl:col-span-2 bg-background-card border border-border rounded-2xl shadow-2xl p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-lg font-bold text-white ">Revenue Overview</h3>
-              <p className="text-sm text-[#666] ">Total Lifetime</p>
+              <h3 className="text-lg font-bold text-foreground ">Revenue Overview</h3>
+              <p className="text-sm text-foreground-muted ">Total Lifetime</p>
             </div>
             <div className="text-right">
-              <p className="text-2xl font-bold text-white ">₹{totalRevenue.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-foreground ">₹{totalRevenue.toLocaleString()}</p>
               <p className="text-sm text-green-400 ">Synced from Database</p>
             </div>
           </div>
@@ -177,25 +177,25 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
 
         {/* Quick Actions + Inventory Status */}
         <div className="space-y-6">
-          <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-6">
-            <h3 className="text-lg font-bold text-white mb-4">Quick Actions</h3>
+          <div className="bg-background-card border border-border rounded-2xl shadow-2xl p-6">
+            <h3 className="text-lg font-bold text-foreground mb-4">Quick Actions</h3>
             <div className="space-y-3">
-              <QuickAction icon="print" label="Manage Orders" color="bg-[#111]0" onClick={() => onNavigate('orders')} />
+              <QuickAction icon="print" label="Manage Orders" color="bg-background-subtle0" onClick={() => onNavigate('orders')} />
               <QuickAction icon="inventory_2" label="Add Products" color="bg-amber-900/200" onClick={() => onNavigate('products')} />
-              <QuickAction icon="warehouse" label="Check Inventory" color="bg-purple-900/200" onClick={() => onNavigate('inventory')} />
+              <QuickAction icon="warehouse" label="Check Inventory" color="bg-primary/10" onClick={() => onNavigate('inventory')} />
               <QuickAction icon="attach_money" label="Update Pricing" color="bg-green-900/20" onClick={() => onNavigate('pricing')} />
-              <QuickAction icon="settings" label="Settings" color="bg-[#0A0A0A]0" onClick={() => onNavigate('settings')} />
+              <QuickAction icon="settings" label="Settings" color="bg-background-card0" onClick={() => onNavigate('settings')} />
             </div>
           </div>
 
           {/* Inventory Status Widget */}
           {inventory.length > 0 && (
-            <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-6">
+            <div className="bg-background-card border border-border rounded-2xl shadow-2xl p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-white ">Stock Status</h3>
+                <h3 className="text-lg font-bold text-foreground ">Stock Status</h3>
                 <button
                   onClick={() => onNavigate('inventory')}
-                  className="text-xs text-red-500 font-medium hover:underline"
+                  className="text-xs text-primary font-medium hover:underline"
                 >
                   View All
                 </button>
@@ -209,8 +209,8 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
                     return (
                       <div key={item.id} className="flex items-center gap-3">
                         <div className={`size-2 ${isCritical ? 'bg-red-900/20' : 'bg-yellow-900/200'}`} />
-                        <span className="text-sm text-[#666] flex-1 truncate">{item.name}</span>
-                        <span className={`text-xs font-bold ${isCritical ? 'text-red-500 ' : 'text-yellow-400 '}`}>
+                        <span className="text-sm text-foreground-muted flex-1 truncate">{item.name}</span>
+                        <span className={`text-xs font-bold ${isCritical ? 'text-primary ' : 'text-yellow-400 '}`}>
                           {item.stock} {item.unit}
                         </span>
                       </div>
@@ -229,32 +229,32 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
       </div>
 
       {/* Recent Orders */}
-      <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl overflow-hidden">
-        <div className="flex items-center justify-between p-6 border-b border-[#333] ">
-          <h3 className="text-lg font-bold text-white ">Recent Orders</h3>
+      <div className="bg-background-card border border-border rounded-2xl shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-between p-6 border-b border-border ">
+          <h3 className="text-lg font-bold text-foreground ">Recent Orders</h3>
           <button
             onClick={() => onNavigate('orders')}
-            className="text-sm text-red-500 font-medium hover:underline"
+            className="text-sm text-primary font-medium hover:underline"
           >
             View All
           </button>
         </div>
         <div className="divide-y divide-[#1A1A1A]">
           {orders.length === 0 ? (
-            <div className="py-12 text-center text-[#666]">
+            <div className="py-12 text-center text-foreground-muted">
               <Icon name="inbox" className="text-3xl mb-2" />
               <p>No orders found</p>
             </div>
           ) : (
             orders.slice(0, 4).map((order) => (
-              <div key={order.id} className="flex items-center justify-between p-4 hover:bg-[#0A0A0A] /40 transition-colors">
+              <div key={order.id} className="flex items-center justify-between p-4 hover:bg-background-card /40 transition-colors">
                 <div className="flex items-center gap-4">
-                  <div className="size-10 bg-[#111] flex items-center justify-center font-bold text-red-500 ">
+                  <div className="size-10 bg-background-subtle flex items-center justify-center font-bold text-primary ">
                     {(order.userName || 'C').charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <p className="font-medium text-white ">{order.userName || 'Customer'}</p>
-                    <p className="text-sm text-[#666] ">{order.id.split('-')[1] || order.id}</p>
+                    <p className="font-medium text-foreground ">{order.userName || 'Customer'}</p>
+                    <p className="text-sm text-foreground-muted ">{order.id.split('-')[1] || order.id}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
@@ -263,12 +263,12 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
                       : order.status === 'confirmed'
                         ? 'bg-yellow-900/20 text-yellow-400 '
                         : order.status === 'printing'
-                          ? 'bg-red-900/20 text-red-400 '
+                          ? 'bg-red-900/20 text-error '
                           : 'bg-green-900/20 text-green-400 '
                     }`}>
                     {order.status}
                   </span>
-                  <span className="font-semibold text-white ">
+                  <span className="font-semibold text-foreground ">
                     ₹{order.totalAmount.toLocaleString()}
                   </span>
                 </div>
@@ -292,20 +292,20 @@ const StatCard: React.FC<{
   iconColor: string;
   urgent?: boolean;
 }> = ({ title, value, change, positive, icon, iconBg, iconColor, urgent }) => (
-  <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-5">
+  <div className="bg-background-card border border-border rounded-2xl shadow-2xl p-5">
     <div className="flex items-start justify-between mb-3">
       <div className={`p-2.5 ${iconBg}`}>
         <Icon name={icon} className={`text-xl ${iconColor}`} />
       </div>
       {urgent && (
-        <span className="px-2 py-0.5 text-xs font-medium bg-red-900/20 text-red-400 ">
+        <span className="px-2 py-0.5 text-xs font-medium bg-red-900/20 text-error ">
           Urgent
         </span>
       )}
     </div>
-    <p className="text-2xl font-bold text-white ">{value}</p>
+    <p className="text-2xl font-bold text-foreground ">{value}</p>
     <div className="flex items-center justify-between mt-1">
-      <p className="text-sm text-[#666] ">{title}</p>
+      <p className="text-sm text-foreground-muted ">{title}</p>
       <span className={`text-xs font-medium ${positive ? 'text-green-400' : 'text-orange-400'}`}>
         {change}
       </span>
@@ -315,11 +315,11 @@ const StatCard: React.FC<{
 
 // Quick Action Component
 const QuickAction: React.FC<{ icon: string; label: string; color: string; onClick?: () => void }> = ({ icon, label, color, onClick }) => (
-  <button onClick={onClick} className="w-full flex items-center gap-3 p-3 hover:bg-[#0A0A0A] transition-colors group">
-    <div className={`size-10 ${color} flex items-center justify-center text-white group-hover:scale-105 transition-transform`}>
+  <button onClick={onClick} className="w-full flex items-center gap-3 p-3 hover:bg-background-card transition-colors group">
+    <div className={`size-10 ${color} flex items-center justify-center text-foreground group-hover:scale-105 transition-transform`}>
       <Icon name={icon} className="text-lg" />
     </div>
-    <span className="font-medium text-[#666] ">{label}</span>
-    <Icon name="chevron_right" className="ml-auto text-[#666] group-hover:text-[#666] transition-colors" />
+    <span className="font-medium text-foreground-muted ">{label}</span>
+    <Icon name="chevron_right" className="ml-auto text-foreground-muted group-hover:text-foreground-muted transition-colors" />
   </button>
 );

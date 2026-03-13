@@ -29,10 +29,10 @@ export const Toast: React.FC<ToastProps> = ({
  }, [duration, onClose]);
 
  const colors = {
- success: 'bg-green-900/20 text-white',
- error: 'bg-red-900/20 text-white',
- info: 'bg-[#111]0 text-white',
- warning: 'bg-yellow-900/200 text-white',
+ success: 'bg-green-900/20 text-foreground',
+ error: 'bg-red-900/20 text-foreground',
+ info: 'bg-background-subtle0 text-foreground',
+ warning: 'bg-yellow-900/200 text-foreground',
  };
 
  const icons = {
@@ -52,7 +52,7 @@ export const Toast: React.FC<ToastProps> = ({
  >
  <Icon name={icons[type]} className="text-xl" />
  <p className="font-medium text-sm">{message}</p>
- <button onClick={() => { setIsVisible(false); setTimeout(onClose, 300); }} className="p-1 hover:bg-[#1A1A1A] transition-colors">
+ <button onClick={() => { setIsVisible(false); setTimeout(onClose, 300); }} className="p-1 hover:bg-background-subtle transition-colors">
  <Icon name="close" className="text-sm" />
  </button>
  </div>

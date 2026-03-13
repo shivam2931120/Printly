@@ -50,31 +50,31 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isSi
         <div className="relative" ref={dropdownRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="relative p-2 text-[#666] hover:text-white hover:bg-[#111] transition-colors"
+                className="relative p-2 text-foreground-muted hover:text-foreground hover:bg-background-subtle transition-colors"
                 title="Notifications"
             >
                 <Bell size={20} />
                 {unreadCount > 0 && (
                     <span className="absolute top-1 right-1 flex h-2.5 w-2.5">
-                        <span className="relative inline-flex h-2.5 w-2.5 bg-red-600"></span>
+                        <span className="relative inline-flex h-2.5 w-2.5 bg-primary"></span>
                     </span>
                 )}
             </button>
 
             {isOpen && (
                 <div className={cn(
-                    "fixed z-50 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl animate-fade-in overflow-hidden rounded-2xl shadow-2xl flex flex-col",
+                    "fixed z-50 bg-background-card border border-border rounded-2xl shadow-2xl animate-fade-in overflow-hidden rounded-2xl shadow-2xl flex flex-col",
                     isSidebar ? "bottom-6 left-[84px] w-[340px] max-h-[80vh]" : "top-16 right-4 left-4 sm:left-auto sm:right-6 sm:w-96 max-h-[80vh]"
                 )}>
                     {/* Header */}
-                    <div className="p-4 border-b border-[#333] bg-[#0A0A0A] space-y-2">
+                    <div className="p-4 border-b border-border bg-background-card space-y-2">
                         <div className="flex items-center justify-between">
-                            <h3 className="font-bold text-white text-sm">NOTIFICATIONS</h3>
+                            <h3 className="font-bold text-foreground text-sm">NOTIFICATIONS</h3>
                             <div className="flex items-center gap-2">
                                 {/* Sound toggle */}
                                 <button
                                     onClick={toggleSound}
-                                    className="p-1 text-[#666] hover:text-white transition-colors"
+                                    className="p-1 text-foreground-muted hover:text-foreground transition-colors"
                                     title={soundEnabled ? 'Mute sounds' : 'Enable sounds'}
                                 >
                                     {soundEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}
@@ -83,7 +83,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isSi
                                 {unreadCount > 0 && (
                                     <button
                                         onClick={handleMarkAllRead}
-                                        className="text-[10px] font-bold text-red-500 hover:text-red-400 transition-colors flex items-center gap-1"
+                                        className="text-[10px] font-bold text-primary hover:text-error transition-colors flex items-center gap-1"
                                     >
                                         <Check size={12} />
                                         Mark all read
@@ -92,7 +92,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isSi
                                 {notifications.length > 0 && (
                                     <button
                                         onClick={clearAll}
-                                        className="text-[10px] font-bold text-[#666] hover:text-white transition-colors ml-2"
+                                        className="text-[10px] font-bold text-foreground-muted hover:text-foreground transition-colors ml-2"
                                     >
                                         Clear
                                     </button>
@@ -104,11 +104,11 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isSi
                         {isNotificationSupported() && pushPermission !== 'granted' && pushPermission !== 'denied' && (
                             <button
                                 onClick={requestPushPermission}
-                                className="w-full flex items-center gap-2 px-3 py-2 bg-red-600/10 border border-red-600/20 text-xs text-red-500 hover:bg-red-600/20 transition-colors"
+                                className="w-full flex items-center gap-2 px-3 py-2 bg-primary/10 border border-primary/20 text-xs text-primary hover:bg-primary/20 transition-colors"
                             >
                                 <BellRing size={14} />
                                 <span className="font-bold">Enable push notifications</span>
-                                <span className="text-[#666] ml-auto">Get alerts even when tab is hidden</span>
+                                <span className="text-foreground-muted ml-auto">Get alerts even when tab is hidden</span>
                             </button>
                         )}
                     </div>
@@ -116,7 +116,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isSi
                     {/* List */}
                     <div className="max-h-[400px] overflow-y-auto">
                         {notifications.length === 0 ? (
-                            <div className="p-8 text-center text-[#666] flex flex-col items-center">
+                            <div className="p-8 text-center text-foreground-muted flex flex-col items-center">
                                 <Bell size={32} className="opacity-20 mb-3" />
                                 <p className="text-sm">No notifications yet</p>
                             </div>
@@ -126,15 +126,15 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isSi
                                     <div
                                         key={notif.id}
                                         className={cn(
-                                            "p-4 hover:bg-[#111] transition-colors relative group",
-                                            !notif.isRead ? "bg-red-600/5 border-l-2 border-l-red-600" : ""
+                                            "p-4 hover:bg-background-subtle transition-colors relative group",
+                                            !notif.isRead ? "bg-primary/5 border-l-2 border-l-red-600" : ""
                                         )}
                                     >
                                         <div className="flex gap-3">
                                             {/* Icon Indicator */}
                                             <div className={cn(
                                                 "size-2 mt-1.5 shrink-0",
-                                                notif.type === 'info' && "bg-[#0A0A0A]",
+                                                notif.type === 'info' && "bg-background-card",
                                                 notif.type === 'success' && "bg-green-900/20",
                                                 notif.type === 'warning' && "bg-yellow-900/200",
                                                 notif.type === 'error' && "bg-red-900/20",
@@ -144,15 +144,15 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isSi
                                                 <div className="flex justify-between items-start mb-0.5">
                                                     <h4 className={cn(
                                                         "text-sm font-bold truncate pr-6",
-                                                        !notif.isRead ? "text-white" : "text-[#666]"
+                                                        !notif.isRead ? "text-foreground" : "text-foreground-muted"
                                                     )}>
                                                         {notif.title}
                                                     </h4>
-                                                    <span className="text-[10px] text-[#666] whitespace-nowrap ml-2">
+                                                    <span className="text-[10px] text-foreground-muted whitespace-nowrap ml-2">
                                                         {formatTime(notif.timestamp)}
                                                     </span>
                                                 </div>
-                                                <p className="text-xs text-[#666] leading-relaxed line-clamp-2">
+                                                <p className="text-xs text-foreground-muted leading-relaxed line-clamp-2">
                                                     {notif.message}
                                                 </p>
                                             </div>
@@ -161,7 +161,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isSi
                                             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-1">
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); removeNotification(notif.id); }}
-                                                    className="p-1 hover:bg-[#1A1A1A] text-[#666] hover:text-red-500 transition-colors"
+                                                    className="p-1 hover:bg-background-subtle text-foreground-muted hover:text-primary transition-colors"
                                                 >
                                                     <X size={12} />
                                                 </button>

@@ -36,16 +36,16 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
  return (
  <aside className={`
  fixed left-0 top-0 z-40 h-screen flex flex-col
- bg-[#050505] border-r border-[#333]
+ bg-background border-r border-border
  transition-all duration-300 ease-in-out
  ${collapsed ? 'w-20' : 'w-64'}
  `}>
  {/* Logo Header */}
- <div className="h-16 flex items-center justify-between px-4 border-b border-[#333] shrink-0">
+ <div className="h-16 flex items-center justify-between px-4 border-b border-border shrink-0">
  <div className={`flex items-center gap-3 ${collapsed ? 'justify-center w-full' : ''}`}>
  <img src="/Printly.png" alt="Printly Logo" className="size-8 object-contain shrink-0" />
  {!collapsed && (
- <span className="text-lg font-bold tracking-tight text-white">
+ <span className="text-lg font-bold tracking-tight text-foreground">
  Printly Admin
  </span>
  )}
@@ -53,7 +53,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
  {onToggle && !collapsed && (
  <button
  onClick={onToggle}
- className="p-2 text-[#666] hover:text-white hover:bg-[#111] transition-colors"
+ className="p-2 text-foreground-muted hover:text-foreground hover:bg-background-subtle transition-colors"
  >
  <Icon name="menu_open" className="text-xl" />
  </button>
@@ -70,8 +70,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
  w-full flex items-center gap-3 px-4 py-3
  transition-all duration-200 group
  ${activeSection === item.id
- ? 'bg-red-600 text-white font-bold'
- : 'text-[#666] hover:bg-[#111] hover:text-white'
+ ? 'bg-primary text-foreground font-bold'
+ : 'text-foreground-muted hover:bg-background-subtle hover:text-foreground'
  }
  ${collapsed ? 'justify-center px-3' : ''}
  `}
@@ -91,7 +91,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
  <div className="p-4 flex justify-center shrink-0">
  <button
  onClick={onToggle}
- className="p-3 text-[#666] hover:text-red-500 hover:bg-red-900/20/10 transition-colors"
+ className="p-3 text-foreground-muted hover:text-primary hover:bg-red-900/20/10 transition-colors"
  >
  <Icon name="chevron_right" className="text-xl" />
  </button>
@@ -99,11 +99,11 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
  )}
 
  {/* User Section */}
- <div className="mt-auto p-4 border-t border-[#333] shrink-0">
+ <div className="mt-auto p-4 border-t border-border shrink-0">
  {!collapsed && (
  <div
  onClick={() => onSectionChange('settings')}
- className="flex items-center gap-3 p-3 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl mb-2 cursor-pointer hover:bg-[#111] hover:border-[#333] transition-colors"
+ className="flex items-center gap-3 p-3 bg-background-card border border-border rounded-2xl shadow-2xl mb-2 cursor-pointer hover:bg-background-subtle hover:border-border transition-colors"
  title="Go to Settings"
  >
  {adminAvatar ? (
@@ -113,15 +113,15 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
  className="size-10 object-cover"
  />
  ) : (
- <div className="size-10 bg-red-600/10 flex items-center justify-center">
- <Icon name="person" className="text-red-500" />
+ <div className="size-10 bg-primary/10 flex items-center justify-center">
+ <Icon name="person" className="text-primary" />
  </div>
  )}
  <div className="flex-1 min-w-0">
- <p className="text-sm font-semibold text-white truncate">
+ <p className="text-sm font-semibold text-foreground truncate">
  {adminName}
  </p>
- <p className="text-xs text-[#666]">Administrator</p>
+ <p className="text-xs text-foreground-muted">Administrator</p>
  </div>
  </div>
  )}

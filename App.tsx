@@ -34,7 +34,7 @@ const NotFound = lazy(() => import('./components/NotFound').then(m => ({ default
 
 // ===== Full-screen loading spinner =====
 const LoadingSpinner = () => (
-  <div className="min-h-screen flex items-center justify-center bg-[#050505] text-white">
+  <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
     <div className="size-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
   </div>
 );
@@ -140,7 +140,7 @@ const AppContent: React.FC = () => {
   }
 
   return (
-    <div className="relative min-h-screen bg-background text-white font-sans selection:bg-white/20">
+    <div className="relative min-h-screen bg-background text-foreground font-sans selection:bg-white/20">
       <Suspense fallback={<LoadingSpinner />}>
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>

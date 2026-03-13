@@ -24,11 +24,11 @@ export const OrderTracker: React.FC<OrderTrackerProps> = ({ status, className, o
  <div className={cn("w-full py-2", className)}>
  <div className="relative flex items-center justify-between">
  {/* Progress Bar Background */}
- <div className="absolute left-0 top-3 -translate-y-1/2 w-full h-0.5 bg-[#111] -z-10" />
+ <div className="absolute left-0 top-3 -translate-y-1/2 w-full h-0.5 bg-background-subtle -z-10" />
 
  {/* Active Progress Bar */}
  <div
- className="absolute left-0 top-3 -translate-y-1/2 h-0.5 bg-black bg-[#0A0A0A] -z-10 transition-all duration-500"
+ className="absolute left-0 top-3 -translate-y-1/2 h-0.5 bg-black bg-background-card -z-10 transition-all duration-500"
  style={{
  width: `${(currentStepIndex / (steps.length - 1)) * 100}%`
  }}
@@ -51,10 +51,10 @@ export const OrderTracker: React.FC<OrderTrackerProps> = ({ status, className, o
  >
  <div
  className={cn(
- "size-6 flex items-center justify-center border-[1.5px] transition-all duration-300 bg-[#0A0A0A]",
+ "size-6 flex items-center justify-center border-[1.5px] transition-all duration-300 bg-background-card",
  isActive
- ? "border-black text-white "
- : "border-[#333] text-[#666]",
+ ? "border-black text-foreground "
+ : "border-border text-foreground-muted",
  isCurrent && step.id === 'printing' && "animate-spin"
  )}
  >
@@ -63,7 +63,7 @@ export const OrderTracker: React.FC<OrderTrackerProps> = ({ status, className, o
  <span
  className={cn(
  "text-[8px] font-bold uppercase tracking-wider transition-colors duration-300 select-none hidden sm:block",
- isActive ? "text-white " : "text-[#666]"
+ isActive ? "text-foreground " : "text-foreground-muted"
  )}
  >
  {step.label}

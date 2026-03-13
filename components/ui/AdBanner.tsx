@@ -21,8 +21,8 @@ export const AdBanner: React.FC<AdBannerProps> = ({
  }, []);
 
  return (
- <div className="my-4 overflow-hidden border border-[#333] bg-[#0A0A0A] p-2 text-center">
- <p className="mb-2 text-xs text-[#666]">Advertisement</p>
+ <div className="my-4 overflow-hidden border border-border bg-background-card p-2 text-center">
+ <p className="mb-2 text-xs text-foreground-muted">Advertisement</p>
  <ins
  className="adsbygoogle block"
  style={{ display: "block" }}

@@ -44,10 +44,10 @@ export const ShopSettings: React.FC<ShopSettingsProps> = ({ shopConfig, onUpdate
  };
 
  return (
- <div className="bg-[#050505] border border-[#333] p-6">
+ <div className="bg-background border border-border p-6">
  <div className="flex items-center justify-between mb-4">
- <h3 className="text-lg font-bold text-white flex items-center gap-2">
- <Icon name="store" className="text-red-500" />
+ <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+ <Icon name="store" className="text-primary" />
  Shop Information
  </h3>
  {!isEditing ? (
@@ -62,14 +62,14 @@ export const ShopSettings: React.FC<ShopSettingsProps> = ({ shopConfig, onUpdate
  <div className="flex gap-2">
  <button
  onClick={() => { setIsEditing(false); if (shopConfig) setConfig(shopConfig); }}
- className="px-3 py-1.5 text-sm font-medium text-[#666] bg-[#111] hover:bg-[#1A1A1A] transition-colors"
+ className="px-3 py-1.5 text-sm font-medium text-foreground-muted bg-background-subtle hover:bg-background-subtle transition-colors"
  >
  Cancel
  </button>
  <button
  onClick={handleSave}
  disabled={isSaving}
- className="px-3 py-1.5 text-sm font-medium text-white bg-green-900/20 hover:bg-green-600 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+ className="px-3 py-1.5 text-sm font-medium text-foreground bg-green-900/20 hover:bg-green-600 transition-colors flex items-center gap-1.5 disabled:opacity-50"
  >
  <Icon name={isSaving ? 'hourglass_empty' : 'save'} className="text-sm" />
  {isSaving ? 'Saving...' : 'Save'}
@@ -145,8 +145,8 @@ export const ShopSettings: React.FC<ShopSettingsProps> = ({ shopConfig, onUpdate
  </div>
 
  {/* Developer Info (non-editable) */}
- <div className="mt-6 pt-4 border-t border-[#333] ">
- <p className="text-xs text-[#666] flex items-center gap-1.5">
+ <div className="mt-6 pt-4 border-t border-border ">
+ <p className="text-xs text-foreground-muted flex items-center gap-1.5">
  <Icon name="lock" className="text-xs" />
  Shop ID: {config.shopId} • Changes saved to Supabase and visible to all users immediately
  </p>
@@ -165,12 +165,12 @@ const EditableSettingRow: React.FC<{
  placeholder?: string;
  multiline?: boolean;
 }> = ({ icon, title, value, isEditing, onChange, placeholder, multiline }) => (
- <div className="flex items-start gap-4 p-3 hover:bg-[#0A0A0A] /50 transition-colors">
- <div className="p-2 bg-[#111] shrink-0 mt-0.5">
- <Icon name={icon} className="text-[#666] " />
+ <div className="flex items-start gap-4 p-3 hover:bg-background-card /50 transition-colors">
+ <div className="p-2 bg-background-subtle shrink-0 mt-0.5">
+ <Icon name={icon} className="text-foreground-muted " />
  </div>
  <div className="flex-1 min-w-0">
- <p className="font-medium text-white text-sm mb-1">{title}</p>
+ <p className="font-medium text-foreground text-sm mb-1">{title}</p>
  {isEditing ? (
  multiline ? (
  <textarea
@@ -178,7 +178,7 @@ const EditableSettingRow: React.FC<{
  onChange={(e) => onChange(e.target.value)}
  placeholder={placeholder}
  rows={3}
- className="w-full px-3 py-1.5 text-sm bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl focus:ring-2 focus:ring-primary/50 focus:border-primary text-white resize-none font-mono"
+ className="w-full px-3 py-1.5 text-sm bg-background-card border border-border rounded-2xl shadow-2xl focus:ring-2 focus:ring-primary/50 focus:border-primary text-foreground resize-none font-mono"
  />
  ) : (
  <input
@@ -186,11 +186,11 @@ const EditableSettingRow: React.FC<{
  value={value}
  onChange={(e) => onChange(e.target.value)}
  placeholder={placeholder}
- className="w-full px-3 py-1.5 text-sm bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl focus:ring-2 focus:ring-primary/50 focus:border-primary text-white "
+ className="w-full px-3 py-1.5 text-sm bg-background-card border border-border rounded-2xl shadow-2xl focus:ring-2 focus:ring-primary/50 focus:border-primary text-foreground "
  />
  )
  ) : (
- <p className="text-sm text-[#666] break-all">{value || <span className="italic text-[#666]">Not set</span>}</p>
+ <p className="text-sm text-foreground-muted break-all">{value || <span className="italic text-foreground-muted">Not set</span>}</p>
  )}
  </div>
  </div>

@@ -1,6 +1,7 @@
 import { supabase, supabaseAdmin } from './supabase';
 export { supabase };
 import { Product, Order, CartItem, OrderStatus, PaymentStatus, PricingConfig, DEFAULT_PRICING, ShopConfig, DEFAULT_SHOP_CONFIG, Service, DEFAULT_SERVICES } from '../types';
+import { generateId } from '../lib/utils';
 
 // ===== PRODUCTS =====
 export const fetchProducts = async (): Promise<Product[]> => {
@@ -120,7 +121,7 @@ export const createOrder = async (order: Order, _userRole?: string): Promise<{ s
             finalUserId = emailUser.id;
         } else {
             // Auto-create user record so the order is properly linked
-            const newUserId = crypto.randomUUID();
+            const newUserId = generateId();
             const now = new Date().toISOString();
             const { data: created } = await supabase
                 .from('User')
@@ -157,7 +158,7 @@ export const createOrder = async (order: Order, _userRole?: string): Promise<{ s
     const itemsJson = order.items.map(item => {
         if (item.type === 'product') {
             return {
-                id: crypto.randomUUID(),
+                id: generateId(),
                 type: 'product',
                 productId: (item as any).productId,
                 name: item.name,
@@ -167,7 +168,7 @@ export const createOrder = async (order: Order, _userRole?: string): Promise<{ s
             };
         } else {
             return {
-                id: crypto.randomUUID(),
+                id: generateId(),
                 type: 'print',
                 name: item.name,
                 fileUrl: (item as any).fileUrl || '',
@@ -476,8 +477,8 @@ export const fetchStockHistory = async (inventoryId: string): Promise<StockLogRo
 
 /** Load pricing from the active Shop row, fall back to localStorage then DEFAULT_PRICING */
 export const fetchPricing = async (): Promise<PricingConfig> => {
+    /* 
     try {
-        // Use admin client to bypass RLS on Shop table
         const { data, error } = await supabaseAdmin
             .from('Shop')
             .select('pricingConfig')
@@ -488,7 +489,8 @@ export const fetchPricing = async (): Promise<PricingConfig> => {
         if (!error && data?.pricingConfig) {
             return data.pricingConfig as PricingConfig;
         }
-    } catch { /* ignore */ }
+    } catch {  }
+    */
 
     // fallback: localStorage cache (same device)
     try {
@@ -521,6 +523,7 @@ export const savePricing = async (pricing: PricingConfig): Promise<{ success: bo
 
 /** Load shop config from the active Shop row, fall back to localStorage then DEFAULT_SHOP_CONFIG */
 export const fetchShopConfig = async (): Promise<ShopConfig> => {
+    /*
     try {
         const { data, error } = await supabaseAdmin
             .from('Shop')
@@ -532,7 +535,8 @@ export const fetchShopConfig = async (): Promise<ShopConfig> => {
         if (!error && data?.shopConfig) {
             return { ...DEFAULT_SHOP_CONFIG, ...(data.shopConfig as ShopConfig) };
         }
-    } catch { /* ignore */ }
+    } catch {  }
+    */
 
     // fallback: localStorage cache
     try {
@@ -603,6 +607,7 @@ export const fetchCustomers = async (): Promise<CustomerSummary[]> => {
 
 /** Load services from the active Shop row, fall back to localStorage then DEFAULT_SERVICES */
 export const fetchServices = async (): Promise<Service[]> => {
+    /*
     try {
         const { data, error } = await supabaseAdmin
             .from('Shop')
@@ -614,7 +619,8 @@ export const fetchServices = async (): Promise<Service[]> => {
         if (!error && data?.servicesConfig) {
             return data.servicesConfig as Service[];
         }
-    } catch { /* ignore */ }
+    } catch {  }
+    */
 
     try {
         const cached = localStorage.getItem('printwise_services');

@@ -59,13 +59,13 @@ export const ServiceManagement: React.FC = () => {
  {/* Header */}
  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
  <div>
- <h2 className="text-2xl font-bold text-white ">Service Management</h2>
- <p className="text-[#666] text-sm mt-1">Manage binding, lamination, and other services</p>
+ <h2 className="text-2xl font-bold text-foreground ">Service Management</h2>
+ <p className="text-foreground-muted text-sm mt-1">Manage binding, lamination, and other services</p>
  </div>
  <button
  onClick={handleSave}
  disabled={saving || !dirty}
- className="inline-flex items-center justify-center h-10 px-4 bg-green-600 text-white text-sm font-bold hover:bg-green-700 transition-colors gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+ className="inline-flex items-center justify-center h-10 px-4 bg-green-600 text-foreground text-sm font-bold hover:bg-green-700 transition-colors gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
  >
  <Icon name={saving ? 'hourglass_empty' : 'save'} className="text-lg" />
  {saving ? 'Saving…' : dirty ? 'Save Changes' : 'Saved'}
@@ -74,22 +74,22 @@ export const ServiceManagement: React.FC = () => {
 
  {/* Stats */}
  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
- <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-5">
+ <div className="bg-background-card border border-border rounded-2xl shadow-2xl p-5">
  <div className="flex items-center gap-3">
- <div className="p-2.5 bg-[#111] "><Icon name="build" className="text-xl text-red-500 " /></div>
- <div><p className="text-2xl font-bold text-white ">{services.length}</p><p className="text-sm text-[#666] ">Total Services</p></div>
+ <div className="p-2.5 bg-background-subtle "><Icon name="build" className="text-xl text-primary " /></div>
+ <div><p className="text-2xl font-bold text-foreground ">{services.length}</p><p className="text-sm text-foreground-muted ">Total Services</p></div>
  </div>
  </div>
- <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-5">
+ <div className="bg-background-card border border-border rounded-2xl shadow-2xl p-5">
  <div className="flex items-center gap-3">
  <div className="p-2.5 bg-green-900/20 bg-green-900/20"><Icon name="check_circle" className="text-xl text-green-400 " /></div>
- <div><p className="text-2xl font-bold text-white ">{activeCount}</p><p className="text-sm text-[#666] ">Active Services</p></div>
+ <div><p className="text-2xl font-bold text-foreground ">{activeCount}</p><p className="text-sm text-foreground-muted ">Active Services</p></div>
  </div>
  </div>
- <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-5">
+ <div className="bg-background-card border border-border rounded-2xl shadow-2xl p-5">
  <div className="flex items-center gap-3">
- <div className="p-2.5 bg-purple-900/20 bg-purple-900/20"><Icon name="category" className="text-xl text-purple-400 " /></div>
- <div><p className="text-2xl font-bold text-white ">{SERVICE_CATEGORIES.length}</p><p className="text-sm text-[#666] ">Categories</p></div>
+ <div className="p-2.5 bg-primary/10"><Icon name="category" className="text-xl text-primary " /></div>
+ <div><p className="text-2xl font-bold text-foreground ">{SERVICE_CATEGORIES.length}</p><p className="text-sm text-foreground-muted ">Categories</p></div>
  </div>
  </div>
  </div>
@@ -100,8 +100,8 @@ export const ServiceManagement: React.FC = () => {
  onClick={() => setSelectedCategory('all')}
  className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-all ${
  selectedCategory === 'all'
- ? 'bg-[#0A0A0A] bg-[#0A0A0A] text-white '
- : 'bg-[#0A0A0A] text-[#666] border border-[#333] hover:bg-[#111] '
+ ? 'bg-background-card bg-background-card text-foreground '
+ : 'bg-background-card text-foreground-muted border border-border hover:bg-background-subtle '
  }`}
  >
  All Services
@@ -112,8 +112,8 @@ export const ServiceManagement: React.FC = () => {
  onClick={() => setSelectedCategory(cat.id)}
  className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-all flex items-center gap-2 ${
  selectedCategory === cat.id
- ? 'bg-[#0A0A0A] bg-[#0A0A0A] text-white '
- : 'bg-[#0A0A0A] text-[#666] border border-[#333] hover:bg-[#111] '
+ ? 'bg-background-card bg-background-card text-foreground '
+ : 'bg-background-card text-foreground-muted border border-border hover:bg-background-subtle '
  }`}
  >
  <Icon name={cat.icon} className="text-lg" />
@@ -125,64 +125,64 @@ export const ServiceManagement: React.FC = () => {
  {/* Service List */}
  {loading ? (
  <div className="py-16 text-center">
- <div className="size-8 border-2 border-[#333] border-t-primary animate-spin mx-auto mb-3" />
- <p className="text-[#666] text-sm">Loading services…</p>
+ <div className="size-8 border-2 border-border border-t-primary animate-spin mx-auto mb-3" />
+ <p className="text-foreground-muted text-sm">Loading services…</p>
  </div>
  ) : (
  <div className="space-y-4">
  {filteredServices.map((service) => (
  <div
  key={service.id}
- className={`bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl overflow-hidden transition-all ${!service.isActive ? 'opacity-60' : ''}`}
+ className={`bg-background-card border border-border rounded-2xl shadow-2xl overflow-hidden transition-all ${!service.isActive ? 'opacity-60' : ''}`}
  >
  {/* Service Header */}
  <div
- className="flex items-center justify-between p-5 cursor-pointer hover:bg-[#0A0A0A] /50 transition-colors"
+ className="flex items-center justify-between p-5 cursor-pointer hover:bg-background-card /50 transition-colors"
  onClick={() => setExpandedService(expandedService === service.id ? null : service.id)}
  >
  <div className="flex items-center gap-4">
- <div className="p-3 bg-[#111] ">
+ <div className="p-3 bg-background-subtle ">
  <Icon
  name={SERVICE_CATEGORIES.find(c => c.id === service.category)?.icon || 'build'}
- className="text-2xl text-red-500 "
+ className="text-2xl text-primary "
  />
  </div>
  <div>
- <h3 className="font-semibold text-white ">{service.name}</h3>
- <p className="text-sm text-[#666] ">{service.description}</p>
+ <h3 className="font-semibold text-foreground ">{service.name}</h3>
+ <p className="text-sm text-foreground-muted ">{service.description}</p>
  </div>
  </div>
  <div className="flex items-center gap-3">
- <span className="text-lg font-bold text-white ">From ₹{service.basePrice}</span>
+ <span className="text-lg font-bold text-foreground ">From ₹{service.basePrice}</span>
  <button
  onClick={(e) => { e.stopPropagation(); handleToggleActive(service.id); }}
  className={`px-3 py-1 text-xs font-medium ${
  service.isActive
  ? 'bg-green-900/20 text-green-400 '
- : 'bg-[#111] text-[#666] '
+ : 'bg-background-subtle text-foreground-muted '
  }`}
  >
  {service.isActive ? 'Active' : 'Inactive'}
  </button>
- <Icon name={expandedService === service.id ? 'expand_less' : 'expand_more'} className="text-xl text-[#666]" />
+ <Icon name={expandedService === service.id ? 'expand_less' : 'expand_more'} className="text-xl text-foreground-muted" />
  </div>
  </div>
 
  {/* Expanded Variants */}
  {expandedService === service.id && (
- <div className="border-t border-[#333] p-5 bg-[#0A0A0A] /30">
- <h4 className="text-sm font-semibold text-[#666] mb-3">Pricing Variants</h4>
+ <div className="border-t border-border p-5 bg-background-card /30">
+ <h4 className="text-sm font-semibold text-foreground-muted mb-3">Pricing Variants</h4>
  <div className="grid gap-3">
  {service.variants.map((variant, index) => (
- <div key={index} className="flex items-center justify-between p-3 bg-[#0A0A0A] ">
- <span className="text-[#666] ">{variant.name}</span>
+ <div key={index} className="flex items-center justify-between p-3 bg-background-card ">
+ <span className="text-foreground-muted ">{variant.name}</span>
  <div className="flex items-center gap-2">
- <span className="text-[#666]">₹</span>
+ <span className="text-foreground-muted">₹</span>
  <input
  type="number"
  value={variant.price}
  onChange={(e) => handleUpdatePrice(service.id, index, Number(e.target.value))}
- className="w-20 px-2 py-1 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl rounded text-right text-white focus:ring-2 focus:ring-primary"
+ className="w-20 px-2 py-1 bg-background-card border border-border rounded-2xl shadow-2xl rounded text-right text-foreground focus:ring-2 focus:ring-primary"
  min="0"
  />
  </div>
@@ -196,8 +196,8 @@ export const ServiceManagement: React.FC = () => {
 
  {filteredServices.length === 0 && (
  <div className="text-center py-12">
- <Icon name="build" className="text-4xl text-[#666] mb-3" />
- <p className="text-[#666] ">No services in this category</p>
+ <Icon name="build" className="text-4xl text-foreground-muted mb-3" />
+ <p className="text-foreground-muted ">No services in this category</p>
  </div>
  )}
  </div>

@@ -28,9 +28,9 @@ export const AuditViewer: React.FC = () => {
  };
 
  const actionColors: Record<string, string> = {
- 'UPDATE': 'bg-red-900/20 text-red-400 ',
+ 'UPDATE': 'bg-red-900/20 text-error ',
  'INSERT': 'bg-green-900/20 text-green-400 ',
- 'DELETE': 'bg-red-900/20 text-red-400 ',
+ 'DELETE': 'bg-red-900/20 text-error ',
  };
 
  const getStatusChange = (log: AuditLogEntry): string | null => {
@@ -46,8 +46,8 @@ export const AuditViewer: React.FC = () => {
  <div className="space-y-6">
  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
  <div>
- <h2 className="text-2xl font-bold text-white ">Audit Log</h2>
- <p className="text-[#666] text-sm mt-1">
+ <h2 className="text-2xl font-bold text-foreground ">Audit Log</h2>
+ <p className="text-foreground-muted text-sm mt-1">
  Track all order status changes and database modifications
  </p>
  </div>
@@ -55,7 +55,7 @@ export const AuditViewer: React.FC = () => {
  <select
  value={limit}
  onChange={(e) => setLimit(Number(e.target.value))}
- className="px-3 py-2 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl text-sm text-[#666] focus:ring-2 focus:ring-primary"
+ className="px-3 py-2 bg-background-card border border-border rounded-2xl shadow-2xl text-sm text-foreground-muted focus:ring-2 focus:ring-primary"
  aria-label="Number of log entries to show"
  >
  <option value={25}>Last 25</option>
@@ -65,7 +65,7 @@ export const AuditViewer: React.FC = () => {
  </select>
  <button
  onClick={loadLogs}
- className="inline-flex items-center justify-center h-10 px-4 border border-[#333] bg-[#0A0A0A] text-[#666] text-sm font-medium hover:bg-[#0A0A0A] transition-colors "
+ className="inline-flex items-center justify-center h-10 px-4 border border-border bg-background-card text-foreground-muted text-sm font-medium hover:bg-background-card transition-colors "
  aria-label="Refresh audit log"
  >
  <Icon name="refresh" className="text-lg mr-2" />
@@ -75,7 +75,7 @@ export const AuditViewer: React.FC = () => {
  </div>
 
  {/* Logs List */}
- <div className="bg-[#050505] border border-[#333] overflow-hidden ">
+ <div className="bg-background border border-border overflow-hidden ">
  {loading ? (
  <div className="p-6 space-y-4">
  {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -90,8 +90,8 @@ export const AuditViewer: React.FC = () => {
  ))}
  </div>
  ) : logs.length === 0 ? (
- <div className="py-16 text-center text-[#666] ">
- <Icon name="history" className="text-4xl text-[#666] mb-3 block mx-auto" />
+ <div className="py-16 text-center text-foreground-muted ">
+ <Icon name="history" className="text-4xl text-foreground-muted mb-3 block mx-auto" />
  <p className="font-medium">No audit logs yet</p>
  <p className="text-xs mt-1">Status changes on orders will appear here automatically</p>
  </div>
@@ -102,11 +102,11 @@ export const AuditViewer: React.FC = () => {
  return (
  <div
  key={log.id}
- className="px-6 py-4 hover:bg-[#0A0A0A] /40 transition-colors"
+ className="px-6 py-4 hover:bg-background-card /40 transition-colors"
  >
  <div className="flex items-start gap-4">
  <div className="mt-0.5">
- <div className={`size-8 flex items-center justify-center ${actionColors[log.action] || 'bg-[#111] text-[#666]'}`}>
+ <div className={`size-8 flex items-center justify-center ${actionColors[log.action] || 'bg-background-subtle text-foreground-muted'}`}>
  <Icon
  name={log.action === 'UPDATE' ? 'edit' : log.action === 'INSERT' ? 'add' : 'delete'}
  className="text-sm"
@@ -115,27 +115,27 @@ export const AuditViewer: React.FC = () => {
  </div>
  <div className="flex-1 min-w-0">
  <div className="flex items-center gap-2 flex-wrap">
- <span className={`inline-flex items-center px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${actionColors[log.action] || 'bg-[#111]'}`}>
+ <span className={`inline-flex items-center px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${actionColors[log.action] || 'bg-background-subtle'}`}>
  {log.action}
  </span>
- <span className="text-sm font-medium text-white ">
+ <span className="text-sm font-medium text-foreground ">
  {log.tableName}
  </span>
- <span className="font-mono text-xs text-[#666]">
+ <span className="font-mono text-xs text-foreground-muted">
  #{log.recordId.slice(-8)}
  </span>
  </div>
 
  {statusChange && (
  <div className="mt-1 flex items-center gap-2">
- <Icon name="swap_horiz" className="text-sm text-[#666]" />
- <span className="text-sm text-[#666] font-medium">
+ <Icon name="swap_horiz" className="text-sm text-foreground-muted" />
+ <span className="text-sm text-foreground-muted font-medium">
  {statusChange}
  </span>
  </div>
  )}
 
- <div className="mt-1 flex items-center gap-4 text-xs text-[#666]">
+ <div className="mt-1 flex items-center gap-4 text-xs text-foreground-muted">
  <span>{formatDate(log.createdAt)}</span>
  {log.changedBy && (
  <span className="font-mono">by {log.changedBy.slice(-8)}</span>

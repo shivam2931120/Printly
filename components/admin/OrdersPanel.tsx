@@ -232,17 +232,17 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
 
  const statusColors: Record<string, string> = {
  'pending': 'bg-yellow-900/20 text-yellow-400 ',
- 'confirmed': 'bg-red-900/20 text-red-400 ',
+ 'confirmed': 'bg-red-900/20 text-error ',
  'printing': 'bg-indigo-900/20 text-indigo-400 ',
- 'ready': 'bg-purple-900/20 text-purple-400 ',
+ 'ready': 'bg-primary/10 text-primary ',
  'completed': 'bg-green-900/20 text-green-400 ',
  };
 
  const paymentColors: Record<string, string> = {
  'paid': 'bg-green-900/20 text-green-400 ',
- 'unpaid': 'bg-red-900/20 text-red-400 ',
+ 'unpaid': 'bg-red-900/20 text-error ',
  'pending': 'bg-yellow-900/20 text-yellow-400 ',
- 'failed': 'bg-red-900/20 text-red-400 ',
+ 'failed': 'bg-red-900/20 text-error ',
  };
 
  const filteredOrders = useMemo(() => orders.filter(order => {
@@ -287,15 +287,15 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  {/* Header */}
  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
  <div>
- <h2 className="text-2xl font-bold text-white ">Orders</h2>
- <p className="text-[#666] text-sm mt-1 flex items-center gap-2">
+ <h2 className="text-2xl font-bold text-foreground ">Orders</h2>
+ <p className="text-foreground-muted text-sm mt-1 flex items-center gap-2">
  Manage print orders and track fulfillment
  {/* Realtime connection indicator */}
  <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 
  ${realtimeStatus === 'connected'
  ? 'bg-green-900/20/10 text-green-500'
  : realtimeStatus === 'error'
- ? 'bg-red-900/20/10 text-red-500'
+ ? 'bg-red-900/20/10 text-primary'
  : 'bg-amber-900/200/10 text-amber-500'
  }`}>
  <span className={`size-1.5 inline-block
@@ -312,7 +312,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  <div className="flex items-center gap-3">
  <button
  onClick={handleExport}
- className="inline-flex items-center justify-center h-10 px-4 border border-[#333] bg-[#0A0A0A] text-[#666] text-sm font-medium hover:bg-[#0A0A0A] transition-colors "
+ className="inline-flex items-center justify-center h-10 px-4 border border-border bg-background-card text-foreground-muted text-sm font-medium hover:bg-background-card transition-colors "
  >
  <Icon name="download" className="text-lg mr-2" />
  Export
@@ -329,15 +329,15 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  className={`
  inline-flex items-center gap-2 px-4 py-2 text-sm font-bold whitespace-nowrap transition-all
  ${statusFilter === status
- ? 'bg-[#0A0A0A] bg-[#0A0A0A] text-white transform scale-105'
- : 'bg-[#0A0A0A] text-[#666] hover:bg-[#1A1A1A] border border-[#333] '
+ ? 'bg-background-card bg-background-card text-foreground transform scale-105'
+ : 'bg-background-card text-foreground-muted hover:bg-background-subtle border border-border '
  }
  `}
  >
  <span className="capitalize">{status === 'all' ? 'All Orders' : status}</span>
  <span className={`px-2 py-0.5 text-xs ${statusFilter === status
- ? 'bg-[#1A1A1A] '
- : 'bg-[#111] '
+ ? 'bg-background-subtle '
+ : 'bg-background-subtle '
  }`}>
  {status === 'all' ? statusCounts.all : statusCounts[status]}
  </span>
@@ -348,20 +348,20 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  {/* Search & Advanced Filters */}
  <div className="flex flex-col sm:flex-row gap-3">
  <div className="relative flex-1 max-w-md">
- <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-[#666] text-lg" />
+ <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground-muted text-lg" />
  <input
  type="text"
  placeholder="Search by OTP, name, email, or file..."
  value={searchQuery}
  onChange={(e) => setSearchQuery(e.target.value)}
- className="w-full pl-10 pr-4 py-2.5 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl text-sm text-white placeholder-slate-400 focus:ring-2 focus:ring-primary focus:border-primary"
+ className="w-full pl-10 pr-4 py-2.5 bg-background-card border border-border rounded-2xl shadow-2xl text-sm text-foreground placeholder-slate-400 focus:ring-2 focus:ring-primary focus:border-primary"
  aria-label="Search orders"
  />
  </div>
  <select
  value={dateFilter}
  onChange={(e) => setDateFilter(e.target.value as any)}
- className="px-3 py-2.5 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl text-sm text-[#666] focus:ring-2 focus:ring-primary"
+ className="px-3 py-2.5 bg-background-card border border-border rounded-2xl shadow-2xl text-sm text-foreground-muted focus:ring-2 focus:ring-primary"
  aria-label="Filter by date"
  >
  <option value="all">All Time</option>
@@ -372,7 +372,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  <select
  value={paymentFilter}
  onChange={(e) => setPaymentFilter(e.target.value)}
- className="px-3 py-2.5 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl text-sm text-[#666] focus:ring-2 focus:ring-primary"
+ className="px-3 py-2.5 bg-background-card border border-border rounded-2xl shadow-2xl text-sm text-foreground-muted focus:ring-2 focus:ring-primary"
  aria-label="Filter by payment"
  >
  <option value="all">All Payments</option>
@@ -383,22 +383,22 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
 
  {/* Bulk Action Bar */}
  {selectedIds.size > 0 && (
- <div className="flex items-center gap-3 p-3 bg-[#111] border border-red-600/20 animate-fade-in">
- <span className="text-sm font-bold text-red-400 ">{selectedIds.size} selected</span>
+ <div className="flex items-center gap-3 p-3 bg-background-subtle border border-primary/20 animate-fade-in">
+ <span className="text-sm font-bold text-error ">{selectedIds.size} selected</span>
  <div className="flex items-center gap-2 ml-auto">
  <button onClick={() => handleBulkStatus('printing')} className="px-3 py-1.5 text-xs font-bold bg-indigo-900/20 text-indigo-400 hover:bg-indigo-900/30 transition-colors">
  <Icon name="print" className="text-sm mr-1" />Print
  </button>
- <button onClick={() => handleBulkStatus('ready')} className="px-3 py-1.5 text-xs font-bold bg-purple-900/20 text-purple-400 hover:bg-purple-900/30 transition-colors">
+ <button onClick={() => handleBulkStatus('ready')} className="px-3 py-1.5 text-xs font-bold bg-primary/10 text-primary hover:bg-primary/15 transition-colors">
  <Icon name="check_circle" className="text-sm mr-1" />Ready
  </button>
  <button onClick={() => handleBulkStatus('completed')} className="px-3 py-1.5 text-xs font-bold bg-green-900/20 text-green-400 hover:bg-green-200 transition-colors">
  <Icon name="done_all" className="text-sm mr-1" />Complete
  </button>
- <button onClick={handleBulkDelete} className="px-3 py-1.5 text-xs font-bold bg-red-900/20 text-red-400 hover:bg-red-900/30 transition-colors">
+ <button onClick={handleBulkDelete} className="px-3 py-1.5 text-xs font-bold bg-red-900/20 text-error hover:bg-red-900/30 transition-colors">
  <Icon name="delete" className="text-sm mr-1" />Delete
  </button>
- <button onClick={() => setSelectedIds(new Set())} className="px-3 py-1.5 text-xs font-medium text-[#666] hover:bg-[#111] transition-colors">
+ <button onClick={() => setSelectedIds(new Set())} className="px-3 py-1.5 text-xs font-medium text-foreground-muted hover:bg-background-subtle transition-colors">
  Clear
  </button>
  </div>
@@ -406,7 +406,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  )}
 
  {/* Desktop Orders Table */}
- <div className="hidden md:block bg-[#050505] border border-[#333] overflow-hidden ">
+ <div className="hidden md:block bg-background border border-border overflow-hidden ">
  {loading ? (
  <div className="p-6 space-y-4">
  {[1, 2, 3, 4, 5].map((i) => (
@@ -434,16 +434,16 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  type="checkbox"
  checked={selectedIds.size === filteredOrders.length && filteredOrders.length > 0}
  onChange={toggleSelectAll}
- className="rounded border-[#333] text-primary focus:ring-primary"
+ className="rounded border-border text-primary focus:ring-primary"
  aria-label="Select all orders"
  />
  </th>
- <th className="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider text-[#666] ">OTP</th>
- <th className="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider text-[#666] ">User</th>
- <th className="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider text-[#666] ">Items</th>
- <th className="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider text-[#666] ">Payment</th>
- <th className="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider text-[#666] ">Status</th>
- <th className="text-right py-3 px-4 text-xs font-semibold uppercase tracking-wider text-[#666] ">Actions</th>
+ <th className="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider text-foreground-muted ">OTP</th>
+ <th className="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider text-foreground-muted ">User</th>
+ <th className="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider text-foreground-muted ">Items</th>
+ <th className="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider text-foreground-muted ">Payment</th>
+ <th className="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider text-foreground-muted ">Status</th>
+ <th className="text-right py-3 px-4 text-xs font-semibold uppercase tracking-wider text-foreground-muted ">Actions</th>
  </tr>
  </thead>
  <motion.tbody
@@ -457,9 +457,9 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  >
  {filteredOrders.length === 0 ? (
  <tr>
- <td colSpan={7} className="py-12 text-center text-[#666] ">
+ <td colSpan={7} className="py-12 text-center text-foreground-muted ">
  <div className="flex flex-col items-center justify-center">
- <Icon name="inbox" className="text-4xl text-[#666] mb-3" />
+ <Icon name="inbox" className="text-4xl text-foreground-muted mb-3" />
  <p>No orders found</p>
  </div>
  </td>
@@ -472,7 +472,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  visible: { opacity: 1, x: 0 }
  }}
  key={order.id}
- className={`hover:bg-[#0A0A0A] /40 transition-colors cursor-pointer ${selectedIds.has(order.id) ? 'bg-[#111]/50' : ''}`}
+ className={`hover:bg-background-card /40 transition-colors cursor-pointer ${selectedIds.has(order.id) ? 'bg-background-subtle/50' : ''}`}
  onClick={() => setSelectedOrder(order)}
  >
  <td className="py-4 px-3" onClick={(e) => e.stopPropagation()}>
@@ -480,7 +480,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  type="checkbox"
  checked={selectedIds.has(order.id)}
  onChange={() => toggleSelect(order.id)}
- className="rounded border-[#333] text-primary focus:ring-primary"
+ className="rounded border-border text-primary focus:ring-primary"
  aria-label={`Select order ${order.orderToken || order.id}`}
  />
  </td>
@@ -491,9 +491,9 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  {order.orderToken}
  </span>
  ) : (
- <span className="font-mono text-xs text-[#666]">—</span>
+ <span className="font-mono text-xs text-foreground-muted">—</span>
  )}
- <span className="text-[10px] text-[#666] font-mono">#{order.id.slice(-6)}</span>
+ <span className="text-[10px] text-foreground-muted font-mono">#{order.id.slice(-6)}</span>
  </div>
  </td>
  <td className="py-4 px-4">
@@ -501,7 +501,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  <div className={`size-8 flex items-center justify-center text-xs font-bold bg-primary/10 text-primary`}>
  {order.userName.charAt(0).toUpperCase()}
  </div>
- <span className="text-white font-medium">{order.userName}</span>
+ <span className="text-foreground font-medium">{order.userName}</span>
  </div>
  </td>
 
@@ -510,32 +510,32 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  {order.items && order.items.length > 0 ? (
  <>
  <Icon name="shopping_bag" className="text-primary text-lg" />
- <span className="text-[#666] truncate max-w-[150px]">
+ <span className="text-foreground-muted truncate max-w-[150px]">
  {order.items.length} items
  </span>
  </>
  ) : (
  <>
- <Icon name="description" className="text-red-500 text-lg" />
- <span className="text-[#666] truncate max-w-[150px]">{order.fileName || 'Unknown File'}</span>
+ <Icon name="description" className="text-primary text-lg" />
+ <span className="text-foreground-muted truncate max-w-[150px]">{order.fileName || 'Unknown File'}</span>
  </>
  )}
  </div>
  </td>
  <td className="py-4 px-4">
- <span className="font-semibold text-white ">
+ <span className="font-semibold text-foreground ">
  ₹{order.totalAmount.toLocaleString()}
  </span>
  </td>
  <td className="py-4 px-4">
  <div className="flex flex-col items-center gap-1">
- <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium ${paymentColors[order.paymentStatus] || 'bg-[#111]'}`}>
+ <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium ${paymentColors[order.paymentStatus] || 'bg-background-subtle'}`}>
  {order.paymentStatus}
  </span>
  </div>
  </td>
  <td className="py-4 px-4">
- <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium ${statusColors[order.status] || 'bg-[#111]'} `}>
+ <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium ${statusColors[order.status] || 'bg-background-subtle'} `}>
  {order.status}
  </span>
  </td>
@@ -543,7 +543,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  <div className="flex items-center justify-end gap-2">
  <button
  onClick={() => setSelectedOrder(order)}
- className="p-2 text-[#666] hover:text-primary hover:bg-primary/10 transition-colors"
+ className="p-2 text-foreground-muted hover:text-primary hover:bg-primary/10 transition-colors"
  title="View Details"
  >
  <Icon name="visibility" className="text-xl" />
@@ -552,7 +552,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  {order.status === 'confirmed' && (
  <button
  onClick={(e) => { e.stopPropagation(); updateOrderStatus(order.id, 'printing'); }}
- className="p-2 bg-indigo-900/20 text-indigo-400 hover:bg-indigo-600 hover:text-white transition-all"
+ className="p-2 bg-indigo-900/20 text-indigo-400 hover:bg-indigo-600 hover:text-foreground transition-all"
  title="Start Printing"
  >
  <Icon name="print" className="text-xl" />
@@ -561,7 +561,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  {order.status === 'printing' && (
  <button
  onClick={(e) => { e.stopPropagation(); updateOrderStatus(order.id, 'ready'); }}
- className="p-2 bg-purple-900/20 text-purple-400 hover:bg-purple-600 hover:text-white transition-all"
+ className="p-2 bg-primary/10 text-primary hover:bg-primary hover:text-foreground transition-all"
  title="Mark Ready"
  >
  <Icon name="check_circle" className="text-xl" />
@@ -570,7 +570,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  {order.status === 'ready' && (
  <button
  onClick={(e) => { e.stopPropagation(); updateOrderStatus(order.id, 'completed'); }}
- className="p-2 bg-green-900/20 text-green-400 hover:bg-green-600 hover:text-white transition-all"
+ className="p-2 bg-green-900/20 text-green-400 hover:bg-green-600 hover:text-foreground transition-all"
  title="Mark Completed"
  >
  <Icon name="done_all" className="text-xl" />
@@ -580,7 +580,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  {order.status === 'completed' && (
  <button
  onClick={(e) => { e.stopPropagation(); deleteOrder(order.id); }}
- className="p-2 bg-red-900/20 text-red-500 hover:bg-red-600 hover:text-white transition-all"
+ className="p-2 bg-red-900/20 text-primary hover:bg-primary hover:text-foreground transition-all"
  title="Delete Order"
  >
  <Icon name="delete" className="text-xl" />
@@ -600,9 +600,9 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  {/* Mobile Orders List (Card View) */}
  <div className="md:hidden space-y-4">
  {filteredOrders.length === 0 ? (
- <div className="py-12 text-center text-[#666] bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl ">
+ <div className="py-12 text-center text-foreground-muted bg-background-card border border-border rounded-2xl shadow-2xl ">
  <div className="flex flex-col items-center justify-center">
- <Icon name="inbox" className="text-4xl text-[#666] mb-3" />
+ <Icon name="inbox" className="text-4xl text-foreground-muted mb-3" />
  <p>No orders found</p>
  </div>
  </div>
@@ -610,7 +610,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  filteredOrders.map((order) => (
  <div
  key={order.id}
- className="bg-[#050505] border border-[#333] p-4  transition- cursor-pointer"
+ className="bg-background border border-border p-4  transition- cursor-pointer"
  onClick={() => setSelectedOrder(order)}
  >
  {/* Header: OTP and Status */}
@@ -622,31 +622,31 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  {order.orderToken}
  </span>
  ) : null}
- <span className="font-mono text-[10px] text-[#666]">#{order.id.slice(-6)}</span>
+ <span className="font-mono text-[10px] text-foreground-muted">#{order.id.slice(-6)}</span>
  </div>
 
  <div className="flex items-center gap-2">
  <div className={`size-6 flex items-center justify-center text-[10px] font-bold bg-primary/10 text-primary`}>
  {order.userName.charAt(0).toUpperCase()}
  </div>
- <span className="font-bold text-white text-sm">
+ <span className="font-bold text-foreground text-sm">
  {order.userName}
  </span>
  </div>
  </div>
  <div className="flex flex-col items-end gap-1">
- <span className={`inline-flex items-center px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase ${statusColors[order.status] || 'bg-[#111]'}`}>
+ <span className={`inline-flex items-center px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase ${statusColors[order.status] || 'bg-background-subtle'}`}>
  {order.status}
  </span>
- <span className={`inline-flex items-center px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase ${paymentColors[order.paymentStatus] || 'bg-[#111]'}`}>
+ <span className={`inline-flex items-center px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase ${paymentColors[order.paymentStatus] || 'bg-background-subtle'}`}>
  {order.paymentStatus}
  </span>
  </div>
  </div>
 
  {/* Content: Items and Amount */}
- <div className="flex justify-between items-center py-3 border-t border-b border-[#333] /50 mb-3">
- <div className="flex items-center gap-2 text-sm text-[#666] ">
+ <div className="flex justify-between items-center py-3 border-t border-b border-border /50 mb-3">
+ <div className="flex items-center gap-2 text-sm text-foreground-muted ">
  {order.items && order.items.length > 0 ? (
  <>
  <Icon name="shopping_bag" className="text-primary" />
@@ -654,12 +654,12 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  </>
  ) : (
  <>
- <Icon name="description" className="text-red-500" />
+ <Icon name="description" className="text-primary" />
  <span className="truncate max-w-[120px]">{order.fileName || 'File'}</span>
  </>
  )}
  </div>
- <span className="font-bold text-white ">
+ <span className="font-bold text-foreground ">
  ₹{order.totalAmount.toLocaleString()}
  </span>
  </div>
@@ -668,7 +668,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
  <button
  onClick={() => setSelectedOrder(order)}
- className="flex-1 py-2 bg-[#1A1A1A] text-[#666] font-bold text-xs hover:bg-[#333] transition-colors flex items-center justify-center gap-1.5"
+ className="flex-1 py-2 bg-background-subtle text-foreground-muted font-bold text-xs hover:bg-[#333] transition-colors flex items-center justify-center gap-1.5"
  >
  <Icon name="visibility" className="text-sm" />
  View
@@ -677,7 +677,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  {order.status === 'confirmed' && (
  <button
  onClick={(e) => { e.stopPropagation(); updateOrderStatus(order.id, 'printing'); }}
- className="flex-1 py-2 bg-indigo-600 text-white font-bold text-xs hover:bg-indigo-700 transition-colors flex items-center justify-center gap-1.5 -500/20"
+ className="flex-1 py-2 bg-indigo-600 text-foreground font-bold text-xs hover:bg-indigo-700 transition-colors flex items-center justify-center gap-1.5 -500/20"
  >
  <Icon name="print" className="text-sm" />
  Print
@@ -686,7 +686,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  {order.status === 'printing' && (
  <button
  onClick={(e) => { e.stopPropagation(); updateOrderStatus(order.id, 'ready'); }}
- className="flex-1 py-2 bg-purple-600 text-white font-bold text-xs hover:bg-purple-700 transition-colors flex items-center justify-center gap-1.5 -500/20"
+ className="flex-1 py-2 bg-primary text-foreground font-bold text-xs hover:bg-accent-hover transition-colors flex items-center justify-center gap-1.5 -500/20"
  >
  <Icon name="check_circle" className="text-sm" />
  Ready
@@ -695,7 +695,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  {order.status === 'ready' && (
  <button
  onClick={(e) => { e.stopPropagation(); updateOrderStatus(order.id, 'completed'); }}
- className="flex-1 py-2 bg-green-600 text-white font-bold text-xs hover:bg-green-700 transition-colors flex items-center justify-center gap-1.5 -500/20"
+ className="flex-1 py-2 bg-green-600 text-foreground font-bold text-xs hover:bg-green-700 transition-colors flex items-center justify-center gap-1.5 -500/20"
  >
  <Icon name="done_all" className="text-sm" />
  Complete
@@ -705,7 +705,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  {order.status === 'completed' && (
  <button
  onClick={(e) => { e.stopPropagation(); deleteOrder(order.id); }}
- className="py-2 px-3 bg-red-600 text-white font-bold text-xs hover:bg-red-700 transition-colors flex items-center justify-center gap-1.5 -500/20"
+ className="py-2 px-3 bg-primary text-foreground font-bold text-xs hover:bg-primary-hover transition-colors flex items-center justify-center gap-1.5 -500/20"
  title="Delete Order"
  >
  <Icon name="delete" className="text-lg" />

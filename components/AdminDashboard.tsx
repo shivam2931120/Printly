@@ -118,16 +118,16 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
 }) => (
  <div className="space-y-6">
  <div>
- <h2 className="text-2xl font-bold text-white ">Settings</h2>
- <p className="text-[#666] text-sm mt-1">
+ <h2 className="text-2xl font-bold text-foreground ">Settings</h2>
+ <p className="text-foreground-muted text-sm mt-1">
  Configure your print shop settings
  </p>
  </div>
 
  <div className="grid gap-6">
  {/* Profile Settings */}
- <div className="bg-[#050505] border border-[#333] p-6">
- <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+ <div className="bg-background border border-border p-6">
+ <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
  <Icon name="person" className="text-primary" />
  Admin Profile
  </h3>
@@ -144,7 +144,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
  <Icon name="person" className="text-4xl text-primary" />
  </div>
  )}
- <label className="absolute bottom-0 right-0 p-2 bg-primary text-white cursor-pointer hover:bg-primary-hover transition-colors ">
+ <label className="absolute bottom-0 right-0 p-2 bg-primary text-foreground cursor-pointer hover:bg-primary-hover transition-colors ">
  <Icon name="camera_alt" className="text-sm" />
  <input
  type="file"
@@ -155,10 +155,10 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
  </label>
  </div>
  <div>
- <p className="text-lg font-bold text-white ">
+ <p className="text-lg font-bold text-foreground ">
  {currentUser?.name || 'Admin User'}
  </p>
- <p className="text-[#666] ">
+ <p className="text-foreground-muted ">
  {currentUser?.email || 'admin@printwise.in'}
  </p>
  <button
@@ -176,8 +176,8 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
  <ShopSettings shopConfig={shopConfig} onUpdate={onShopConfigUpdate} />
 
  {/* Notifications */}
- <div className="bg-[#050505] border border-[#333] p-6">
- <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+ <div className="bg-background border border-border p-6">
+ <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
  <Icon name="notifications" className="text-amber-500" />
  Notifications
  </h3>
@@ -198,12 +198,12 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
  </div>
 
  {/* Danger Zone */}
- <div className="bg-red-600/5 border border-red-600/20 p-6">
- <h3 className="text-lg font-bold text-red-400 mb-4 flex items-center gap-2">
- <Icon name="warning" className="text-red-500 " />
+ <div className="bg-primary/5 border border-primary/20 p-6">
+ <h3 className="text-lg font-bold text-error mb-4 flex items-center gap-2">
+ <Icon name="warning" className="text-primary " />
  Danger Zone
  </h3>
- <p className="text-sm text-red-500 mb-4">
+ <p className="text-sm text-primary mb-4">
  Clears cached preferences and UI state. Database data is not affected.
  </p>
  <button
@@ -213,7 +213,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
  window.location.reload();
  }
  }}
- className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold text-sm transition-colors flex items-center gap-2 "
+ className="px-4 py-2 bg-primary hover:bg-primary-hover text-foreground font-bold text-sm transition-colors flex items-center gap-2 "
  >
  <Icon name="delete_forever" />
  Clear Local Cache
@@ -229,13 +229,13 @@ const SettingRow: React.FC<{
  title: string;
  description: string;
 }> = ({ icon, title, description }) => (
- <div className="flex items-start gap-4 p-3 hover:bg-[#0A0A0A] /50 transition-colors">
- <div className="p-2 bg-[#111] ">
- <Icon name={icon} className="text-[#666] " />
+ <div className="flex items-start gap-4 p-3 hover:bg-background-card /50 transition-colors">
+ <div className="p-2 bg-background-subtle ">
+ <Icon name={icon} className="text-foreground-muted " />
  </div>
  <div>
- <p className="font-medium text-white ">{title}</p>
- <p className="text-sm text-[#666] ">{description}</p>
+ <p className="font-medium text-foreground ">{title}</p>
+ <p className="text-sm text-foreground-muted ">{description}</p>
  </div>
  </div>
 );
@@ -250,23 +250,23 @@ const ToggleSetting: React.FC<{
  const [enabled, setEnabled] = useState(defaultValue);
 
  return (
- <div className="flex items-center justify-between p-3 hover:bg-[#0A0A0A] /50 transition-colors">
+ <div className="flex items-center justify-between p-3 hover:bg-background-card /50 transition-colors">
  <div className="flex items-start gap-4">
- <div className="p-2 bg-[#111] ">
- <Icon name={icon} className="text-[#666] " />
+ <div className="p-2 bg-background-subtle ">
+ <Icon name={icon} className="text-foreground-muted " />
  </div>
  <div>
- <p className="font-medium text-white ">{title}</p>
- <p className="text-sm text-[#666] ">{description}</p>
+ <p className="font-medium text-foreground ">{title}</p>
+ <p className="text-sm text-foreground-muted ">{description}</p>
  </div>
  </div>
  <button
  onClick={() => setEnabled(!enabled)}
- className={`relative w-11 h-6 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${enabled ? 'bg-primary' : 'bg-[#1A1A1A] '
+ className={`relative w-11 h-6 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${enabled ? 'bg-primary' : 'bg-background-subtle '
  }`}
  >
  <span
- className={`absolute left-0.5 top-0.5 bg-[#0A0A0A] h-5 w-5 transform transition-transform duration-200 ease-in-out ${enabled ? 'translate-x-5' : 'translate-x-0'
+ className={`absolute left-0.5 top-0.5 bg-background-card h-5 w-5 transform transition-transform duration-200 ease-in-out ${enabled ? 'translate-x-5' : 'translate-x-0'
  }`}
  />
  </button>

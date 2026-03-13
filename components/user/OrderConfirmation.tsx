@@ -80,22 +80,22 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({
  <div className="absolute inset-0 bg-black/60 animate-fade-in" onClick={handleClose} />
 
  {/* Modal */}
- <div className="relative w-full max-w-lg bg-surface-dark border rounded-2xl shadow-xl border-[#333] overflow-hidden animate-zoom-in">
+ <div className="relative w-full max-w-lg bg-surface-dark border rounded-2xl shadow-xl border-border overflow-hidden animate-zoom-in">
  {/* Success Header */}
- <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-8 text-center text-white relative overflow-hidden">
+ <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-8 text-center text-foreground relative overflow-hidden">
  <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
  <div className="relative z-10">
- <div className="inline-flex items-center justify-center size-20 bg-[#1A1A1A] mb-4 ">
- <CheckCircle2 className="w-10 h-10 text-white" />
+ <div className="inline-flex items-center justify-center size-20 bg-background-subtle mb-4 ">
+ <CheckCircle2 className="w-10 h-10 text-foreground" />
  </div>
  <h2 className="text-3xl font-black mb-1 tracking-tight">Order Confirmed!</h2>
- <p className="text-white/90 font-medium">Your print job has been queued</p>
+ <p className="text-foreground/90 font-medium">Your print job has been queued</p>
  </div>
  </div>
 
  {/* Token Display */}
  <div className="p-6 border-b border-border-dark bg-background-dark/50">
- <p className="text-xs font-bold text-[#666] text-center uppercase tracking-widest mb-3">Order Token</p>
+ <p className="text-xs font-bold text-foreground-muted text-center uppercase tracking-widest mb-3">Order Token</p>
  <div className="flex items-center justify-center gap-2">
  {token.split('').map((char, idx) => (
  <div
@@ -107,13 +107,13 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({
  ))}
  </div>
  <div className="flex items-center justify-center mt-4 gap-3">
- <p className="text-xs text-[#666] flex items-center gap-1.5">
+ <p className="text-xs text-foreground-muted flex items-center gap-1.5">
  <Info size={14} />
  Show this token at the counter
  </p>
  <button
  onClick={handleCopyToken}
- className={`flex items-center gap-1 px-3 py-1.5 text-xs font-bold transition-all ${copied ? 'bg-green-900/20/20 text-green-400 border border-green-500/30' : 'bg-[#111] text-[#666] border border-[#333] hover:bg-[#111] hover:text-white'}`}
+ className={`flex items-center gap-1 px-3 py-1.5 text-xs font-bold transition-all ${copied ? 'bg-green-900/20/20 text-green-400 border border-green-500/30' : 'bg-background-subtle text-foreground-muted border border-border hover:bg-background-subtle hover:text-foreground'}`}
  >
  {copied ? <><Check size={12} /> Copied</> : <><Copy size={12} /> Copy</>}
  </button>
@@ -123,15 +123,15 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({
  {/* Order Details */}
  <div className="p-6 space-y-5">
  {/* Item Preview (First item or summary) */}
- <div className="flex items-center gap-4 p-4 bg-[#0A0A0A]/5 border border-[#333]">
- <div className="size-12 bg-red-900/20/10 flex items-center justify-center text-red-500 shrink-0">
+ <div className="flex items-center gap-4 p-4 bg-background-card/5 border border-border">
+ <div className="size-12 bg-red-900/20/10 flex items-center justify-center text-primary shrink-0">
  <FileText size={24} />
  </div>
  <div className="flex-1 min-w-0">
- <p className="font-bold text-white truncate text-lg">
+ <p className="font-bold text-foreground truncate text-lg">
  {order.fileName || 'Print Order'}
  </p>
- <p className="text-sm text-[#666]">
+ <p className="text-sm text-foreground-muted">
  {order.pageCount ? `${order.pageCount} pages • ` : ''}
  {order.options?.copies || 1} copies
  </p>
@@ -141,14 +141,14 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({
  {order.options && (
  <div className="grid grid-cols-2 gap-3 text-sm">
  <div className="p-3 bg-background-dark border border-border-dark">
- <p className="text-xs text-[#666] mb-1">Print Color</p>
- <p className="font-bold text-[#999] capitalize">
+ <p className="text-xs text-foreground-muted mb-1">Print Color</p>
+ <p className="font-bold text-foreground-secondary capitalize">
  {order.options.colorMode === 'color' ? 'Color' : 'Black & White'}
  </p>
  </div>
  <div className="p-3 bg-background-dark border border-border-dark">
- <p className="text-xs text-[#666] mb-1">Paper Size</p>
- <p className="font-bold text-[#999] uppercase">{order.options.paperSize}</p>
+ <p className="text-xs text-foreground-muted mb-1">Paper Size</p>
+ <p className="font-bold text-foreground-secondary uppercase">{order.options.paperSize}</p>
  </div>
  </div>
  )}
@@ -156,12 +156,12 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({
  {/* Total & Time */}
  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-primary/10 to-transparent border border-primary/20">
  <div>
- <p className="text-xs text-[#666] font-bold uppercase">Amount Paid</p>
+ <p className="text-xs text-foreground-muted font-bold uppercase">Amount Paid</p>
  <p className="text-2xl font-black text-primary">₹{order.totalAmount.toFixed(2)}</p>
  </div>
  <div className="text-right">
- <p className="text-xs text-[#666] font-bold uppercase">Date</p>
- <p className="text-sm font-medium text-white">{formatDateTime(order.createdAt)}</p>
+ <p className="text-xs text-foreground-muted font-bold uppercase">Date</p>
+ <p className="text-sm font-medium text-foreground">{formatDateTime(order.createdAt)}</p>
  </div>
  </div>
  </div>
@@ -171,7 +171,7 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({
  <Button
  variant="ghost"
  onClick={handleClose}
- className="flex-1 text-[#666] hover:text-white"
+ className="flex-1 text-foreground-muted hover:text-foreground"
  >
  Close
  </Button>

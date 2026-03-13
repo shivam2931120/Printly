@@ -216,23 +216,23 @@ export const AnalyticsDashboard: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-white ">Analytics Overview</h2>
-          <p className="text-[#666] text-sm mt-1">
+          <h2 className="text-2xl font-bold text-foreground ">Analytics Overview</h2>
+          <p className="text-foreground-muted text-sm mt-1">
             Live analytics generated from real-time orders
           </p>
         </div>
 
         <div className="flex items-center gap-3">
           {/* Period Selector */}
-          <div className="flex p-1 bg-[#1A1A1A] ">
+          <div className="flex p-1 bg-background-subtle ">
             {(['week', 'month', 'year', 'all'] as TimePeriod[]).map((p) => (
               <button
                 key={p}
                 onClick={() => setPeriod(p)}
                 className={`px-3 py-2 text-sm font-medium capitalize transition-all
                   ${period === p
-                    ? 'bg-[#0A0A0A] text-white '
-                    : 'text-[#666] hover:text-white '
+                    ? 'bg-background-card text-foreground '
+                    : 'text-foreground-muted hover:text-foreground '
                   }`}
               >
                 {p}
@@ -246,7 +246,7 @@ export const AnalyticsDashboard: React.FC = () => {
       {loading ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map(i => (
-            <div key={i} className="h-28 bg-[#1A1A1A] animate-pulse" />
+            <div key={i} className="h-28 bg-background-subtle animate-pulse" />
           ))}
         </div>
       ) : (
@@ -261,13 +261,13 @@ export const AnalyticsDashboard: React.FC = () => {
             title="Total Orders"
             value={totals.orders.toString()}
             icon="receipt_long"
-            accent="blue"
+            accent="red"
           />
           <StatsCard
             title="Avg Order Value"
             value={`₹${Math.round(totals.avgOrderValue)}`}
             icon="trending_up"
-            accent="violet"
+            accent="red"
           />
           <StatsCard
             title="Unique Customers"
@@ -282,17 +282,17 @@ export const AnalyticsDashboard: React.FC = () => {
       {!loading && (
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           {/* Revenue Chart */}
-          <div className="xl:col-span-2 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-6">
+          <div className="xl:col-span-2 bg-background-card border border-border rounded-2xl shadow-2xl p-6">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-lg font-bold text-white ">Revenue Trend</h3>
-                <p className="text-sm text-[#666] ">
+                <h3 className="text-lg font-bold text-foreground ">Revenue Trend</h3>
+                <p className="text-sm text-foreground-muted ">
                   Daily revenue ({period === 'all' ? 'all time' : `last ${period}`})
                 </p>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <div className="size-3 bg-[#DC2626]" />
-                <span className="text-[#666] ">Revenue</span>
+                <span className="text-foreground-muted ">Revenue</span>
               </div>
             </div>
             <div className="h-72" style={{ minWidth: 0 }}>
@@ -328,7 +328,7 @@ export const AnalyticsDashboard: React.FC = () => {
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-full flex items-center justify-center text-[#666]">
+                <div className="h-full flex items-center justify-center text-foreground-muted">
                   <div className="text-center">
                     <Icon name="analytics" className="text-4xl mb-2" />
                     <p className="text-sm">No data for this period.</p>
@@ -339,9 +339,9 @@ export const AnalyticsDashboard: React.FC = () => {
           </div>
 
           {/* Print Type Distribution */}
-          <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-6">
-            <h3 className="text-lg font-bold text-white mb-2">Print Type</h3>
-            <p className="text-sm text-[#666] mb-4">B&W vs Color pages</p>
+          <div className="bg-background-card border border-border rounded-2xl shadow-2xl p-6">
+            <h3 className="text-lg font-bold text-foreground mb-2">Print Type</h3>
+            <p className="text-sm text-foreground-muted mb-4">B&W vs Color pages</p>
             {(totals.bwPages + totals.colorPages) > 0 ? (
               <>
                 <div className="h-56" style={{ minWidth: 0 }}>
@@ -363,7 +363,7 @@ export const AnalyticsDashboard: React.FC = () => {
                       <Legend
                         verticalAlign="bottom"
                         formatter={(value) => (
-                          <span className="text-[#666] text-sm">{value}</span>
+                          <span className="text-foreground-muted text-sm">{value}</span>
                         )}
                       />
                     </PieChart>
@@ -372,14 +372,14 @@ export const AnalyticsDashboard: React.FC = () => {
                 <div className="flex justify-center gap-6 mt-2">
                   {printTypeData.map((item) => (
                     <div key={item.name} className="text-center">
-                      <p className="text-2xl font-bold text-white ">{item.value}%</p>
-                      <p className="text-xs text-[#666] ">{item.name}</p>
+                      <p className="text-2xl font-bold text-foreground ">{item.value}%</p>
+                      <p className="text-xs text-foreground-muted ">{item.name}</p>
                     </div>
                   ))}
                 </div>
               </>
             ) : (
-              <div className="h-56 flex items-center justify-center text-[#666]">
+              <div className="h-56 flex items-center justify-center text-foreground-muted">
                 <div className="text-center">
                   <Icon name="print" className="text-4xl mb-2" />
                   <p className="text-sm">No print data yet</p>
@@ -394,9 +394,9 @@ export const AnalyticsDashboard: React.FC = () => {
       {!loading && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Peak Hours (today) */}
-          <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-6">
-            <h3 className="text-lg font-bold text-white mb-2">Today&apos;s Peak Hours</h3>
-            <p className="text-sm text-[#666] mb-4">Order volume by hour (live)</p>
+          <div className="bg-background-card border border-border rounded-2xl shadow-2xl p-6">
+            <h3 className="text-lg font-bold text-foreground mb-2">Today&apos;s Peak Hours</h3>
+            <p className="text-sm text-foreground-muted mb-4">Order volume by hour (live)</p>
             <div className="h-64" style={{ minWidth: 0 }}>
               <ResponsiveContainer width="99%" height={250} debounce={1}>
                 <BarChart data={peakHoursData}>
@@ -418,31 +418,31 @@ export const AnalyticsDashboard: React.FC = () => {
           </div>
 
           {/* Summary Cards */}
-          <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-6">
-            <h3 className="text-lg font-bold text-white mb-2">Breakdown</h3>
-            <p className="text-sm text-[#666] mb-4">Jobs & sales summary</p>
+          <div className="bg-background-card border border-border rounded-2xl shadow-2xl p-6">
+            <h3 className="text-lg font-bold text-foreground mb-2">Breakdown</h3>
+            <p className="text-sm text-foreground-muted mb-4">Jobs & sales summary</p>
 
             <div className="space-y-4">
-              <SummaryRow icon="print" label="Print Jobs" value={totals.printJobs} color="blue" />
-              <SummaryRow icon="shopping_bag" label="Product Sales" value={totals.productSales} color="violet" />
+              <SummaryRow icon="print" label="Print Jobs" value={totals.printJobs} color="red" />
+              <SummaryRow icon="shopping_bag" label="Product Sales" value={totals.productSales} color="red" />
               <SummaryRow icon="description" label="B&W Pages" value={totals.bwPages} color="slate" />
               <SummaryRow icon="palette" label="Color Pages" value={totals.colorPages} color="emerald" />
             </div>
 
             {/* Paper Size (today) */}
-            <div className="mt-6 pt-4 border-t border-[#333] ">
-              <h4 className="text-sm font-semibold text-[#666] mb-3">Today&apos;s Paper Sizes</h4>
+            <div className="mt-6 pt-4 border-t border-border ">
+              <h4 className="text-sm font-semibold text-foreground-muted mb-3">Today&apos;s Paper Sizes</h4>
               <div className="space-y-3">
                 {paperSizeData.map((item) => (
                   <div key={item.name} className="flex items-center gap-4">
-                    <span className="w-14 text-sm font-medium text-[#666] ">{item.name}</span>
-                    <div className="flex-1 h-2.5 bg-[#1A1A1A] overflow-hidden">
+                    <span className="w-14 text-sm font-medium text-foreground-muted ">{item.name}</span>
+                    <div className="flex-1 h-2.5 bg-background-subtle overflow-hidden">
                       <div
                         className="h-full transition-all duration-500"
                         style={{ width: `${item.value}%`, backgroundColor: item.color }}
                       />
                     </div>
-                    <span className="w-10 text-sm font-bold text-white text-right">{item.value}%</span>
+                    <span className="w-10 text-sm font-bold text-foreground text-right">{item.value}%</span>
                   </div>
                 ))}
               </div>
@@ -459,21 +459,21 @@ const StatsCard: React.FC<{
   title: string;
   value: string;
   icon: string;
-  accent: 'emerald' | 'blue' | 'violet' | 'amber';
+  accent: 'emerald' | 'red' | 'red' | 'amber';
 }> = ({ title, value, icon, accent }) => {
   const colors = {
     emerald: 'bg-emerald-900/20 text-emerald-500',
-    blue: 'bg-[#1A1A1A] text-red-500',
-    violet: 'bg-violet-900/20 text-violet-500',
+    blue: 'bg-background-subtle text-primary',
+    violet: 'bg-primary/10 text-primary',
     amber: 'bg-amber-900/20 text-amber-500',
   };
 
   return (
-    <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-5">
+    <div className="bg-background-card border border-border rounded-2xl shadow-2xl p-5">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm text-[#666] mb-1">{title}</p>
-          <p className="text-2xl font-bold text-white ">{value}</p>
+          <p className="text-sm text-foreground-muted mb-1">{title}</p>
+          <p className="text-2xl font-bold text-foreground ">{value}</p>
         </div>
         <div className={`p-2.5 ${colors[accent]}`}>
           <Icon name={icon} className="text-xl" />
@@ -488,18 +488,18 @@ const SummaryRow: React.FC<{
   icon: string;
   label: string;
   value: number;
-  color: 'blue' | 'violet' | 'slate' | 'emerald';
+  color: 'red' | 'red' | 'slate' | 'emerald';
 }> = ({ icon, label, value, color }) => {
   const iconColors = {
-    blue: 'text-red-500',
-    violet: 'text-violet-500',
-    slate: 'text-[#666]',
+    blue: 'text-primary',
+    violet: 'text-primary',
+    slate: 'text-foreground-muted',
     emerald: 'text-emerald-500',
   };
   const bgColors = {
-    blue: 'bg-[#1A1A1A]',
-    violet: 'bg-violet-900/20',
-    slate: 'bg-[#1A1A1A]',
+    blue: 'bg-background-subtle',
+    violet: 'bg-primary/10',
+    slate: 'bg-background-subtle',
     emerald: 'bg-emerald-900/20',
   };
 
@@ -509,9 +509,9 @@ const SummaryRow: React.FC<{
         <Icon name={icon} className={`text-lg ${iconColors[color]}`} />
       </div>
       <div className="flex-1">
-        <p className="text-sm text-[#666] ">{label}</p>
+        <p className="text-sm text-foreground-muted ">{label}</p>
       </div>
-      <p className="text-lg font-bold text-white ">{value.toLocaleString()}</p>
+      <p className="text-lg font-bold text-foreground ">{value.toLocaleString()}</p>
     </div>
   );
 };

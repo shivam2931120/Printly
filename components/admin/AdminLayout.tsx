@@ -24,7 +24,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
  return (
- <div className="min-h-screen bg-[#050505] font-display overflow-x-hidden">
+ <div className="min-h-screen bg-background font-display overflow-x-hidden">
  {/* Desktop Sidebar */}
  <div className="hidden lg:block">
  <AdminSidebar
@@ -69,19 +69,19 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
  ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}
  `}>
  {/* Top Bar */}
- <header className="sticky top-0 z-20 h-16 bg-[#050505] border-b border-[#333]">
+ <header className="sticky top-0 z-20 h-16 bg-background border-b border-border">
  <div className="h-full px-4 sm:px-6 lg:px-8 flex items-center justify-between">
  {/* Mobile Menu Button */}
  <button
  onClick={() => setMobileMenuOpen(true)}
- className="lg:hidden p-2 -ml-2 text-[#666] hover:text-white"
+ className="lg:hidden p-2 -ml-2 text-foreground-muted hover:text-foreground"
  >
  <Icon name="menu" className="text-2xl" />
  </button>
 
  {/* Page Title */}
  <div className="hidden lg:block">
- <h1 className="text-xl font-bold text-white capitalize">
+ <h1 className="text-xl font-bold text-foreground capitalize">
  {activeSection}
  </h1>
  </div>
@@ -91,17 +91,17 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
  {/* Search */}
  <div className="hidden sm:flex items-center">
  <div className="relative">
- <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-[#666] text-lg" />
+ <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground-muted text-lg" />
  <input
  type="text"
  placeholder="Search..."
- className="w-64 pl-10 pr-4 py-2 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl text-sm text-white placeholder-[#666] focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none"
+ className="w-64 pl-10 pr-4 py-2 bg-background-card border border-border rounded-2xl shadow-2xl text-sm text-foreground placeholder-[#666] focus:ring-2 focus:ring-red-600 focus:border-primary outline-none"
  />
  </div>
  </div>
 
  {/* Notifications */}
- <div className="text-white">
+ <div className="text-foreground">
  <NotificationDropdown />
  </div>
 
@@ -111,11 +111,11 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
  <img
  src={adminAvatar}
  alt="Admin"
- className="size-9 object-cover border-2 border-[#333]"
+ className="size-9 object-cover border-2 border-border"
  />
  ) : (
- <div className="size-9 bg-red-600/10 flex items-center justify-center border-2 border-[#333]">
- <Icon name="person" className="text-red-500" />
+ <div className="size-9 bg-primary/10 flex items-center justify-center border-2 border-border">
+ <Icon name="person" className="text-primary" />
  </div>
  )}
  </div>

@@ -121,18 +121,18 @@ export const StorePage: React.FC = () => {
       {/* Mobile Filter Toggle */}
       <div className="lg:hidden flex items-center gap-4 mb-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#666]" size={16} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground-muted" size={16} />
           <input
             type="text"
             placeholder="Search products..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-background-card border rounded-2xl shadow-xl border-border text-sm text-white focus:outline-none focus:border-[#333]"
+            className="w-full pl-10 pr-4 py-2.5 bg-background-card border rounded-2xl shadow-xl border-border text-sm text-foreground focus:outline-none focus:border-border"
           />
         </div>
         <button
           onClick={() => setIsMobileFilterOpen(true)}
-          className="p-2.5 bg-background-card border rounded-2xl shadow-xl border-border text-[#666] hover:text-white"
+          className="p-2.5 bg-background-card border rounded-2xl shadow-xl border-border text-foreground-muted hover:text-foreground"
         >
           <Filter size={20} />
         </button>
@@ -158,10 +158,10 @@ export const StorePage: React.FC = () => {
       )}>
         <div className="h-full flex flex-col p-6 lg:p-0 pt-20 lg:pt-0">
           <div className="flex items-center justify-between mb-8 lg:hidden">
-            <span className="font-bold text-lg text-white font-display">Filters</span>
+            <span className="font-bold text-lg text-foreground font-display">Filters</span>
             <button
               onClick={() => setIsMobileFilterOpen(false)}
-              className="p-3 bg-[#111] text-white hover:bg-[#111] transition-colors"
+              className="p-3 bg-background-subtle text-foreground hover:bg-background-subtle transition-colors"
             >
               <X size={24} />
             </button>
@@ -169,18 +169,18 @@ export const StorePage: React.FC = () => {
 
           <div className="space-y-8">
             <div className="hidden lg:block relative group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#666] group-focus-within:text-white transition-colors" size={16} />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground-muted group-focus-within:text-foreground transition-colors" size={16} />
               <input
                 type="text"
                 placeholder="Search products..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl text-sm text-white focus:outline-none focus:border-[#333] transition-all font-medium"
+                className="w-full pl-10 pr-4 py-2.5 bg-background-card border border-border rounded-2xl shadow-2xl text-sm text-foreground focus:outline-none focus:border-border transition-all font-medium"
               />
             </div>
 
             <div className="space-y-3">
-              <h3 className="text-[10px] font-black text-[#666] uppercase tracking-[0.2em] ml-1">Categories</h3>
+              <h3 className="text-[10px] font-black text-foreground-muted uppercase tracking-[0.2em] ml-1">Categories</h3>
               <div className="space-y-1">
                 <Magnetic strength={0.2}>
                   <button
@@ -188,8 +188,8 @@ export const StorePage: React.FC = () => {
                     className={cn(
                       "w-full flex items-center justify-between px-3 py-2 text-sm font-bold transition-all text-left group",
                       selectedCategory === 'all'
-                        ? "bg-red-600 text-white"
-                        : "text-[#666] hover:bg-[#111] hover:text-white"
+                        ? "bg-primary text-foreground"
+                        : "text-foreground-muted hover:bg-background-subtle hover:text-foreground"
                     )}
                   >
                     <span>All Products</span>
@@ -205,8 +205,8 @@ export const StorePage: React.FC = () => {
                         className={cn(
                           "w-full flex items-center justify-between px-3 py-2 text-sm font-bold transition-all text-left group",
                           selectedCategory === cat.id
-                            ? "bg-red-600 text-white"
-                            : "text-[#666] hover:bg-[#111] hover:text-white"
+                            ? "bg-primary text-foreground"
+                            : "text-foreground-muted hover:bg-background-subtle hover:text-foreground"
                         )}
                       >
                         <span className="flex items-center gap-2">
@@ -224,7 +224,7 @@ export const StorePage: React.FC = () => {
             <div className="lg:hidden pt-4">
               <Button
                 onClick={() => setIsMobileFilterOpen(false)}
-                className="w-full bg-red-600 text-white font-black h-14 "
+                className="w-full bg-primary text-foreground font-black h-14 "
               >
                 Apply Filters
               </Button>
@@ -240,16 +240,16 @@ export const StorePage: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8 flex items-baseline justify-between"
         >
-          <h1 className="text-3xl font-black text-white font-display tracking-tight">
+          <h1 className="text-3xl font-black text-foreground font-display tracking-tight">
             {selectedCategory === 'all' ? 'All Products' : PRODUCT_CATEGORIES.find(c => c.id === selectedCategory)?.name}
           </h1>
-          <span className="text-[#666] text-[10px] font-black uppercase tracking-widest opacity-50">{filteredProducts.length} items available</span>
+          <span className="text-foreground-muted text-[10px] font-black uppercase tracking-widest opacity-50">{filteredProducts.length} items available</span>
         </motion.div>
 
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-              <div key={i} className="aspect-[3/4] bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl relative overflow-hidden">
+              <div key={i} className="aspect-[3/4] bg-background-card border border-border rounded-2xl shadow-2xl relative overflow-hidden">
                 <div className="absolute inset-0 shimmer" />
               </div>
             ))}
@@ -264,10 +264,10 @@ export const StorePage: React.FC = () => {
             {filteredProducts.map(product => (
               <motion.div key={product.id} variants={itemVariants}>
                 <SpotlightCard
-                  className="group flex flex-col bg-[#0C0C0C] border border-[#333] overflow-hidden hover:border-[#333] transition-all duration-500 hover:-translate-y-2 -[0_20px_40px_rgba(0,0,0,0.6)]"
+                  className="group flex flex-col bg-[#0C0C0C] border border-border overflow-hidden hover:border-border transition-all duration-500 hover:-translate-y-2 -[0_20px_40px_rgba(0,0,0,0.6)]"
                 >
                   {/* Image Area */}
-                  <div className="aspect-[4/3] bg-[#0A0A0A] relative overflow-hidden">
+                  <div className="aspect-[4/3] bg-background-card relative overflow-hidden">
                     {product.image && (product.image.startsWith('http') || product.image.startsWith('/')) ? (
                       <img
                         src={product.image}
@@ -275,7 +275,7 @@ export const StorePage: React.FC = () => {
                         className="h-full w-full object-cover transition-transform duration-700 cubic-bezier(0.16, 1, 0.3, 1) group-hover:scale-110"
                       />
                     ) : (
-                      <div className="h-full w-full flex items-center justify-center text-[#666]/30">
+                      <div className="h-full w-full flex items-center justify-center text-foreground-muted/30">
                         <Package size={48} strokeWidth={1} />
                       </div>
                     )}
@@ -285,7 +285,7 @@ export const StorePage: React.FC = () => {
                         <Button
                           onClick={(e) => { e.stopPropagation(); addToCartProduct(product); }}
                           disabled={product.stock === 0}
-                          className="px-8 h-12 bg-red-600 text-white hover:bg-red-700 font-black translate-y-4 group-hover:translate-y-0 transition-transform duration-500"
+                          className="px-8 h-12 bg-primary text-foreground hover:bg-primary-hover font-black translate-y-4 group-hover:translate-y-0 transition-transform duration-500"
                         >
                           <Plus size={20} className="mr-2 stroke-[3]" />
                           Quick Add
@@ -295,13 +295,13 @@ export const StorePage: React.FC = () => {
 
                     {product.stock === 0 && (
                       <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
-                        <span className="bg-red-600 text-white px-4 py-2 text-[10px] uppercase font-black tracking-widest ">
+                        <span className="bg-primary text-foreground px-4 py-2 text-[10px] uppercase font-black tracking-widest ">
                           Sold Out
                         </span>
                       </div>
                     )}
                     {product.stock < 5 && product.stock > 0 && (
-                      <span className="absolute top-4 right-4 bg-red-600 text-white text-[10px] uppercase font-black px-2.5 py-1.5 z-20 animate-pulse">
+                      <span className="absolute top-4 right-4 bg-primary text-foreground text-[10px] uppercase font-black px-2.5 py-1.5 z-20 animate-pulse">
                         Only {product.stock} Left
                       </span>
                     )}
@@ -310,22 +310,22 @@ export const StorePage: React.FC = () => {
                   {/* Content */}
                   <div className="p-6 flex flex-col flex-1 relative">
                     <div className="mb-2">
-                      <h3 className="text-lg font-bold text-white line-clamp-1 transition-colors group-hover:text-primary tracking-tight" title={product.name}>
+                      <h3 className="text-lg font-bold text-foreground line-clamp-1 transition-colors group-hover:text-primary tracking-tight" title={product.name}>
                         {product.name}
                       </h3>
-                      <p className="text-[10px] text-[#666] mt-2 uppercase font-black tracking-[0.15em] opacity-40">
+                      <p className="text-[10px] text-foreground-muted mt-2 uppercase font-black tracking-[0.15em] opacity-40">
                         {product.category}
                       </p>
                     </div>
 
                     <div className="mt-6 flex items-center justify-between">
-                      <span className="text-2xl font-black text-white font-display">
+                      <span className="text-2xl font-black text-foreground font-display">
                         ₹{product.price}
                       </span>
                       <button
                         onClick={() => addToCartProduct(product)}
                         disabled={product.stock === 0}
-                        className="lg:hidden size-12 bg-red-600 flex items-center justify-center text-white active:scale-90 transition-transform disabled:opacity-20 hover:bg-red-700"
+                        className="lg:hidden size-12 bg-primary flex items-center justify-center text-foreground active:scale-90 transition-transform disabled:opacity-20 hover:bg-primary-hover"
                       >
                         <Plus size={24} strokeWidth={3} />
                       </button>
@@ -341,16 +341,16 @@ export const StorePage: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="flex flex-col items-center justify-center py-32 text-center border border-[#333] bg-[#0A0A0A]"
+            className="flex flex-col items-center justify-center py-32 text-center border border-border bg-background-card"
           >
-            <div className="size-20 bg-[#111] flex items-center justify-center mb-6 ">
-              <Search size={40} className="text-[#666] opacity-20" />
+            <div className="size-20 bg-background-subtle flex items-center justify-center mb-6 ">
+              <Search size={40} className="text-foreground-muted opacity-20" />
             </div>
-            <h3 className="text-xl font-black text-white mb-2">No matches found</h3>
-            <p className="text-[#666] text-sm max-w-xs mx-auto mb-8 font-medium">
+            <h3 className="text-xl font-black text-foreground mb-2">No matches found</h3>
+            <p className="text-foreground-muted text-sm max-w-xs mx-auto mb-8 font-medium">
               We couldn't find any products matching your current filters.
             </p>
-            <Button variant="outline" className=" border-[#333] text-white font-bold" onClick={() => { setSearchQuery(''); setSelectedCategory('all'); }}>
+            <Button variant="outline" className=" border-border text-foreground font-bold" onClick={() => { setSearchQuery(''); setSelectedCategory('all'); }}>
               Clear all filters
             </Button>
           </motion.div>

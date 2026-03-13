@@ -23,7 +23,7 @@ const getStatusColor = (status: InventoryStatus) => {
  switch (status) {
  case 'good': return 'bg-green-900/20 text-green-400 ';
  case 'low': return 'bg-yellow-900/20 text-yellow-700 ';
- case 'critical': return 'bg-red-900/20 text-red-400 ';
+ case 'critical': return 'bg-red-900/20 text-error ';
  }
 };
 
@@ -128,14 +128,14 @@ export const InventoryPanel: React.FC = () => {
  {/* Header */}
  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
  <div>
- <h2 className="text-2xl font-bold text-white ">Inventory</h2>
- <p className="text-[#666] text-sm mt-1">
+ <h2 className="text-2xl font-bold text-foreground ">Inventory</h2>
+ <p className="text-foreground-muted text-sm mt-1">
  Track paper stock, ink levels, and supplies
  </p>
  </div>
  <button
  onClick={() => setAddItemModal(true)}
- className="inline-flex items-center justify-center h-10 px-4 bg-[#0A0A0A] bg-[#0A0A0A] text-white text-sm font-bold hover:opacity-90 transition-colors"
+ className="inline-flex items-center justify-center h-10 px-4 bg-background-card bg-background-card text-foreground text-sm font-bold hover:opacity-90 transition-colors"
  >
  <Icon name="add" className="text-lg mr-2" />
  Add Stock Item
@@ -144,13 +144,13 @@ export const InventoryPanel: React.FC = () => {
 
  {/* Search */}
  <div className="relative max-w-sm">
- <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-[#666] text-lg" />
+ <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground-muted text-lg" />
  <input
  type="text"
  placeholder="Search inventory..."
  value={searchQuery}
  onChange={e => setSearchQuery(e.target.value)}
- className="w-full pl-10 pr-4 py-2.5 border border-[#333] bg-[#0A0A0A] text-white text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
+ className="w-full pl-10 pr-4 py-2.5 border border-border bg-background-card text-foreground text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
  />
  </div>
 
@@ -158,11 +158,11 @@ export const InventoryPanel: React.FC = () => {
  {(criticalCount > 0 || lowCount > 0) && (
  <div className="flex flex-wrap gap-4">
  {criticalCount > 0 && (
- <div className="flex items-center gap-3 px-4 py-3 bg-red-900/20 border border-red-600/20">
- <Icon name="error" className="text-red-500 text-xl" />
+ <div className="flex items-center gap-3 px-4 py-3 bg-red-900/20 border border-primary/20">
+ <Icon name="error" className="text-primary text-xl" />
  <div>
- <p className="font-semibold text-red-400">{criticalCount} Critical</p>
- <p className="text-sm text-red-500 ">Restock immediately</p>
+ <p className="font-semibold text-error">{criticalCount} Critical</p>
+ <p className="text-sm text-primary ">Restock immediately</p>
  </div>
  </div>
  )}
@@ -182,23 +182,23 @@ export const InventoryPanel: React.FC = () => {
  {loading ? (
  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
  {[...Array(6)].map((_, i) => (
- <div key={i} className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-5 animate-pulse">
- <div className="h-5 bg-[#1A1A1A] rounded w-3/4 mb-2" />
- <div className="h-3 bg-[#1A1A1A] rounded w-1/2 mb-4" />
- <div className="h-8 bg-[#1A1A1A] rounded w-1/3 mb-2" />
- <div className="h-2 bg-[#1A1A1A] rounded w-full" />
+ <div key={i} className="bg-background-card border border-border rounded-2xl shadow-2xl p-5 animate-pulse">
+ <div className="h-5 bg-background-subtle rounded w-3/4 mb-2" />
+ <div className="h-3 bg-background-subtle rounded w-1/2 mb-4" />
+ <div className="h-8 bg-background-subtle rounded w-1/3 mb-2" />
+ <div className="h-2 bg-background-subtle rounded w-full" />
  </div>
  ))}
  </div>
  ) : filteredItems.length === 0 ? (
  <div className="flex flex-col items-center justify-center py-16 text-center">
- <div className="size-16 bg-[#111] flex items-center justify-center mb-4">
- <Icon name="inventory_2" className="text-3xl text-[#666]" />
+ <div className="size-16 bg-background-subtle flex items-center justify-center mb-4">
+ <Icon name="inventory_2" className="text-3xl text-foreground-muted" />
  </div>
- <h3 className="text-lg font-semibold text-white mb-1">
+ <h3 className="text-lg font-semibold text-foreground mb-1">
  {searchQuery ? 'No matching items' : 'No inventory items yet'}
  </h3>
- <p className="text-sm text-[#666] mb-4">
+ <p className="text-sm text-foreground-muted mb-4">
  {searchQuery ? 'Try a different search term' : 'Add your first stock item to get started'}
  </p>
  {!searchQuery && (
@@ -221,12 +221,12 @@ export const InventoryPanel: React.FC = () => {
  return (
  <div
  key={item.id}
- className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-5 group"
+ className="bg-background-card border border-border rounded-2xl shadow-2xl p-5 group"
  >
  <div className="flex items-start justify-between mb-3">
  <div className="flex-1 min-w-0">
- <h3 className="font-semibold text-white truncate">{item.name}</h3>
- <p className="text-sm text-[#666] mt-0.5">
+ <h3 className="font-semibold text-foreground truncate">{item.name}</h3>
+ <p className="text-sm text-foreground-muted mt-0.5">
  Threshold: {item.threshold} {item.unit}
  </p>
  </div>
@@ -236,7 +236,7 @@ export const InventoryPanel: React.FC = () => {
  </span>
  <button
  onClick={() => handleDeleteItem(item)}
- className="opacity-0 group-hover:opacity-100 p-1 rounded text-[#666] hover:text-red-500 transition-all"
+ className="opacity-0 group-hover:opacity-100 p-1 rounded text-foreground-muted hover:text-primary transition-all"
  title="Delete item"
  >
  <Icon name="close" className="text-sm" />
@@ -246,10 +246,10 @@ export const InventoryPanel: React.FC = () => {
 
  <div className="mt-4">
  <div className="flex items-baseline justify-between mb-2">
- <span className="text-2xl font-bold text-white ">{item.stock}</span>
- <span className="text-sm text-[#666] ">{item.unit}</span>
+ <span className="text-2xl font-bold text-foreground ">{item.stock}</span>
+ <span className="text-sm text-foreground-muted ">{item.unit}</span>
  </div>
- <div className="h-2 bg-[#111] overflow-hidden">
+ <div className="h-2 bg-background-subtle overflow-hidden">
  <div
  className={`h-full transition-all duration-500 ${getProgressColor(status)}`}
  style={{ width: `${percentage}%` }}
@@ -264,14 +264,14 @@ export const InventoryPanel: React.FC = () => {
  setStockAmount(0);
  setStockNote('');
  }}
- className="flex-1 py-2 px-3 text-sm font-medium text-red-500 hover:bg-[#111] transition-colors"
+ className="flex-1 py-2 px-3 text-sm font-medium text-primary hover:bg-background-subtle transition-colors"
  >
  <Icon name="add" className="text-lg inline mr-1" />
  Add
  </button>
  <button
  onClick={() => openHistory(item)}
- className="flex-1 py-2 px-3 text-sm font-medium text-[#666] hover:bg-[#111] transition-colors"
+ className="flex-1 py-2 px-3 text-sm font-medium text-foreground-muted hover:bg-background-subtle transition-colors"
  >
  <Icon name="history" className="text-lg inline mr-1" />
  History
@@ -286,42 +286,42 @@ export const InventoryPanel: React.FC = () => {
  {/* ===== ADD ITEM MODAL ===== */}
  {addItemModal && (
  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setAddItemModal(false)}>
- <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl w-full max-w-md" onClick={e => e.stopPropagation()}>
- <div className="flex items-center justify-between p-5 border-b border-[#333] ">
- <h3 className="text-lg font-bold text-white ">Add Stock Item</h3>
- <button onClick={() => setAddItemModal(false)} className="p-1 hover:bg-[#111] ">
- <Icon name="close" className="text-xl text-[#666]" />
+ <div className="bg-background-card border border-border rounded-2xl shadow-2xl w-full max-w-md" onClick={e => e.stopPropagation()}>
+ <div className="flex items-center justify-between p-5 border-b border-border ">
+ <h3 className="text-lg font-bold text-foreground ">Add Stock Item</h3>
+ <button onClick={() => setAddItemModal(false)} className="p-1 hover:bg-background-subtle ">
+ <Icon name="close" className="text-xl text-foreground-muted" />
  </button>
  </div>
  <div className="p-5 space-y-4">
  <div>
- <label className="block text-sm font-medium text-[#666] mb-1">Item Name *</label>
+ <label className="block text-sm font-medium text-foreground-muted mb-1">Item Name *</label>
  <input
  type="text"
  value={newItem.name}
  onChange={e => setNewItem(p => ({ ...p, name: e.target.value }))}
  placeholder="e.g. A4 Paper (White)"
- className="w-full px-4 py-2.5 border border-[#333] bg-[#0A0A0A] text-white text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
+ className="w-full px-4 py-2.5 border border-border bg-background-card text-foreground text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
  autoFocus
  />
  </div>
  <div className="grid grid-cols-2 gap-4">
  <div>
- <label className="block text-sm font-medium text-[#666] mb-1">Initial Stock</label>
+ <label className="block text-sm font-medium text-foreground-muted mb-1">Initial Stock</label>
  <input
  type="number"
  min={0}
  value={newItem.stock}
  onChange={e => setNewItem(p => ({ ...p, stock: Number(e.target.value) }))}
- className="w-full px-4 py-2.5 border border-[#333] bg-[#0A0A0A] text-white text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
+ className="w-full px-4 py-2.5 border border-border bg-background-card text-foreground text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
  />
  </div>
  <div>
- <label className="block text-sm font-medium text-[#666] mb-1">Unit</label>
+ <label className="block text-sm font-medium text-foreground-muted mb-1">Unit</label>
  <select
  value={newItem.unit}
  onChange={e => setNewItem(p => ({ ...p, unit: e.target.value }))}
- className="w-full px-4 py-2.5 border border-[#333] bg-[#0A0A0A] text-white text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
+ className="w-full px-4 py-2.5 border border-border bg-background-card text-foreground text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
  >
  <option value="sheets">Sheets</option>
  <option value="cartridges">Cartridges</option>
@@ -333,18 +333,18 @@ export const InventoryPanel: React.FC = () => {
  </div>
  </div>
  <div>
- <label className="block text-sm font-medium text-[#666] mb-1">Low Stock Threshold</label>
+ <label className="block text-sm font-medium text-foreground-muted mb-1">Low Stock Threshold</label>
  <input
  type="number"
  min={1}
  value={newItem.threshold}
  onChange={e => setNewItem(p => ({ ...p, threshold: Number(e.target.value) }))}
- className="w-full px-4 py-2.5 border border-[#333] bg-[#0A0A0A] text-white text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
+ className="w-full px-4 py-2.5 border border-border bg-background-card text-foreground text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
  />
- <p className="text-xs text-[#666] mt-1">Alert when stock drops below this</p>
+ <p className="text-xs text-foreground-muted mt-1">Alert when stock drops below this</p>
  </div>
  </div>
- <div className="flex gap-3 p-5 border-t border-[#333] ">
+ <div className="flex gap-3 p-5 border-t border-border ">
  <button onClick={() => setAddItemModal(false)} className="flex-1 text-sm">
  Cancel
  </button>
@@ -363,30 +363,30 @@ export const InventoryPanel: React.FC = () => {
  {/* ===== ADD STOCK MODAL ===== */}
  {addStockModal && (
  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setAddStockModal(null)}>
- <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
- <div className="flex items-center justify-between p-5 border-b border-[#333] ">
+ <div className="bg-background-card border border-border rounded-2xl shadow-2xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
+ <div className="flex items-center justify-between p-5 border-b border-border ">
  <div>
- <h3 className="text-lg font-bold text-white ">Update Stock</h3>
- <p className="text-sm text-[#666] ">{addStockModal.name}</p>
+ <h3 className="text-lg font-bold text-foreground ">Update Stock</h3>
+ <p className="text-sm text-foreground-muted ">{addStockModal.name}</p>
  </div>
- <button onClick={() => setAddStockModal(null)} className="p-1 hover:bg-[#111] ">
- <Icon name="close" className="text-xl text-[#666]" />
+ <button onClick={() => setAddStockModal(null)} className="p-1 hover:bg-background-subtle ">
+ <Icon name="close" className="text-xl text-foreground-muted" />
  </button>
  </div>
  <div className="p-5 space-y-4">
  <div className="text-center">
- <p className="text-sm text-[#666] mb-1">Current Stock</p>
- <p className="text-3xl font-bold text-white ">
- {addStockModal.stock} <span className="text-base font-normal text-[#666]">{addStockModal.unit}</span>
+ <p className="text-sm text-foreground-muted mb-1">Current Stock</p>
+ <p className="text-3xl font-bold text-foreground ">
+ {addStockModal.stock} <span className="text-base font-normal text-foreground-muted">{addStockModal.unit}</span>
  </p>
  </div>
 
  <div>
- <label className="block text-sm font-medium text-[#666] mb-2">Quantity to Add/Remove</label>
+ <label className="block text-sm font-medium text-foreground-muted mb-2">Quantity to Add/Remove</label>
  <div className="flex items-center gap-3">
  <button
  onClick={() => setStockAmount(a => a - 1)}
- className="size-10 flex items-center justify-center bg-red-900/20 text-red-500 hover:bg-red-900/20 transition-colors font-bold text-lg"
+ className="size-10 flex items-center justify-center bg-red-900/20 text-primary hover:bg-red-900/20 transition-colors font-bold text-lg"
  >
  −
  </button>
@@ -394,7 +394,7 @@ export const InventoryPanel: React.FC = () => {
  type="number"
  value={stockAmount}
  onChange={e => setStockAmount(Number(e.target.value))}
- className="flex-1 text-center px-4 py-2.5 border border-[#333] bg-[#0A0A0A] text-white text-lg font-bold focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
+ className="flex-1 text-center px-4 py-2.5 border border-border bg-background-card text-foreground text-lg font-bold focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
  />
  <button
  onClick={() => setStockAmount(a => a + 1)}
@@ -409,11 +409,11 @@ export const InventoryPanel: React.FC = () => {
  New stock: {addStockModal.stock + stockAmount} {addStockModal.unit}
  </span>
  ) : stockAmount < 0 ? (
- <span className="text-red-500 ">
+ <span className="text-primary ">
  New stock: {Math.max(0, addStockModal.stock + stockAmount)} {addStockModal.unit}
  </span>
  ) : (
- <span className="text-[#666]">No change</span>
+ <span className="text-foreground-muted">No change</span>
  )}
  </p>
  </div>
@@ -424,7 +424,7 @@ export const InventoryPanel: React.FC = () => {
  <button
  key={q}
  onClick={() => setStockAmount(q)}
- className="px-3 py-1.5 text-xs font-medium bg-[#111] text-[#666] hover:bg-primary/10 hover:text-primary transition-colors"
+ className="px-3 py-1.5 text-xs font-medium bg-background-subtle text-foreground-muted hover:bg-primary/10 hover:text-primary transition-colors"
  >
  +{q}
  </button>
@@ -432,17 +432,17 @@ export const InventoryPanel: React.FC = () => {
  </div>
 
  <div>
- <label className="block text-sm font-medium text-[#666] mb-1">Note (optional)</label>
+ <label className="block text-sm font-medium text-foreground-muted mb-1">Note (optional)</label>
  <input
  type="text"
  value={stockNote}
  onChange={e => setStockNote(e.target.value)}
  placeholder="e.g. New shipment arrived"
- className="w-full px-4 py-2.5 border border-[#333] bg-[#0A0A0A] text-white text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
+ className="w-full px-4 py-2.5 border border-border bg-background-card text-foreground text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
  />
  </div>
  </div>
- <div className="flex gap-3 p-5 border-t border-[#333] ">
+ <div className="flex gap-3 p-5 border-t border-border ">
  <button onClick={() => setAddStockModal(null)} className="flex-1 text-sm">
  Cancel
  </button>
@@ -461,14 +461,14 @@ export const InventoryPanel: React.FC = () => {
  {/* ===== HISTORY MODAL ===== */}
  {historyModal && (
  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setHistoryModal(null)}>
- <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
- <div className="flex items-center justify-between p-5 border-b border-[#333] shrink-0">
+ <div className="bg-background-card border border-border rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+ <div className="flex items-center justify-between p-5 border-b border-border shrink-0">
  <div>
- <h3 className="text-lg font-bold text-white ">Stock History</h3>
- <p className="text-sm text-[#666] ">{historyModal.name}</p>
+ <h3 className="text-lg font-bold text-foreground ">Stock History</h3>
+ <p className="text-sm text-foreground-muted ">{historyModal.name}</p>
  </div>
- <button onClick={() => setHistoryModal(null)} className="p-1 hover:bg-[#111] ">
- <Icon name="close" className="text-xl text-[#666]" />
+ <button onClick={() => setHistoryModal(null)} className="p-1 hover:bg-background-subtle ">
+ <Icon name="close" className="text-xl text-foreground-muted" />
  </button>
  </div>
  <div className="flex-1 overflow-y-auto p-5">
@@ -476,51 +476,51 @@ export const InventoryPanel: React.FC = () => {
  <div className="space-y-3">
  {[...Array(4)].map((_, i) => (
  <div key={i} className="animate-pulse flex items-center gap-3">
- <div className="size-8 bg-[#1A1A1A] " />
+ <div className="size-8 bg-background-subtle " />
  <div className="flex-1">
- <div className="h-4 bg-[#1A1A1A] rounded w-3/4 mb-1" />
- <div className="h-3 bg-[#1A1A1A] rounded w-1/2" />
+ <div className="h-4 bg-background-subtle rounded w-3/4 mb-1" />
+ <div className="h-3 bg-background-subtle rounded w-1/2" />
  </div>
  </div>
  ))}
  </div>
  ) : historyLogs.length === 0 ? (
  <div className="text-center py-10">
- <Icon name="history" className="text-4xl text-[#666] mb-2" />
- <p className="text-sm text-[#666] ">No stock changes recorded yet</p>
+ <Icon name="history" className="text-4xl text-foreground-muted mb-2" />
+ <p className="text-sm text-foreground-muted ">No stock changes recorded yet</p>
  </div>
  ) : (
  <div className="space-y-3">
  {historyLogs.map((log) => (
  <div
  key={log.id}
- className="flex items-start gap-3 p-3 bg-[#0A0A0A] "
+ className="flex items-start gap-3 p-3 bg-background-card "
  >
  <div className={`size-8 flex items-center justify-center shrink-0 ${
  log.amount > 0
  ? 'bg-green-900/20 text-green-400 '
- : 'bg-red-900/20 text-red-500 '
+ : 'bg-red-900/20 text-primary '
  }`}>
  <Icon name={log.amount > 0 ? 'arrow_upward' : 'arrow_downward'} className="text-sm" />
  </div>
  <div className="flex-1 min-w-0">
  <div className="flex items-center justify-between">
  <span className={`text-sm font-bold ${
- log.amount > 0 ? 'text-green-400 ' : 'text-red-500 '
+ log.amount > 0 ? 'text-green-400 ' : 'text-primary '
  }`}>
  {log.amount > 0 ? '+' : ''}{log.amount} {historyModal.unit}
  </span>
- <span className="text-xs text-[#666]">
+ <span className="text-xs text-foreground-muted">
  {new Date(log.createdAt).toLocaleDateString('en-IN', {
  day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
  })}
  </span>
  </div>
  {log.note && (
- <p className="text-xs text-[#666] mt-0.5 truncate">{log.note}</p>
+ <p className="text-xs text-foreground-muted mt-0.5 truncate">{log.note}</p>
  )}
  {log.createdBy && (
- <p className="text-xs text-[#666] mt-0.5">by {log.createdBy}</p>
+ <p className="text-xs text-foreground-muted mt-0.5">by {log.createdBy}</p>
  )}
  </div>
  </div>
@@ -528,7 +528,7 @@ export const InventoryPanel: React.FC = () => {
  </div>
  )}
  </div>
- <div className="p-5 border-t border-[#333] shrink-0">
+ <div className="p-5 border-t border-border shrink-0">
  <button onClick={() => setHistoryModal(null)} className="w-full text-sm">
  Close
  </button>

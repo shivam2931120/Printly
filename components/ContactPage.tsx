@@ -24,24 +24,24 @@ const InfoCard: React.FC<{
  lines: string[];
  action?: { label: string; href: string };
 }> = ({ icon, title, lines, action }) => (
- <div className="group relative bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl/[0.06] p-6 hover:border-[#333]/[0.12] transition-all duration-500 overflow-hidden">
+ <div className="group relative bg-background-card border border-border rounded-2xl shadow-2xl/[0.06] p-6 hover:border-border/[0.12] transition-all duration-500 overflow-hidden">
  {/* spotlight hover glow */}
  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none bg-[radial-gradient(300px_circle_at_50%_50%,rgba(255,255,255,0.04),transparent_70%)]" />
 
  <div className="relative z-10">
- <div className="size-12 bg-[#111] border border-[#333] rounded-2xl shadow-2xl/[0.06] flex items-center justify-center mb-4 text-white group-hover:bg-[#0A0A0A]/[0.1] transition-colors duration-300">
+ <div className="size-12 bg-background-subtle border border-border rounded-2xl shadow-2xl/[0.06] flex items-center justify-center mb-4 text-foreground group-hover:bg-background-card/[0.1] transition-colors duration-300">
  {icon}
  </div>
- <h3 className="text-sm font-black text-white uppercase tracking-widest mb-2">{title}</h3>
+ <h3 className="text-sm font-black text-foreground uppercase tracking-widest mb-2">{title}</h3>
  {lines.map((line, i) => (
- <p key={i} className="text-[#666] text-sm leading-relaxed">{line}</p>
+ <p key={i} className="text-foreground-muted text-sm leading-relaxed">{line}</p>
  ))}
  {action && (
  <a
  href={action.href}
  target="_blank"
  rel="noopener noreferrer"
- className="inline-flex items-center gap-1.5 mt-4 text-xs font-bold text-white hover:underline underline-offset-4 decoration-white/30 transition-all group/link"
+ className="inline-flex items-center gap-1.5 mt-4 text-xs font-bold text-foreground hover:underline underline-offset-4 decoration-white/30 transition-all group/link"
  >
  {action.label}
  <ExternalLink size={12} className="group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform" />
@@ -94,30 +94,30 @@ export const ContactPage: React.FC<{ shopConfig?: ShopConfig }> = ({ shopConfig 
  };
 
  return (
- <div className="min-h-screen bg-[#050505] text-white">
+ <div className="min-h-screen bg-background text-foreground">
  {/* ──── Hero ──── */}
  <div className="relative overflow-hidden">
  {/* background blobs */}
- <div className="absolute top-[-30%] right-[-15%] w-[700px] h-[700px] bg-[#0A0A0A] pointer-events-none" />
- <div className="absolute bottom-[-20%] left-[-10%] w-[500px] h-[500px] bg-[#0A0A0A]/[0.015] pointer-events-none" />
+ <div className="absolute top-[-30%] right-[-15%] w-[700px] h-[700px] bg-background-card pointer-events-none" />
+ <div className="absolute bottom-[-20%] left-[-10%] w-[500px] h-[500px] bg-background-card/[0.015] pointer-events-none" />
 
  <div className="relative z-10 max-w-6xl mx-auto px-6 pt-8 pb-16">
  {/* Back button */}
  <button
  onClick={() => navigate(-1)}
- className="flex items-center gap-2 text-[#666] hover:text-white transition-all text-xs font-black uppercase tracking-widest group mb-12"
+ className="flex items-center gap-2 text-foreground-muted hover:text-foreground transition-all text-xs font-black uppercase tracking-widest group mb-12"
  >
  <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
  Back
  </button>
 
  <div className="text-center max-w-2xl mx-auto mb-16">
- <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#111] border border-[#333] rounded-2xl shadow-2xl/[0.06] text-[10px] font-black text-[#666] uppercase tracking-[0.2em] mb-6">
+ <div className="inline-flex items-center gap-2 px-4 py-2 bg-background-subtle border border-border rounded-2xl shadow-2xl/[0.06] text-[10px] font-black text-foreground-muted uppercase tracking-[0.2em] mb-6">
  <MessageSquare size={12} />
  Get in Touch
  </div>
  <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-4 font-display">Contact Us</h1>
- <p className="text-[#666] text-base leading-relaxed">
+ <p className="text-foreground-muted text-base leading-relaxed">
  Have a question or need help? We'd love to hear from you. Reach out through any of the channels below or fill out the form.
  </p>
  </div>
@@ -152,17 +152,17 @@ export const ContactPage: React.FC<{ shopConfig?: ShopConfig }> = ({ shopConfig 
  {/* ──── Map + Form ──── */}
  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
  {/* Map */}
- <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl/[0.06] overflow-hidden">
- <div className="p-5 border-b border-[#333]/[0.06] flex items-center gap-3">
- <div className="size-9 bg-[#111] flex items-center justify-center">
+ <div className="bg-background-card border border-border rounded-2xl shadow-2xl/[0.06] overflow-hidden">
+ <div className="p-5 border-b border-border/[0.06] flex items-center gap-3">
+ <div className="size-9 bg-background-subtle flex items-center justify-center">
  <Navigation size={16} />
  </div>
  <div>
- <h3 className="text-sm font-black text-white">Our Location</h3>
- <p className="text-[#666] text-xs">{CONTACT.location}</p>
+ <h3 className="text-sm font-black text-foreground">Our Location</h3>
+ <p className="text-foreground-muted text-xs">{CONTACT.location}</p>
  </div>
  </div>
- <div className="aspect-[4/3] lg:aspect-auto lg:h-[420px] bg-[#0A0A0A]">
+ <div className="aspect-[4/3] lg:aspect-auto lg:h-[420px] bg-background-card">
  <iframe
  title="Location Map"
  width="100%"
@@ -177,14 +177,14 @@ export const ContactPage: React.FC<{ shopConfig?: ShopConfig }> = ({ shopConfig 
  </div>
 
  {/* Contact Form */}
- <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl/[0.06] p-6 md:p-8">
+ <div className="bg-background-card border border-border rounded-2xl shadow-2xl/[0.06] p-6 md:p-8">
  <div className="flex items-center gap-3 mb-8">
- <div className="size-9 bg-[#111] flex items-center justify-center">
+ <div className="size-9 bg-background-subtle flex items-center justify-center">
  <Send size={16} />
  </div>
  <div>
- <h3 className="text-sm font-black text-white">Send a Message</h3>
- <p className="text-[#666] text-xs">We'll get back to you within 24 hours</p>
+ <h3 className="text-sm font-black text-foreground">Send a Message</h3>
+ <p className="text-foreground-muted text-xs">We'll get back to you within 24 hours</p>
  </div>
  </div>
 
@@ -193,11 +193,11 @@ export const ContactPage: React.FC<{ shopConfig?: ShopConfig }> = ({ shopConfig 
  <div className="size-16 bg-green-900/20/10 border border-green-500/20 flex items-center justify-center mb-4">
  <CheckCircle2 className="text-green-400" size={28} />
  </div>
- <h3 className="text-xl font-black text-white mb-2">Message Sent!</h3>
- <p className="text-[#666] text-sm max-w-xs">Thank you for reaching out. We'll respond as soon as possible.</p>
+ <h3 className="text-xl font-black text-foreground mb-2">Message Sent!</h3>
+ <p className="text-foreground-muted text-sm max-w-xs">Thank you for reaching out. We'll respond as soon as possible.</p>
  <button
  onClick={() => setSubmitStatus('idle')}
- className="mt-6 text-xs font-bold text-white hover:underline underline-offset-4"
+ className="mt-6 text-xs font-bold text-foreground hover:underline underline-offset-4"
  >
  Send another message
  </button>
@@ -205,7 +205,7 @@ export const ContactPage: React.FC<{ shopConfig?: ShopConfig }> = ({ shopConfig 
  ) : (
  <form onSubmit={handleSubmit} className="space-y-5">
  {submitStatus === 'error' && (
- <div className="p-4 bg-red-900/20/10 border border-red-500/20 text-red-400 text-xs font-bold text-center flex items-center justify-center gap-2">
+ <div className="p-4 bg-red-900/20/10 border border-error/20 text-error text-xs font-bold text-center flex items-center justify-center gap-2">
  <AlertCircle size={14} />
  Failed to send. Please try again or email us directly.
  </div>
@@ -213,23 +213,23 @@ export const ContactPage: React.FC<{ shopConfig?: ShopConfig }> = ({ shopConfig 
 
  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
  <div className="space-y-2">
- <label className="text-[10px] font-black text-[#666] uppercase tracking-[0.15em] ml-1">Name</label>
+ <label className="text-[10px] font-black text-foreground-muted uppercase tracking-[0.15em] ml-1">Name</label>
  <input
  type="text"
  value={formData.name}
  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
- className="w-full px-4 py-3.5 bg-[#111] border border-[#333] rounded-2xl shadow-2xl focus:border-[#333] focus:bg-[#111] outline-none transition-all text-white placeholder-[#333] text-sm font-medium"
+ className="w-full px-4 py-3.5 bg-background-subtle border border-border rounded-2xl shadow-2xl focus:border-border focus:bg-background-subtle outline-none transition-all text-foreground placeholder-[#333] text-sm font-medium"
  placeholder="Your name"
  required
  />
  </div>
  <div className="space-y-2">
- <label className="text-[10px] font-black text-[#666] uppercase tracking-[0.15em] ml-1">Email</label>
+ <label className="text-[10px] font-black text-foreground-muted uppercase tracking-[0.15em] ml-1">Email</label>
  <input
  type="email"
  value={formData.email}
  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
- className="w-full px-4 py-3.5 bg-[#111] border border-[#333] rounded-2xl shadow-2xl focus:border-[#333] focus:bg-[#111] outline-none transition-all text-white placeholder-[#333] text-sm font-medium"
+ className="w-full px-4 py-3.5 bg-background-subtle border border-border rounded-2xl shadow-2xl focus:border-border focus:bg-background-subtle outline-none transition-all text-foreground placeholder-[#333] text-sm font-medium"
  placeholder="you@email.com"
  required
  />
@@ -237,23 +237,23 @@ export const ContactPage: React.FC<{ shopConfig?: ShopConfig }> = ({ shopConfig 
  </div>
 
  <div className="space-y-2">
- <label className="text-[10px] font-black text-[#666] uppercase tracking-[0.15em] ml-1">Subject</label>
+ <label className="text-[10px] font-black text-foreground-muted uppercase tracking-[0.15em] ml-1">Subject</label>
  <input
  type="text"
  value={formData.subject}
  onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
- className="w-full px-4 py-3.5 bg-[#111] border border-[#333] rounded-2xl shadow-2xl focus:border-[#333] focus:bg-[#111] outline-none transition-all text-white placeholder-[#333] text-sm font-medium"
+ className="w-full px-4 py-3.5 bg-background-subtle border border-border rounded-2xl shadow-2xl focus:border-border focus:bg-background-subtle outline-none transition-all text-foreground placeholder-[#333] text-sm font-medium"
  placeholder="How can we help?"
  required
  />
  </div>
 
  <div className="space-y-2">
- <label className="text-[10px] font-black text-[#666] uppercase tracking-[0.15em] ml-1">Message</label>
+ <label className="text-[10px] font-black text-foreground-muted uppercase tracking-[0.15em] ml-1">Message</label>
  <textarea
  value={formData.message}
  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
- className="w-full px-4 py-3.5 bg-[#111] border border-[#333] rounded-2xl shadow-2xl focus:border-[#333] focus:bg-[#111] outline-none transition-all text-white placeholder-[#333] text-sm font-medium resize-none"
+ className="w-full px-4 py-3.5 bg-background-subtle border border-border rounded-2xl shadow-2xl focus:border-border focus:bg-background-subtle outline-none transition-all text-foreground placeholder-[#333] text-sm font-medium resize-none"
  placeholder="Tell us more..."
  rows={5}
  required
@@ -263,7 +263,7 @@ export const ContactPage: React.FC<{ shopConfig?: ShopConfig }> = ({ shopConfig 
  <Button
  type="submit"
  disabled={isSubmitting}
- className="w-full h-14 text-sm font-black bg-red-600 text-white hover:opacity-90 transition-all active:scale-[0.98] group"
+ className="w-full h-14 text-sm font-black bg-primary text-foreground hover:opacity-90 transition-all active:scale-[0.98] group"
  >
  {isSubmitting ? (
  <div className="size-5 border-2 border-white/30 border-t-white animate-spin mx-auto" />

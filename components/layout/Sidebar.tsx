@@ -58,20 +58,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ user }) => {
     return (
         <aside
             className={cn(
-                "hidden lg:flex flex-col fixed top-0 left-0 h-screen bg-[#050505] border-r border-[#333] transition-all duration-500 z-50",
+                "hidden lg:flex flex-col fixed top-0 left-0 h-screen bg-background border-r border-border transition-all duration-500 z-50",
                 isSidebarExpanded ? "w-64" : "w-[80px]"
             )}
             onMouseEnter={() => setSidebarExpanded(true)}
             onMouseLeave={() => setSidebarExpanded(false)}
         >
             {/* Logo Area */}
-            <div className="h-20 flex items-center px-6 border-b border-[#333]">
+            <div className="h-20 flex items-center px-6 border-b border-border">
                 <div className="flex items-center gap-3 w-full">
                     <div className="relative shrink-0">
                         <img src="/Printly.png" alt="Printly Logo" className="size-9 object-contain" />
                     </div>
                     <span className={cn(
-                        "font-black text-xl text-white font-display tracking-tight transition-all duration-300",
+                        "font-black text-xl text-foreground font-display tracking-tight transition-all duration-300",
                         isSidebarExpanded ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4 hidden"
                     )}>
                         Printly
@@ -91,8 +91,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ user }) => {
                             className={cn(
                                 "flex items-center gap-4 px-4 py-3.5 transition-all duration-200 group relative",
                                 isActive
-                                    ? "bg-red-600 text-white"
-                                    : "text-[#666] hover:bg-[#111] hover:text-white"
+                                    ? "bg-primary text-foreground"
+                                    : "text-foreground-muted hover:bg-background-subtle hover:text-foreground"
                             )}
                         >
                             <Icon size={20} className={cn("shrink-0 transition-transform duration-200", !isActive && "group-hover:scale-110")} />
@@ -103,7 +103,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ user }) => {
                                 {link.name}
                             </span>
                             {isActive && (
-                                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[#0A0A0A]" />
+                                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-background-card" />
                             )}
                         </NavLink>
                     );
@@ -112,17 +112,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ user }) => {
 
             {/* Utilities (Cart & Notifications) */}
             <div className={cn(
-                "p-4 border-t border-[#333] flex items-center gap-2",
+                "p-4 border-t border-border flex items-center gap-2",
                 isSidebarExpanded ? "justify-start" : "flex-col justify-center"
             )}>
                 <button
                     onClick={() => toggleCart(true)}
-                    className="relative p-2 text-[#666] hover:text-white hover:bg-[#111] transition-all duration-200 active:scale-90"
+                    className="relative p-2 text-foreground-muted hover:text-foreground hover:bg-background-subtle transition-all duration-200 active:scale-90"
                     title="Cart"
                 >
                     <ShoppingBag size={20} />
                     {totalItems > 0 && (
-                        <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[16px] h-[16px] px-1 bg-red-600 text-white text-[9px] font-black border-2 border-[#050505]">
+                        <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[16px] h-[16px] px-1 bg-primary text-foreground text-[9px] font-black border-2 border-[#050505]">
                             {totalItems}
                         </span>
                     )}
@@ -132,20 +132,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ user }) => {
             </div>
 
             {/* Bottom Actions */}
-            <div className="p-4 border-t border-[#333]">
+            <div className="p-4 border-t border-border">
                 {user ? (
                     <div className="space-y-3">
                         <div
                             onClick={() => navigate('/profile')}
                             className={cn(
-                                "flex items-center gap-3 px-3 py-3 hover:bg-[#111] transition-all cursor-pointer group",
+                                "flex items-center gap-3 px-3 py-3 hover:bg-background-subtle transition-all cursor-pointer group",
                                 !isSidebarExpanded && "justify-center"
                             )}>
                             <div className="relative shrink-0">
                                 <img
                                     src={user.avatar || `https://ui-avatars.com/api/?name=${user.name}&background=random`}
                                     alt="Profile"
-                                    className="size-9 border-2 border-[#333] group-hover:border-[#333] transition-colors"
+                                    className="size-9 border-2 border-border group-hover:border-border transition-colors"
                                 />
                                 <div className="absolute -bottom-0.5 -right-0.5 size-3 bg-green-900/20 border-2 border-[#050505]" />
                             </div>
@@ -153,10 +153,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ user }) => {
                                 "flex-1 min-w-0 transition-all duration-300",
                                 isSidebarExpanded ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4 hidden"
                             )}>
-                                <p className="text-sm font-bold text-white truncate">{user.name}</p>
+                                <p className="text-sm font-bold text-foreground truncate">{user.name}</p>
                                 <p className={cn(
                                     "text-[10px] font-bold uppercase tracking-wider",
-                                    user.isDeveloper ? "text-red-400" : user.isAdmin ? "text-red-400" : "text-[#666]"
+                                    user.isDeveloper ? "text-error" : user.isAdmin ? "text-error" : "text-foreground-muted"
                                 )}>
                                     {user.isDeveloper ? 'Developer' : user.isAdmin ? 'Admin' : 'User'}
                                 </p>
@@ -183,7 +183,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ user }) => {
                     <button
                         onClick={() => navigate('/sign-in')}
                         className={cn(
-                            "flex items-center gap-4 px-4 py-3.5 bg-red-600 text-white font-bold hover:bg-red-700 transition-all w-full",
+                            "flex items-center gap-4 px-4 py-3.5 bg-primary text-foreground font-bold hover:bg-primary-hover transition-all w-full",
                             !isSidebarExpanded && "justify-center"
                         )}
                     >

@@ -48,15 +48,15 @@ export const UploadCard: React.FC<UploadCardProps> = ({
  {/* Header */}
  <div className="flex items-center justify-between mb-5">
  <div>
- <h2 className="text-xl font-bold text-white tracking-tight">Upload Documents</h2>
- <p className="text-sm text-[#666] mt-0.5">Select the PDF files you want to print</p>
+ <h2 className="text-xl font-bold text-foreground tracking-tight">Upload Documents</h2>
+ <p className="text-sm text-foreground-muted mt-0.5">Select the PDF files you want to print</p>
  </div>
  {files.length > 0 && onPreview && (
  <motion.button
  whileHover={{ scale: 1.05 }}
  whileTap={{ scale: 0.95 }}
  onClick={onPreview}
- className="flex items-center gap-2 px-4 py-2 bg-[#111] border border-[#333] rounded-2xl shadow-2xl/[0.06] text-sm font-medium text-gray-400 hover:text-white hover:border-[#333] transition-all"
+ className="flex items-center gap-2 px-4 py-2 bg-background-subtle border border-border rounded-2xl shadow-2xl/[0.06] text-sm font-medium text-gray-400 hover:text-foreground hover:border-border transition-all"
  >
  <Eye size={16} />
  Preview
@@ -75,8 +75,8 @@ export const UploadCard: React.FC<UploadCardProps> = ({
  'relative flex flex-col items-center justify-center text-center cursor-pointer border-2 border-dashed transition-all duration-300 overflow-hidden',
  files.length > 0 ? 'py-8 px-6' : 'py-14 px-6',
  isDragActive
- ? 'border-[#333]/30 bg-[#111] scale-[1.01]'
- : 'border-[#333] hover:border-[#333] hover:bg-[#0A0A0A]',
+ ? 'border-border/30 bg-background-subtle scale-[1.01]'
+ : 'border-border hover:border-border hover:bg-background-card',
  )}
  >
  <input {...getInputProps()} />
@@ -94,15 +94,15 @@ export const UploadCard: React.FC<UploadCardProps> = ({
  <motion.div
  animate={isDragActive ? { scale: 1.15, rotate: 5 } : { scale: 1, rotate: 0 }}
  transition={{ type: 'spring', stiffness: 300, damping: 20 }}
- className="size-14 bg-[#111] border border-[#333] rounded-2xl shadow-2xl/[0.06] flex items-center justify-center mb-4"
+ className="size-14 bg-background-subtle border border-border rounded-2xl shadow-2xl/[0.06] flex items-center justify-center mb-4"
  >
- <UploadCloud size={28} className={cn('transition-colors', isDragActive ? 'text-white' : 'text-[#666]')} />
+ <UploadCloud size={28} className={cn('transition-colors', isDragActive ? 'text-foreground' : 'text-foreground-muted')} />
  </motion.div>
 
- <h3 className="text-base font-semibold text-white mb-1">
+ <h3 className="text-base font-semibold text-foreground mb-1">
  {isDragActive ? 'Drop files here' : 'Tap to upload or drag files'}
  </h3>
- <p className="text-xs text-[#666] mb-5">PDF up to 50MB</p>
+ <p className="text-xs text-foreground-muted mb-5">PDF up to 50MB</p>
 
  <div onClick={(e) => e.stopPropagation()}>
  <motion.button
@@ -112,7 +112,7 @@ export const UploadCard: React.FC<UploadCardProps> = ({
  const input = document.querySelector('input[type="file"]') as HTMLInputElement;
  input?.click();
  }}
- className="px-6 py-2.5 bg-[#111] border border-[#333] rounded-2xl shadow-2xl text-sm font-semibold text-white hover:bg-[#0A0A0A]/[0.1] transition-all"
+ className="px-6 py-2.5 bg-background-subtle border border-border rounded-2xl shadow-2xl text-sm font-semibold text-foreground hover:bg-background-card/[0.1] transition-all"
  >
  Browse Files
  </motion.button>
@@ -122,7 +122,7 @@ export const UploadCard: React.FC<UploadCardProps> = ({
  {/* File List */}
  {files.length > 0 && (
  <div className="mt-5 space-y-2.5 flex-1 overflow-y-auto no-scrollbar">
- <p className="text-[10px] font-bold text-[#666] uppercase tracking-widest mb-3">
+ <p className="text-[10px] font-bold text-foreground-muted uppercase tracking-widest mb-3">
  Uploaded Files ({files.length})
  </p>
  <AnimatePresence>

@@ -11,7 +11,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({ className, ...props }) => {
  role="status"
  aria-label="Loading"
  className={cn(
- "animate-pulse bg-[#1A1A1A]",
+ "animate-pulse bg-background-subtle",
  className
  )}
  {...props}

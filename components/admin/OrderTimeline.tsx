@@ -25,7 +25,7 @@ export const generateOrderEvents = (order: Order): OrderEvent[] => {
  timestamp: new Date(order.createdAt).toLocaleString(),
  user: order.userName || 'Customer',
  details: `Order #${order.id.slice(-6)} created with ${order.items?.length || 0} items`,
- statusColor: 'text-red-500 bg-[#111] '
+ statusColor: 'text-primary bg-background-subtle '
  });
 
  // 2. Payment Event (if paid)
@@ -45,7 +45,7 @@ export const generateOrderEvents = (order: Order): OrderEvent[] => {
  timestamp: new Date(order.updatedAt).toLocaleString(),
  user: 'System',
  details: 'Transaction failed',
- statusColor: 'text-red-500 bg-red-900/20 '
+ statusColor: 'text-primary bg-red-900/20 '
  });
  }
 
@@ -60,7 +60,7 @@ export const generateOrderEvents = (order: Order): OrderEvent[] => {
  case 'confirmed':
  action = 'Order Confirmed';
  details = 'Order accepted by store';
- color = 'text-red-500 bg-[#111] ';
+ color = 'text-primary bg-background-subtle ';
  break;
  case 'printing':
  action = 'Printing Started';
@@ -70,7 +70,7 @@ export const generateOrderEvents = (order: Order): OrderEvent[] => {
  case 'ready':
  action = 'Ready for Pickup';
  details = 'Order is ready for collection';
- color = 'text-purple-500 bg-purple-900/20 bg-purple-900/20';
+ color = 'text-primary bg-primary/10';
  break;
  case 'completed':
  action = 'Order Completed';
@@ -102,11 +102,11 @@ export const OrderTimeline: React.FC<OrderTimelineProps> = ({ events }) => {
  <div key={event.id} className="flex gap-4 pb-8 last:pb-0 relative">
  {/* Timeline line */}
  {index < events.length - 1 && (
- <div className="absolute left-[1.2rem] top-8 w-0.5 h-[calc(100%-1rem)] bg-[#111] " />
+ <div className="absolute left-[1.2rem] top-8 w-0.5 h-[calc(100%-1rem)] bg-background-subtle " />
  )}
 
  {/* Icon */}
- <div className={`relative z-10 size-10 flex items-center justify-center flex-shrink-0 border-2 border-[#333] ${event.statusColor || 'text-[#666] bg-[#0A0A0A]'}`}>
+ <div className={`relative z-10 size-10 flex items-center justify-center flex-shrink-0 border-2 border-border ${event.statusColor || 'text-foreground-muted bg-background-card'}`}>
  <Icon name="history" className="text-lg" />
  </div>
 
@@ -114,16 +114,16 @@ export const OrderTimeline: React.FC<OrderTimelineProps> = ({ events }) => {
  <div className="flex-1 min-w-0 pt-1">
  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1">
  <div>
- <p className="font-bold text-white text-sm">{event.action}</p>
+ <p className="font-bold text-foreground text-sm">{event.action}</p>
  {event.details && (
- <p className="text-xs text-[#666] mt-0.5">{event.details}</p>
+ <p className="text-xs text-foreground-muted mt-0.5">{event.details}</p>
  )}
  </div>
- <span className="text-[10px] sm:text-xs text-[#666] font-mono bg-[#0A0A0A] px-2 py-1 w-fit">
+ <span className="text-[10px] sm:text-xs text-foreground-muted font-mono bg-background-card px-2 py-1 w-fit">
  {event.timestamp}
  </span>
  </div>
- <p className="text-[10px] text-[#666] mt-2 flex items-center gap-1">
+ <p className="text-[10px] text-foreground-muted mt-2 flex items-center gap-1">
  <span className="size-1.5 bg-[#333] " />
  by {event.user}
  </p>

@@ -20,21 +20,21 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, pageCount, onRem
  animate={{ opacity: 1, y: 0 }}
  exit={{ opacity: 0, x: -20 }}
  transition={{ duration: 0.25, delay: index * 0.05 }}
- className="group flex items-center gap-4 p-4 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl/[0.06] hover:bg-[#111] transition-all duration-200"
+ className="group flex items-center gap-4 p-4 bg-background-card border border-border rounded-2xl shadow-2xl/[0.06] hover:bg-background-subtle transition-all duration-200"
  >
  {/* Icon */}
- <div className="size-11 bg-[#111] flex items-center justify-center shrink-0">
+ <div className="size-11 bg-background-subtle flex items-center justify-center shrink-0">
  <FileText size={20} className="text-gray-400" />
  </div>
 
  {/* Info */}
  <div className="flex-1 min-w-0">
- <p className="text-sm font-semibold text-white truncate">{file.name}</p>
+ <p className="text-sm font-semibold text-foreground truncate">{file.name}</p>
  <div className="flex items-center gap-2 mt-0.5">
- <span className="text-xs text-[#666]">{sizeMB} MB</span>
- <span className="text-xs text-[#666]">•</span>
+ <span className="text-xs text-foreground-muted">{sizeMB} MB</span>
+ <span className="text-xs text-foreground-muted">•</span>
  {isAnalyzing ? (
- <span className="text-xs text-[#666] animate-pulse">Analyzing...</span>
+ <span className="text-xs text-foreground-muted animate-pulse">Analyzing...</span>
  ) : (
  <span className="text-xs text-gray-400 font-medium">{pageCount} pages</span>
  )}
@@ -55,7 +55,7 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, pageCount, onRem
  {/* Remove */}
  <button
  onClick={(e) => { e.stopPropagation(); onRemove(); }}
- className="p-1.5 text-[#666] hover:text-red-400 hover:bg-red-900/20/10 transition-all opacity-0 group-hover:opacity-100"
+ className="p-1.5 text-foreground-muted hover:text-error hover:bg-red-900/20/10 transition-all opacity-0 group-hover:opacity-100"
  aria-label="Remove file"
  >
  <X size={16} />

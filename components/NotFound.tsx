@@ -17,11 +17,11 @@ export const NotFound = () => {
 
  {/* Text */}
  <div className="space-y-2">
- <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight font-display">
+ <h1 className="text-4xl md:text-5xl font-black text-foreground tracking-tight font-display">
  404
  </h1>
- <h2 className="text-xl font-bold text-white">Page Not Found</h2>
- <p className="text-[#666] leading-relaxed">
+ <h2 className="text-xl font-bold text-foreground">Page Not Found</h2>
+ <p className="text-foreground-muted leading-relaxed">
  Oops! The page you're looking for seems to have gone missing. It might have been moved or deleted.
  </p>
  </div>
@@ -41,7 +41,7 @@ export const NotFound = () => {
  {/* Background Decoration */}
  <div className="absolute inset-0 pointer-events-none overflow-hidden">
  <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/5 "></div>
- <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-[#111]0/5 "></div>
+ <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-background-subtle0/5 "></div>
  </div>
  </div>
  );

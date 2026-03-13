@@ -6,34 +6,34 @@
 
 @layer base {
   :root {
-    --background: 5 5 5;
+    --background: 0 0 0;
     --foreground: 255 255 255;
     --card: 10 10 10;
     --card-foreground: 255 255 255;
     --popover: 10 10 10;
     --popover-foreground: 255 255 255;
-    --primary: 220 38 38;
+    --primary: 229 62 62;
     --primary-foreground: 255 255 255;
-    --secondary: 18 18 18;
+    --secondary: 17 17 17;
     --secondary-foreground: 255 255 255;
-    --muted: 26 26 26;
-    --muted-foreground: 102 102 102;
-    --accent: 220 38 38;
+    --muted: 17 17 17;
+    --muted-foreground: 136 136 136;
+    --accent: 229 62 62;
     --accent-foreground: 255 255 255;
-    --destructive: 239 68 68;
+    --destructive: 229 62 62;
     --destructive-foreground: 255 255 255;
-    --border: 26 26 26;
-    --input: 26 26 26;
-    --ring: 220 38 38;
+    --border: 28 28 28;
+    --input: 28 28 28;
+    --ring: 229 62 62;
   }
 
   * {
-    transition: background-color 0.3s ease, border-color 0.3s ease;
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.2s ease, box-shadow 0.3s ease, transform 0.2s ease;
   }
 
   body {
-    @apply bg-background text-white font-sans antialiased;
-    background-color: #050505;
+    @apply bg-background text-foreground font-sans antialiased;
+    background-color: #000000;
     color: #FFFFFF;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -65,8 +65,8 @@
 
   /* Custom Scrollbar */
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 5px;
   }
 
   ::-webkit-scrollbar-track {
@@ -74,43 +74,52 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #1A1A1A;
+    background: #1C1C1C;
+    border-radius: 999px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #333333;
+    background: #2A2A2A;
   }
 
   /* Dark select dropdown options */
   select option {
     background-color: #0A0A0A;
-    color: #ffffff;
+    color: #FFFFFF;
+  }
+
+  /* Glass effect utility */
+  .glass {
+    background: rgba(10, 10, 10, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
   }
 }
 
 @layer components {
   .btn-flat {
-    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[#111] border border-[#333] rounded-xl text-white font-bold transition-all duration-200 hover:bg-[#1A1A1A] hover:border-[#333] hover:shadow-lg active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-background-light border border-border rounded-xl text-foreground font-bold transition-all duration-300 hover:bg-border-light hover:border-border-light hover:shadow-card active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-primary {
-    @apply bg-red-600 rounded-xl shadow-lg shadow-red-600/20 text-white border-red-600 hover:bg-red-700 hover:border-red-700 hover:shadow-red-700/30;
+    @apply bg-primary rounded-xl shadow-glow-red text-white border border-primary/40 hover:bg-accent-hover hover:border-accent-hover hover:shadow-glow-red-lg transition-all duration-300;
   }
 
   .btn-danger {
-    @apply bg-transparent rounded-xl border-red-500/30 text-red-500 hover:bg-red-500/10 hover:border-red-500/50 hover:shadow-lg hover:shadow-red-500/10;
+    @apply bg-transparent rounded-xl border border-error/30 text-error hover:bg-error/10 hover:border-error/50 hover:shadow-glow-red transition-all duration-300;
   }
 }
 
 /* Animations */
 .animate-in {
-  animation: animate-in 0.3s ease-out;
+  animation: animate-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes animate-in {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(10px);
   }
 
   to {

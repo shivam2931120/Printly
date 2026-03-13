@@ -30,10 +30,10 @@ export class ErrorBoundary extends Component<Props, State> {
  <div className="min-h-screen flex items-center justify-center bg-background p-4 text-center">
  <div className="max-w-md w-full bg-background-card border rounded-2xl shadow-xl border-border p-8 ">
  <div className="size-16 bg-red-900/20/10 flex items-center justify-center mx-auto mb-6">
- <AlertTriangle className="size-8 text-red-500" />
+ <AlertTriangle className="size-8 text-primary" />
  </div>
- <h1 className="text-2xl font-bold text-white mb-2 font-display">Something went wrong</h1>
- <p className="text-[#666] mb-8 text-sm leading-relaxed">
+ <h1 className="text-2xl font-bold text-foreground mb-2 font-display">Something went wrong</h1>
+ <p className="text-foreground-muted mb-8 text-sm leading-relaxed">
  We apologize for the inconvenience. The application encountered an unexpected error.
  </p>
  <div className="flex gap-4">
@@ -52,7 +52,7 @@ export class ErrorBoundary extends Component<Props, State> {
  </Button>
  </div>
  {process.env.NODE_ENV === 'development' && (
- <div className="mt-8 p-4 bg-black/50 text-left overflow-auto max-h-48 text-xs font-mono text-red-400">
+ <div className="mt-8 p-4 bg-black/50 text-left overflow-auto max-h-48 text-xs font-mono text-error">
  {this.state.error?.toString()}
  </div>
  )}

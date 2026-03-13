@@ -69,8 +69,8 @@ export const SettingsStep: React.FC<SettingsStepProps> = ({
  const pill = (selected: boolean) => cn(
  "flex items-center gap-1.5 px-3 py-2 text-xs font-bold transition-all duration-150 cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50",
  selected
- ? "bg-red-600 text-white -[0_0_12px_rgba(255,255,255,0.15)]"
- : "bg-[#111] text-[#666] border border-[#333] hover:bg-[#111] hover:text-white"
+ ? "bg-primary text-foreground -[0_0_12px_rgba(255,255,255,0.15)]"
+ : "bg-background-subtle text-foreground-muted border border-border hover:bg-background-subtle hover:text-foreground"
  );
 
  // Options card content (shared between mobile and desktop)
@@ -78,7 +78,7 @@ export const SettingsStep: React.FC<SettingsStepProps> = ({
  <>
  {/* Color Mode */}
  <div className="flex items-center justify-between" role="group" aria-label="Color mode">
- <span className="text-[10px] font-black text-[#666] uppercase tracking-widest">Color</span>
+ <span className="text-[10px] font-black text-foreground-muted uppercase tracking-widest">Color</span>
  <div className="flex gap-1.5">
  {(['bw', 'color'] as const).map((mode) => (
  <button
@@ -99,11 +99,11 @@ export const SettingsStep: React.FC<SettingsStepProps> = ({
  </div>
  </div>
 
- <div className="border-t border-[#333]/[0.06]" />
+ <div className="border-t border-border/[0.06]" />
 
  {/* Sides */}
  <div className="flex items-center justify-between" role="group" aria-label="Sides">
- <span className="text-[10px] font-black text-[#666] uppercase tracking-widest">Sides</span>
+ <span className="text-[10px] font-black text-foreground-muted uppercase tracking-widest">Sides</span>
  <div className="flex gap-1.5">
  {(['single', 'double'] as const).map((side) => (
  <button
@@ -115,7 +115,7 @@ export const SettingsStep: React.FC<SettingsStepProps> = ({
  <FileIcon size={12} />
  <span>{side === 'single' ? 'Single' : 'Double'}</span>
  {side === 'double' && options.sides !== 'double' && pricing.doubleSidedDiscount > 0 && (
- <span className="text-[9px] text-blue-400 font-bold">-₹{pricing.doubleSidedDiscount}/pg</span>
+ <span className="text-[9px] text-primary font-bold">-₹{pricing.doubleSidedDiscount}/pg</span>
  )}
  {options.sides === side && <Check size={10} />}
  </button>
@@ -123,11 +123,11 @@ export const SettingsStep: React.FC<SettingsStepProps> = ({
  </div>
  </div>
 
- <div className="border-t border-[#333]/[0.06]" />
+ <div className="border-t border-border/[0.06]" />
 
  {/* Binding */}
  <div className="flex items-center justify-between" role="group" aria-label="Binding type">
- <span className="text-[10px] font-black text-[#666] uppercase tracking-widest">Binding</span>
+ <span className="text-[10px] font-black text-foreground-muted uppercase tracking-widest">Binding</span>
  <div className="flex gap-1.5 flex-wrap justify-end">
  {[
  { id: 'none', label: 'None', icon: X },
@@ -156,23 +156,23 @@ export const SettingsStep: React.FC<SettingsStepProps> = ({
  </div>
  </div>
 
- <div className="border-t border-[#333]/[0.06]" />
+ <div className="border-t border-border/[0.06]" />
 
  {/* Copies */}
  <div className="flex items-center justify-between" role="group" aria-label="Number of copies">
- <span className="text-[10px] font-black text-[#666] uppercase tracking-widest">Copies</span>
+ <span className="text-[10px] font-black text-foreground-muted uppercase tracking-widest">Copies</span>
  <div className="flex items-center gap-3">
  <button
  onClick={() => updateOption('copies', Math.max(1, options.copies - 1))}
- className="size-7 bg-[#111] flex items-center justify-center text-white hover:bg-[#1A1A1A] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+ className="size-7 bg-background-subtle flex items-center justify-center text-foreground hover:bg-background-subtle transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
  aria-label="Decrease copies"
  >
  <Minus size={12} />
  </button>
- <span className="text-base font-bold text-white w-5 text-center tabular-nums" aria-live="polite">{options.copies}</span>
+ <span className="text-base font-bold text-foreground w-5 text-center tabular-nums" aria-live="polite">{options.copies}</span>
  <button
  onClick={() => updateOption('copies', options.copies + 1)}
- className="size-7 bg-[#0A0A0A] flex items-center justify-center text-white hover:bg-[#0A0A0A]/90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+ className="size-7 bg-background-card flex items-center justify-center text-foreground hover:bg-background-card/90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
  aria-label="Increase copies"
  >
  <Plus size={12} />
@@ -185,8 +185,8 @@ export const SettingsStep: React.FC<SettingsStepProps> = ({
  return (
  <div className="space-y-4 animate-fade-in pb-24 lg:pb-4" role="form" aria-label="Print settings">
  <div>
- <h2 className="text-xl lg:text-2xl font-black text-white font-display">Print Settings</h2>
- <p className="text-[#666] text-xs mt-0.5">Customize your print options</p>
+ <h2 className="text-xl lg:text-2xl font-black text-foreground font-display">Print Settings</h2>
+ <p className="text-foreground-muted text-xs mt-0.5">Customize your print options</p>
  </div>
 
  {/* Desktop: 2-column layout */}
@@ -196,10 +196,10 @@ export const SettingsStep: React.FC<SettingsStepProps> = ({
  {/* Options Card */}
  <div className=" p-5 space-y-5">
  <div className="flex items-center justify-between">
- <span className="text-[10px] font-black text-[#666] uppercase tracking-widest">Options</span>
+ <span className="text-[10px] font-black text-foreground-muted uppercase tracking-widest">Options</span>
  <button
  onClick={resetDefaults}
- className="text-[10px] text-[#666] hover:text-white transition-colors flex items-center gap-1"
+ className="text-[10px] text-foreground-muted hover:text-foreground transition-colors flex items-center gap-1"
  aria-label="Reset to default settings"
  >
  <RotateCcw size={10} /> Reset
@@ -213,26 +213,26 @@ export const SettingsStep: React.FC<SettingsStepProps> = ({
  <div className="space-y-4 sticky top-4 self-start">
  {/* Live Cost Breakdown */}
  <div className=" p-5 space-y-3" aria-live="polite">
- <h3 className="text-xs font-black text-[#666] uppercase tracking-widest">Cost Breakdown</h3>
+ <h3 className="text-xs font-black text-foreground-muted uppercase tracking-widest">Cost Breakdown</h3>
  <div className="space-y-1.5 text-sm">
  {breakdown.lines.map((line, i) => (
  <div key={i} className="flex justify-between items-baseline gap-2">
  <div className="flex items-baseline gap-1.5 min-w-0">
- <span className={cn("truncate", line.amount < 0 ? "text-green-400" : "text-[#666]")}>{line.label}</span>
+ <span className={cn("truncate", line.amount < 0 ? "text-green-400" : "text-foreground-muted")}>{line.label}</span>
  {line.detail && (
- <span className="text-[10px] text-[#666]/60 shrink-0">{line.detail}</span>
+ <span className="text-[10px] text-foreground-muted/60 shrink-0">{line.detail}</span>
  )}
  </div>
- <span className={cn("font-medium tabular-nums shrink-0", line.amount < 0 ? "text-green-400" : "text-white")}>
+ <span className={cn("font-medium tabular-nums shrink-0", line.amount < 0 ? "text-green-400" : "text-foreground")}>
  {line.amount < 0 ? `-₹${Math.abs(line.amount).toFixed(0)}` : `₹${line.amount.toFixed(0)}`}
  </span>
  </div>
  ))}
  </div>
- <div className="border-t border-[#333]/[0.06] pt-3">
+ <div className="border-t border-border/[0.06] pt-3">
  <div className="flex justify-between items-baseline">
- <span className="text-xs text-[#666] uppercase font-bold">Total</span>
- <span className="text-2xl font-black text-white tabular-nums">₹{totalPrice.toFixed(0)}</span>
+ <span className="text-xs text-foreground-muted uppercase font-bold">Total</span>
+ <span className="text-2xl font-black text-foreground tabular-nums">₹{totalPrice.toFixed(0)}</span>
  </div>
  </div>
  </div>
@@ -251,10 +251,10 @@ export const SettingsStep: React.FC<SettingsStepProps> = ({
  <div className="lg:hidden space-y-3">
  <div className=" p-4 space-y-4">
  <div className="flex items-center justify-between">
- <span className="text-[10px] font-black text-[#666] uppercase tracking-widest">Options</span>
+ <span className="text-[10px] font-black text-foreground-muted uppercase tracking-widest">Options</span>
  <button
  onClick={resetDefaults}
- className="text-[10px] text-[#666] hover:text-white transition-colors flex items-center gap-1"
+ className="text-[10px] text-foreground-muted hover:text-foreground transition-colors flex items-center gap-1"
  aria-label="Reset to default settings"
  >
  <RotateCcw size={10} /> Reset
@@ -267,9 +267,9 @@ export const SettingsStep: React.FC<SettingsStepProps> = ({
  {/* Sticky Action for Mobile - Above Bottom Nav */}
  <div className="fixed bottom-24 left-0 right-0 p-4 bg-transparent lg:hidden z-[100] pb-0 pointer-events-none">
  <div className="pointer-events-auto flex items-center gap-3">
- <div className="flex-1 bg-black/80 p-3 border border-[#333] flex justify-between items-center ">
- <p className="text-xs text-[#666] uppercase font-bold">Total</p>
- <p className="text-xl font-bold text-white tabular-nums" aria-live="polite">₹{totalPrice.toFixed(0)}</p>
+ <div className="flex-1 bg-black/80 p-3 border border-border flex justify-between items-center ">
+ <p className="text-xs text-foreground-muted uppercase font-bold">Total</p>
+ <p className="text-xl font-bold text-foreground tabular-nums" aria-live="polite">₹{totalPrice.toFixed(0)}</p>
  </div>
  <Button
  onClick={onNext}

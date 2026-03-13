@@ -23,10 +23,10 @@ import { OrderTracker } from './OrderTracker';
 
 const statusConfig: Record<string, { color: string; icon: any; label: string }> = {
  pending: { color: 'text-yellow-500 bg-yellow-900/200/10 border-yellow-500/20', icon: Clock, label: 'Pending' },
- confirmed: { color: 'text-red-500 bg-[#111]0/10 border-red-600/20', icon: CheckCircle2, label: 'Confirmed' },
- printing: { color: 'text-purple-500 bg-purple-900/200/10 border-purple-500/20', icon: Loader2, label: 'Printing' },
+ confirmed: { color: 'text-primary bg-background-subtle0/10 border-primary/20', icon: CheckCircle2, label: 'Confirmed' },
+ printing: { color: 'text-primary bg-primary/10 border-primary/20', icon: Loader2, label: 'Printing' },
  ready: { color: 'text-green-500 bg-green-900/20/10 border-green-500/20', icon: CheckCircle2, label: 'Ready for Pickup' },
- completed: { color: 'text-[#666] bg-[#111] border-[#333]', icon: CheckCircle2, label: 'Completed' },
+ completed: { color: 'text-foreground-muted bg-background-subtle border-border', icon: CheckCircle2, label: 'Completed' },
 };
 
 export const MyOrdersPage: React.FC = () => {
@@ -181,23 +181,23 @@ export const MyOrdersPage: React.FC = () => {
  <div>
  <button
  onClick={() => navigate('/')}
- className="flex items-center gap-2 text-[#666] hover:text-white transition-colors mb-1 text-xs"
+ className="flex items-center gap-2 text-foreground-muted hover:text-foreground transition-colors mb-1 text-xs"
  >
  <ArrowLeft size={14} />
  Back
  </button>
- <h1 className="text-2xl font-bold text-white font-display">My Orders</h1>
+ <h1 className="text-2xl font-bold text-foreground font-display">My Orders</h1>
  </div>
 
  {/* Stats Cards (Mini) */}
  <div className="flex gap-3">
  <div className="px-3 py-2 bg-background-card border rounded-2xl shadow-xl border-border ">
- <p className="text-[10px] text-[#666] uppercase font-bold">Total Spent</p>
- <p className="text-base font-bold text-white">₹{orders.reduce((acc, o) => acc + o.totalAmount, 0).toFixed(0)}</p>
+ <p className="text-[10px] text-foreground-muted uppercase font-bold">Total Spent</p>
+ <p className="text-base font-bold text-foreground">₹{orders.reduce((acc, o) => acc + o.totalAmount, 0).toFixed(0)}</p>
  </div>
  <div className="px-3 py-2 bg-background-card border rounded-2xl shadow-xl border-border ">
- <p className="text-[10px] text-[#666] uppercase font-bold">Active Jobs</p>
- <p className="text-base font-bold text-white">{orders.filter(o => ['pending', 'printing', 'confirmed'].includes(o.status.toLowerCase())).length}</p>
+ <p className="text-[10px] text-foreground-muted uppercase font-bold">Active Jobs</p>
+ <p className="text-base font-bold text-foreground">{orders.filter(o => ['pending', 'printing', 'confirmed'].includes(o.status.toLowerCase())).length}</p>
  </div>
  </div>
  </div>
@@ -211,8 +211,8 @@ export const MyOrdersPage: React.FC = () => {
  className={cn(
  "px-3 py-1.5 text-xs font-medium transition-all border capitalize",
  filterStatus === status
- ? "bg-red-600 text-white border-[#333]"
- : "bg-transparent text-[#666] border-border hover:border-[#333] hover:text-white"
+ ? "bg-primary text-foreground border-border"
+ : "bg-transparent text-foreground-muted border-border hover:border-border hover:text-foreground"
  )}
  >
  {status}
@@ -242,7 +242,7 @@ export const MyOrdersPage: React.FC = () => {
  visible: { opacity: 1, y: 0 }
  }}
  key={order.id}
- className="group relative bg-background-card border rounded-2xl shadow-xl border-border overflow-hidden hover:border-[#333] transition-all duration-300"
+ className="group relative bg-background-card border rounded-2xl shadow-xl border-border overflow-hidden hover:border-border transition-all duration-300"
  >
  <div className="p-4">
  {/* Top row: status icon + summary + price */}
@@ -253,19 +253,19 @@ export const MyOrdersPage: React.FC = () => {
  </div>
  <div className="min-w-0">
  <div className="flex items-center gap-2">
- <span className="font-bold text-white text-sm truncate">{getOrderSummary(order)}</span>
+ <span className="font-bold text-foreground text-sm truncate">{getOrderSummary(order)}</span>
  <span className={cn("text-[9px] uppercase font-bold px-1.5 py-0.5 rounded border whitespace-nowrap", status.color)}>
  {status.label}
  </span>
  </div>
  <div className="flex items-center gap-2 mt-0.5">
- <span className="text-xs text-[#666] font-mono">#{order.id.slice(-6)}</span>
+ <span className="text-xs text-foreground-muted font-mono">#{order.id.slice(-6)}</span>
  </div>
  </div>
  </div>
 
  <div className="text-right shrink-0">
- <span className="text-lg font-bold text-white">₹{order.totalAmount.toFixed(0)}</span>
+ <span className="text-lg font-bold text-foreground">₹{order.totalAmount.toFixed(0)}</span>
  </div>
  </div>
 
@@ -277,7 +277,7 @@ export const MyOrdersPage: React.FC = () => {
  {order.status === 'ready' && (
  <button
  onClick={() => handleMarkCollected(order.id)}
- className="text-xs px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white font-bold transition-colors flex items-center gap-1.5"
+ className="text-xs px-3 py-1.5 bg-green-600 hover:bg-green-700 text-foreground font-bold transition-colors flex items-center gap-1.5"
  >
  <CheckCircle2 size={12} />
  Collected
@@ -291,7 +291,7 @@ export const MyOrdersPage: React.FC = () => {
  <div className="mt-3 pt-3 border-t border-border/50">
  <div className="flex items-center justify-between">
  <div>
- <p className="text-[10px] font-bold text-[#666] uppercase tracking-widest mb-1.5">Pickup OTP</p>
+ <p className="text-[10px] font-bold text-foreground-muted uppercase tracking-widest mb-1.5">Pickup OTP</p>
  <div className="flex items-center gap-1">
  {order.orderToken.split('').map((char, idx) => (
  <div
@@ -309,7 +309,7 @@ export const MyOrdersPage: React.FC = () => {
  "flex items-center gap-1.5 px-3 py-2 text-xs font-bold transition-all",
  copiedId === order.id
  ? "bg-green-900/20/20 text-green-400 border border-green-500/30"
- : "bg-[#111] text-[#666] border border-border hover:bg-[#111] hover:text-white"
+ : "bg-background-subtle text-foreground-muted border border-border hover:bg-background-subtle hover:text-foreground"
  )}
  >
  {copiedId === order.id ? (
@@ -319,7 +319,7 @@ export const MyOrdersPage: React.FC = () => {
  )}
  </button>
  </div>
- <p className="text-[10px] text-[#666] mt-1.5">Show this code at the counter to collect your order</p>
+ <p className="text-[10px] text-foreground-muted mt-1.5">Show this code at the counter to collect your order</p>
  </div>
  )}
  </div>
@@ -329,9 +329,9 @@ export const MyOrdersPage: React.FC = () => {
  </motion.div>
  ) : (
  <div className="text-center py-12 bg-background-card/50 border border-dashed border-border">
- <Package size={36} className="text-[#666] opacity-20 mx-auto mb-3" />
- <h3 className="text-base font-bold text-white">No orders found</h3>
- <p className="text-[#666] text-sm mt-1 mb-4">You haven't placed any orders yet.</p>
+ <Package size={36} className="text-foreground-muted opacity-20 mx-auto mb-3" />
+ <h3 className="text-base font-bold text-foreground">No orders found</h3>
+ <p className="text-foreground-muted text-sm mt-1 mb-4">You haven't placed any orders yet.</p>
  {filterStatus !== 'all' && (
  <Button variant="outline" onClick={() => setFilterStatus('all')}>
  View all orders

@@ -121,14 +121,14 @@ export const ShopsManagement: React.FC<{ onSelectShop?: (shopId: string) => void
  {/* Header */}
  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
  <div>
- <h2 className="text-2xl font-bold text-white">Shops Management</h2>
- <p className="text-[#666] text-sm mt-1">
+ <h2 className="text-2xl font-bold text-foreground">Shops Management</h2>
+ <p className="text-foreground-muted text-sm mt-1">
  Manage all registered shops on the platform
  </p>
  </div>
  <button
  onClick={() => setIsAddingShop(true)}
- className="flex items-center gap-2 px-4 py-2.5 bg-[#111] border border-[#333] rounded-2xl shadow-2xl text-white text-sm font-semibold hover:bg-[#0A0A0A]/15 transition-colors"
+ className="flex items-center gap-2 px-4 py-2.5 bg-background-subtle border border-border rounded-2xl shadow-2xl text-foreground text-sm font-semibold hover:bg-background-card/15 transition-colors"
  >
  <Icon name="add_business" className="text-lg" />
  Add Shop
@@ -137,46 +137,46 @@ export const ShopsManagement: React.FC<{ onSelectShop?: (shopId: string) => void
 
  {/* Stats Overview */}
  <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
- <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl/[0.06] p-5 transition-colors duration-200">
+ <div className="bg-background-card border border-border rounded-2xl shadow-2xl/[0.06] p-5 transition-colors duration-200">
  <div className="flex items-center gap-3">
- <div className="p-2.5 bg-[#111]0/10">
- <Icon name="store" className="text-xl text-blue-400" />
+ <div className="p-2.5 bg-background-subtle0/10">
+ <Icon name="store" className="text-xl text-primary" />
  </div>
  <div>
- <p className="text-2xl font-bold text-white">{shops.length}</p>
+ <p className="text-2xl font-bold text-foreground">{shops.length}</p>
  <p className="text-sm text-text-secondary">Total Shops</p>
  </div>
  </div>
  </div>
- <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl/[0.06] p-5 transition-colors duration-200">
+ <div className="bg-background-card border border-border rounded-2xl shadow-2xl/[0.06] p-5 transition-colors duration-200">
  <div className="flex items-center gap-3">
  <div className="p-2.5 bg-green-900/20/10">
  <Icon name="check_circle" className="text-xl text-green-400" />
  </div>
  <div>
- <p className="text-2xl font-bold text-white">{activeShops}</p>
+ <p className="text-2xl font-bold text-foreground">{activeShops}</p>
  <p className="text-sm text-text-secondary">Active</p>
  </div>
  </div>
  </div>
- <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl/[0.06] p-5 transition-colors duration-200">
+ <div className="bg-background-card border border-border rounded-2xl shadow-2xl/[0.06] p-5 transition-colors duration-200">
  <div className="flex items-center gap-3">
- <div className="p-2.5 bg-purple-900/200/10">
- <Icon name="receipt_long" className="text-xl text-purple-400" />
+ <div className="p-2.5 bg-primary/10">
+ <Icon name="receipt_long" className="text-xl text-primary" />
  </div>
  <div>
- <p className="text-2xl font-bold text-white">{totalOrders}</p>
+ <p className="text-2xl font-bold text-foreground">{totalOrders}</p>
  <p className="text-sm text-text-secondary">Total Orders</p>
  </div>
  </div>
  </div>
- <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl/[0.06] p-5 transition-colors duration-200">
+ <div className="bg-background-card border border-border rounded-2xl shadow-2xl/[0.06] p-5 transition-colors duration-200">
  <div className="flex items-center gap-3">
  <div className="p-2.5 bg-amber-900/200/10">
  <Icon name="payments" className="text-xl text-amber-400" />
  </div>
  <div>
- <p className="text-2xl font-bold text-white">₹{totalRevenue.toLocaleString()}</p>
+ <p className="text-2xl font-bold text-foreground">₹{totalRevenue.toLocaleString()}</p>
  <p className="text-sm text-text-secondary">Total Revenue</p>
  </div>
  </div>
@@ -185,25 +185,25 @@ export const ShopsManagement: React.FC<{ onSelectShop?: (shopId: string) => void
 
  {/* Add Shop Modal */}
  {isAddingShop && (
- <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-6">
- <h3 className="text-lg font-bold text-white mb-4">Add New Shop</h3>
+ <div className="bg-background-card border border-border rounded-2xl shadow-2xl p-6">
+ <h3 className="text-lg font-bold text-foreground mb-4">Add New Shop</h3>
  <div className="flex gap-3">
  <input
  type="text"
  placeholder="Shop Name"
  value={newShopName}
  onChange={(e) => setNewShopName(e.target.value)}
- className="flex-1 px-4 py-2 bg-[#111] border border-[#333] rounded-2xl shadow-2xl text-white placeholder:text-[#666] focus:outline-none focus:border-red-600"
+ className="flex-1 px-4 py-2 bg-background-subtle border border-border rounded-2xl shadow-2xl text-foreground placeholder:text-foreground-muted focus:outline-none focus:border-primary"
  />
  <button
  onClick={addShop}
- className="px-4 py-2 bg-green-900/20/90 text-white font-semibold hover:bg-green-400 transition-colors"
+ className="px-4 py-2 bg-green-900/20/90 text-foreground font-semibold hover:bg-green-400 transition-colors"
  >
  Create
  </button>
  <button
  onClick={() => setIsAddingShop(false)}
- className="px-4 py-2 bg-[#111] border border-[#333] rounded-2xl shadow-2xl text-text-secondary font-medium hover:text-white hover:bg-[#0A0A0A]/[0.1] transition-colors"
+ className="px-4 py-2 bg-background-subtle border border-border rounded-2xl shadow-2xl text-text-secondary font-medium hover:text-foreground hover:bg-background-card/[0.1] transition-colors"
  >
  Cancel
  </button>
@@ -214,10 +214,10 @@ export const ShopsManagement: React.FC<{ onSelectShop?: (shopId: string) => void
  {/* Shops List */}
  {loading ? (
  <div className="flex items-center justify-center py-20">
- <div className="size-8 border-2 border-[#333] border-t-white animate-spin" />
+ <div className="size-8 border-2 border-border border-t-white animate-spin" />
  </div>
  ) : (
- <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl/[0.06] overflow-hidden">
+ <div className="bg-background-card border border-border rounded-2xl shadow-2xl/[0.06] overflow-hidden">
  <table className="w-full">
  <thead>
  <tr className="bg-surface-darker/50 border-b border-border-dark">
@@ -231,7 +231,7 @@ export const ShopsManagement: React.FC<{ onSelectShop?: (shopId: string) => void
  </thead>
  <tbody className="divide-y divide-border-dark">
  {shops.map((shop) => (
- <tr key={shop.id} className="hover:bg-[#0A0A0A] transition-colors group">
+ <tr key={shop.id} className="hover:bg-background-card transition-colors group">
  <td className="py-4 px-4">
  <div className="flex items-center gap-3">
  <div className="p-2 bg-primary/10">
@@ -249,7 +249,7 @@ export const ShopsManagement: React.FC<{ onSelectShop?: (shopId: string) => void
  <td className="py-4 px-4">
  <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium ${shop.isActive
  ? 'bg-success/10 text-success'
- : 'bg-red-900/20/10 text-red-500'
+ : 'bg-red-900/20/10 text-primary'
  }`}>
  {shop.isActive ? 'Active' : 'Suspended'}
  </span>
@@ -258,7 +258,7 @@ export const ShopsManagement: React.FC<{ onSelectShop?: (shopId: string) => void
  <div className="flex items-center justify-end gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
  <button
  onClick={() => handleManageShop(shop)}
- className="flex items-center gap-1 px-3 py-1.5 bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl text-xs font-medium text-text-secondary hover:text-white hover:bg-[#111] hover:border-[#333] transition-all duration-200"
+ className="flex items-center gap-1 px-3 py-1.5 bg-background-card border border-border rounded-2xl shadow-2xl text-xs font-medium text-text-secondary hover:text-foreground hover:bg-background-subtle hover:border-border transition-all duration-200"
  >
  <Icon name="admin_panel_settings" className="text-sm" />
  Manage
@@ -270,7 +270,7 @@ export const ShopsManagement: React.FC<{ onSelectShop?: (shopId: string) => void
  }
  }}
  className={`flex items-center gap-1 px-3 py-1.5 border text-xs font-medium transition-colors ${shop.isActive
- ? 'border-red-900/30 text-red-400 bg-red-900/10 hover:bg-red-900/20 hover:border-red-900/50'
+ ? 'border-red-900/30 text-error bg-red-900/10 hover:bg-red-900/20 hover:border-red-900/50'
  : 'border-green-900/30 text-green-400 bg-green-900/10 hover:bg-green-900/30 hover:border-green-900/50'
  }`}
  title={shop.isActive ? 'Suspend Shop' : 'Activate Shop'}
@@ -287,8 +287,8 @@ export const ShopsManagement: React.FC<{ onSelectShop?: (shopId: string) => void
 
  {shops.length === 0 && (
  <div className="py-12 text-center">
- <Icon name="store" className="text-4xl text-[#666] mb-3" />
- <p className="text-[#666]">No shops registered yet</p>
+ <Icon name="store" className="text-4xl text-foreground-muted mb-3" />
+ <p className="text-foreground-muted">No shops registered yet</p>
  </div>
  )}
  </div>

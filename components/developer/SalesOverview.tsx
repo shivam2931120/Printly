@@ -64,8 +64,8 @@ export const SalesOverview: React.FC = () => {
       {/* Header with Export */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-white">Sales Overview</h2>
-          <p className="text-[#666] text-sm mt-1">
+          <h2 className="text-2xl font-bold text-foreground">Sales Overview</h2>
+          <p className="text-foreground-muted text-sm mt-1">
             Aggregate sales data across all shops (real-time + persisted)
           </p>
         </div>
@@ -84,7 +84,7 @@ export const SalesOverview: React.FC = () => {
             }));
             exportToCSV(rows, 'printly_sales_report');
           }}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-[#111] border border-[#333] rounded-2xl shadow-2xl/[0.10] text-sm font-medium text-white hover:bg-[#0A0A0A]/[0.10] transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-background-subtle border border-border rounded-2xl shadow-2xl/[0.10] text-sm font-medium text-foreground hover:bg-background-card/[0.10] transition-colors"
           disabled={orders.length === 0}
         >
           <Icon name="download" className="text-lg" />
@@ -94,83 +94,83 @@ export const SalesOverview: React.FC = () => {
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <div className="size-8 border-2 border-[#333] border-t-white animate-spin" />
+          <div className="size-8 border-2 border-border border-t-white animate-spin" />
         </div>
       ) : (
         <>
           {/* Stats Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-            <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-5">
+            <div className="bg-background-card border border-border rounded-2xl shadow-2xl p-5">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 bg-green-900/20">
                   <Icon name="payments" className="text-xl text-green-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-white">₹{stats.totalRevenue.toLocaleString()}</p>
-                  <p className="text-sm text-[#666]">Total Revenue</p>
+                  <p className="text-2xl font-bold text-foreground">₹{stats.totalRevenue.toLocaleString()}</p>
+                  <p className="text-sm text-foreground-muted">Total Revenue</p>
                 </div>
               </div>
             </div>
-            <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-5">
+            <div className="bg-background-card border border-border rounded-2xl shadow-2xl p-5">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-blue-900/20">
-                  <Icon name="receipt_long" className="text-xl text-blue-400" />
+                <div className="p-2.5 bg-primary/10">
+                  <Icon name="receipt_long" className="text-xl text-primary" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-white">{stats.totalOrders}</p>
-                  <p className="text-sm text-[#666]">Total Orders</p>
+                  <p className="text-2xl font-bold text-foreground">{stats.totalOrders}</p>
+                  <p className="text-sm text-foreground-muted">Total Orders</p>
                 </div>
               </div>
             </div>
-            <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-5">
+            <div className="bg-background-card border border-border rounded-2xl shadow-2xl p-5">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-purple-900/20">
-                  <Icon name="trending_up" className="text-xl text-purple-400" />
+                <div className="p-2.5 bg-primary/10">
+                  <Icon name="trending_up" className="text-xl text-primary" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-white">₹{stats.avgOrderValue}</p>
-                  <p className="text-sm text-[#666]">Avg Order</p>
+                  <p className="text-2xl font-bold text-foreground">₹{stats.avgOrderValue}</p>
+                  <p className="text-sm text-foreground-muted">Avg Order</p>
                 </div>
               </div>
             </div>
-            <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-5">
+            <div className="bg-background-card border border-border rounded-2xl shadow-2xl p-5">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 bg-amber-900/20">
                   <Icon name="today" className="text-xl text-amber-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-white">{stats.todayOrders}</p>
-                  <p className="text-sm text-[#666]">Today's Orders</p>
+                  <p className="text-2xl font-bold text-foreground">{stats.todayOrders}</p>
+                  <p className="text-sm text-foreground-muted">Today's Orders</p>
                 </div>
               </div>
             </div>
-            <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-5">
+            <div className="bg-background-card border border-border rounded-2xl shadow-2xl p-5">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 bg-pink-900/20">
                   <Icon name="monetization_on" className="text-xl text-pink-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-white">₹{stats.todayRevenue.toLocaleString()}</p>
-                  <p className="text-sm text-[#666]">Today's Revenue</p>
+                  <p className="text-2xl font-bold text-foreground">₹{stats.todayRevenue.toLocaleString()}</p>
+                  <p className="text-sm text-foreground-muted">Today's Revenue</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Weekly Revenue Chart */}
-          <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-6">
-            <h3 className="text-lg font-bold text-white mb-4">Weekly Revenue</h3>
+          <div className="bg-background-card border border-border rounded-2xl shadow-2xl p-6">
+            <h3 className="text-lg font-bold text-foreground mb-4">Weekly Revenue</h3>
             <div className="space-y-3">
               {weeklyData.map(item => (
                 <div key={item.day} className="flex items-center gap-4">
-                  <span className="w-10 text-sm font-medium text-[#666]">{item.day}</span>
-                  <div className="flex-1 h-8 bg-[#0A0A0A] overflow-hidden">
+                  <span className="w-10 text-sm font-medium text-foreground-muted">{item.day}</span>
+                  <div className="flex-1 h-8 bg-background-card overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-blue-600 to-blue-400 flex items-center justify-end pr-3 transition-all duration-500"
+                      className="h-full bg-gradient-to-r from-primary to-accent-hover flex items-center justify-end pr-3 transition-all duration-500"
                       style={{ width: `${Math.max(item.percentage, 2)}%` }}
                     >
                       {item.revenue > 0 && (
-                        <span className="text-xs font-bold text-white">₹{item.revenue.toLocaleString()}</span>
+                        <span className="text-xs font-bold text-foreground">₹{item.revenue.toLocaleString()}</span>
                       )}
                     </div>
                   </div>
@@ -181,10 +181,10 @@ export const SalesOverview: React.FC = () => {
 
           {/* Empty State */}
           {orders.length === 0 && (
-            <div className="bg-[#0A0A0A] border border-[#333] rounded-2xl shadow-2xl p-12 text-center">
-              <Icon name="analytics" className="text-5xl text-[#666] mb-4" />
-              <h3 className="text-lg font-semibold text-[#666] mb-2">No Sales Data Yet</h3>
-              <p className="text-[#666]">Sales data will appear here once orders are placed.</p>
+            <div className="bg-background-card border border-border rounded-2xl shadow-2xl p-12 text-center">
+              <Icon name="analytics" className="text-5xl text-foreground-muted mb-4" />
+              <h3 className="text-lg font-semibold text-foreground-muted mb-2">No Sales Data Yet</h3>
+              <p className="text-foreground-muted">Sales data will appear here once orders are placed.</p>
             </div>
           )}
         </>
