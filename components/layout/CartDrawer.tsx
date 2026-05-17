@@ -1,4 +1,4 @@
-import React, { useRef, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import {
     X,
     ShoppingBag,
@@ -12,10 +12,11 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useClerkSupabase } from '../../services/clerkSupabase';
 import { useCartStore } from '../../store/useCartStore';
 import { compressPdf } from '../../lib/compressPdf';
 import { useOrderStore } from '../../store/useOrderStore';
-import { createOrder, uploadFile } from '../../services/data';
+import { abandonUnpaidOrder, confirmOrderPayment, createOrder, uploadFile } from '../../services/data';
 import { useNotificationStore } from '../../store/useNotificationStore';
 import { toast } from 'sonner';
 import { Button } from '../ui/Button';
@@ -33,8 +34,20 @@ declare global {
     }
 }
 
-const loadRazorpayScript = () => {
+const loadRazorpayScript = (): Promise<boolean> => {
     return new Promise((resolve) => {
+        if (window.Razorpay) {
+            resolve(true);
+            return;
+        }
+
+        const existingScript = document.querySelector<HTMLScriptElement>('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+        if (existingScript) {
+            existingScript.addEventListener('load', () => resolve(true), { once: true });
+            existingScript.addEventListener('error', () => resolve(false), { once: true });
+            return;
+        }
+
         const script = document.createElement('script');
         script.src = 'https://checkout.razorpay.com/v1/checkout.js';
         script.onload = () => {
@@ -49,6 +62,7 @@ const loadRazorpayScript = () => {
 
 export const CartDrawer: React.FC = () => {
     const { user } = useAuth();
+    const { getAuthenticatedClient } = useClerkSupabase();
     const navigate = useNavigate();
     const {
         cart,
@@ -69,6 +83,18 @@ export const CartDrawer: React.FC = () => {
     const [confirmedOrder, setConfirmedOrder] = React.useState<Order | null>(null);
 
     const handlePayment = useCallback(async () => {
+        if (cart.length === 0 || cartTotal <= 0) {
+            toast.error('Your cart is empty.');
+            return;
+        }
+
+        if (!user) {
+            toast.error('Please sign in before checkout.');
+            toggleCart(false);
+            navigate('/sign-in');
+            return;
+        }
+
         try {
             await RateLimits.payment(async () => { });
         } catch (err: any) {
@@ -94,116 +120,156 @@ export const CartDrawer: React.FC = () => {
             return;
         }
 
-        const totalAmount = (cartTotal * 1.05).toFixed(2);
+        let uploadError = false;
+        const totalFiles = cart.filter(i => i.type === 'print').length;
+        let filesUploaded = 0;
+
+        const processedCart = await Promise.all(cart.map(async (item) => {
+            if (item.type !== 'print') return item;
+
+            if ((item as any).fileUrl) {
+                const { file: _file, ...rest } = item as any;
+                return rest as CartItem;
+            }
+
+            if (!((item as any).file instanceof File) || !(item as any).file.name) {
+                uploadError = true;
+                return item;
+            }
+
+            try {
+                const compressedFile = await compressPdf((item as any).file);
+                const publicUrl = await uploadFile(compressedFile);
+                if (!publicUrl) {
+                    uploadError = true;
+                    return item;
+                }
+
+                filesUploaded++;
+                if (totalFiles > 0) {
+                    setUploadProgress(Math.round((filesUploaded / totalFiles) * 100));
+                }
+
+                const { file: _file, ...rest } = item as any;
+                return { ...rest, fileUrl: publicUrl } as CartItem;
+            } catch (err) {
+                console.error('Upload failed for item', item.name, err);
+                uploadError = true;
+                return item;
+            }
+        }));
+
+        if (uploadError || processedCart.some(item => item.type === 'print' && !(item as any).fileUrl)) {
+            toast.error('File upload failed. Please remove and re-add any missing print files, then try again.');
+            setIsProcessing(false);
+            return;
+        }
+
+        const totalAmount = parseFloat((cartTotal * 1.05).toFixed(2));
+        const now = new Date();
+        const pendingOrder: Order = {
+            id: generateId(),
+            userId: user.id,
+            clerkId: user.authId,
+            userEmail: user.email,
+            userName: user.name,
+            items: processedCart,
+            type: 'mixed',
+            totalAmount,
+            status: 'pending',
+            paymentStatus: 'unpaid',
+            createdAt: now,
+            updatedAt: now
+        };
+
+        const dbClient = await getAuthenticatedClient();
+        const userRole = user.isAdmin ? 'ADMIN' : (user.isDeveloper ? 'DEVELOPER' : 'USER');
+        const createResult = await createOrder(pendingOrder, userRole, dbClient);
+
+        if (!createResult.success) {
+            console.error('Failed to save order before payment:', createResult.error?.message || createResult.error);
+            toast.error('Could not save your order before payment. No payment was taken.');
+            setIsProcessing(false);
+            return;
+        }
+
+        const savedOrder: Order = {
+            ...pendingOrder,
+            orderToken: createResult.data?.orderToken || pendingOrder.orderToken,
+        };
+
+        let paymentHandled = false;
 
         const options = {
             key: razorpayKey,
-            amount: Math.round(parseFloat(totalAmount) * 100).toString(),
+            amount: Math.round(totalAmount * 100).toString(),
             currency: "INR",
             name: "Printly",
             description: "Print Order Payment",
             handler: async (response: any) => {
-                // Generate a clean 6-char pickup code
-                const pickupCode = Math.floor(1000 + Math.random() * 9000).toString();
+                paymentHandled = true;
+                const paymentId = response.razorpay_payment_id;
+                const confirmResult = await confirmOrderPayment(savedOrder.id, paymentId, dbClient);
 
-                let uploadError = false;
-                const totalFiles = cart.filter(i => i.type === 'print').length;
-                let filesUploaded = 0;
-
-                const processedCart = await Promise.all(cart.map(async (item) => {
-                    if (item.type === 'print') {
-                        // Check for valid file object (persistence issue check)
-                        if (!(item as any).file || !(item as any).file.name) {
-                            console.error('Missing file object for item:', item.name);
-                            uploadError = true;
-                            return item;
-                        }
-
-                        try {
-                            // Compress PDF before upload for smaller storage
-                            const compressedFile = await compressPdf((item as any).file);
-                            const publicUrl = await uploadFile(compressedFile);
-                            if (publicUrl) {
-                                filesUploaded++;
-                                setUploadProgress(Math.round((filesUploaded / totalFiles) * 100));
-                                return { ...item, fileUrl: publicUrl };
-                            }
-                        } catch (err) {
-                            console.error('Upload failed for item', item.name, err);
-                        }
-                    }
-                    return item;
-                }));
-
-                if (uploadError) {
-                    toast.error("Some files are missing (likely due to page refresh). Please remove and re-add your print items.");
-                    setIsProcessing(false);
-                    return;
-                }
-
-                const newOrder: Order = {
-                    id: response.razorpay_payment_id || generateId(),
-                    orderToken: pickupCode,
-                    userId: user?.id,
-                    clerkId: user?.authId, // Clerk user ID for tracing
-                    userEmail: user?.email || 'guest@example.com',
-                    userName: user?.name || 'Guest',
-                    items: processedCart,
-                    type: 'mixed',
-                    totalAmount: parseFloat(totalAmount),
-                    status: 'pending',
-                    paymentStatus: 'paid',
-                    paymentId: response.razorpay_payment_id,
-                    createdAt: new Date(),
+                const paidOrder: Order = {
+                    ...savedOrder,
+                    status: confirmResult.success ? 'confirmed' : 'pending',
+                    paymentStatus: confirmResult.success ? 'paid' : 'unpaid',
+                    paymentId,
                     updatedAt: new Date()
                 };
 
-                // Saving Order to DB
-                const userRole = user?.isAdmin ? 'ADMIN' : (user?.isDeveloper ? 'DEVELOPER' : 'USER');
-                const { success, error } = await createOrder(newOrder, userRole);
-
-                if (!success) {
-                    console.error('Failed to save order to DB:', error?.message || error);
-                    toast.error('Payment successful but failed to save order. Please contact support.');
-                    setIsProcessing(false);
-                    return;
+                if (!confirmResult.success) {
+                    console.error('Payment captured but order confirmation update failed:', confirmResult.error?.message || confirmResult.error);
+                    toast.warning('Payment was captured and your order was saved. It may show as unpaid until verification completes.');
                 }
 
-                addOrder(newOrder); // Update local store too
+                addOrder(paidOrder); // Update local store too
 
                 // Add Notification
                 const { addNotification } = useNotificationStore.getState();
                 addNotification({
                     title: 'Order Placed Successfully',
-                    message: `Your order #${newOrder.orderToken} has been placed.`,
+                    message: `Your order #${paidOrder.orderToken || paidOrder.id.slice(-6)} has been placed.`,
                     type: 'success'
                 });
 
                 clearCart();
-                setConfirmedOrder(newOrder); // Show confirmation modal instead of direct navigation
-                toast.success(`Payment Successful! Your collection OTP is ${pickupCode}`, { duration: 5000 });
+                setConfirmedOrder(paidOrder); // Show confirmation modal instead of direct navigation
+                toast.success(`Payment successful. Your collection OTP is ${paidOrder.orderToken || paidOrder.id.slice(-6)}`, { duration: 5000 });
                 setIsProcessing(false);
             },
             prefill: {
-                name: user?.name || "User Name",
-                email: user?.email || "user@example.com",
+                name: user.name || "User Name",
+                email: user.email || "user@example.com",
                 contact: "9999999999",
             },
             notes: {
-                address: "Razorpay Corporate Office",
+                app_order_id: savedOrder.id,
+                order_token: savedOrder.orderToken || '',
             },
             theme: {
                 color: "#E53E3E", // Red accent
+            },
+            modal: {
+                ondismiss: () => {
+                    if (!paymentHandled) {
+                        abandonUnpaidOrder(savedOrder.id, dbClient);
+                    }
+                    setIsProcessing(false);
+                },
             },
         };
 
         const paymentObject = new window.Razorpay(options);
         paymentObject.on('payment.failed', function (response: any) {
+            paymentHandled = true;
+            abandonUnpaidOrder(savedOrder.id, dbClient);
             toast.error(response?.error?.description || 'Payment failed. Please try again.');
             setIsProcessing(false);
         });
         paymentObject.open();
-    }, [cartTotal, clearCart, toggleCart, addOrder, cart, user, navigate]);
+    }, [cartTotal, clearCart, toggleCart, addOrder, cart, user, navigate, getAuthenticatedClient]);
 
     if (!isCartOpen) return null;
 

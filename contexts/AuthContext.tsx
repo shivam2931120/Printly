@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 import { useUser, useAuth as useClerkAuth } from '@clerk/clerk-react';
 import { supabase } from '../services/supabase';
+import { useClerkSupabase } from '../services/clerkSupabase';
 import type { User } from '../types';
 import { hasAdminAccess, hasDeveloperAccess, normalizeRole } from '../lib/utils';
 
@@ -100,11 +101,11 @@ async function queryWithTimeout<T>(
 }
 
 /** Fetch User row from DB: by authId → email → auto-create */
-async function fetchUserRecord(clerkUser: ClerkUserInfo): Promise<User> {
+async function fetchUserRecord(clerkUser: ClerkUserInfo, client = supabase): Promise<User> {
     try {
         // 1. By authId (Clerk user ID)
         const { data: records, error: e1 } = await queryWithTimeout(() =>
-            supabase.from('User').select('*').eq('authId', clerkUser.id)
+            client.from('User').select('*').eq('authId', clerkUser.id)
         );
 
         if (e1 && e1.code !== 'TIMEOUT') console.warn('[Auth] authId lookup error:', e1.message);
@@ -115,12 +116,12 @@ async function fetchUserRecord(clerkUser: ClerkUserInfo): Promise<User> {
         // 2. By email — backfill authId
         if (clerkUser.email) {
             const { data: emailRecords } = await queryWithTimeout(() =>
-                supabase.from('User').select('*').eq('email', clerkUser.email)
+                client.from('User').select('*').eq('email', clerkUser.email)
             );
 
             if (emailRecords && Array.isArray(emailRecords) && emailRecords.length > 0) {
                 const legacy = emailRecords[0];
-                supabase.from('User').update({ authId: clerkUser.id }).eq('id', legacy.id).then(() => { }); // fire-and-forget
+                client.from('User').update({ authId: clerkUser.id }).eq('id', legacy.id).then(() => { }); // fire-and-forget
                 return mapDbUser({ ...legacy, authId: clerkUser.id }, clerkUser);
             }
         }
@@ -128,7 +129,7 @@ async function fetchUserRecord(clerkUser: ClerkUserInfo): Promise<User> {
         // 3. Auto-create
         const now = new Date().toISOString();
         const { data: inserted, error: insertErr } = await queryWithTimeout(() =>
-            supabase.from('User').insert({
+            client.from('User').insert({
                 id: crypto.randomUUID(),
                 authId: clerkUser.id,
                 email: clerkUser.email || '',
@@ -147,7 +148,7 @@ async function fetchUserRecord(clerkUser: ClerkUserInfo): Promise<User> {
         // Retry lookups on conflict
         if (insertErr) {
             const { data: retry } = await queryWithTimeout(() =>
-                supabase.from('User').select('*').eq('authId', clerkUser.id).maybeSingle()
+                client.from('User').select('*').eq('authId', clerkUser.id).maybeSingle()
             );
             if (retry) return mapDbUser(retry, clerkUser);
         }
@@ -166,6 +167,7 @@ async function fetchUserRecord(clerkUser: ClerkUserInfo): Promise<User> {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { user: clerkUser, isLoaded: clerkLoaded, isSignedIn: clerkSignedIn } = useUser();
     const { signOut: clerkSignOut } = useClerkAuth();
+    const { getAuthenticatedClient } = useClerkSupabase();
 
     const cachedUser = getCachedUser();
     const [appUser, setAppUser] = useState<User | null>(cachedUser);
@@ -174,7 +176,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const resolveAppUser = useCallback(async (clerk: ClerkUserInfo) => {
         const seq = ++resolveRef.current;
-        const user = await fetchUserRecord(clerk);
+        const client = await getAuthenticatedClient();
+        const user = await fetchUserRecord(clerk, client);
         if (seq !== resolveRef.current) return; // stale
         setAppUser(prev => {
             if (prev && (prev.isDeveloper || prev.isAdmin) && !user.isDeveloper && !user.isAdmin && user.id.startsWith('temp_')) {
@@ -183,7 +186,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setCachedUser(user);
             return user;
         });
-    }, []);
+    }, [getAuthenticatedClient]);
 
     useEffect(() => {
         if (!clerkLoaded) return;

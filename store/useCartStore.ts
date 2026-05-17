@@ -66,13 +66,15 @@ export const useCartStore = create<CartState>()(
             },
 
             addToCartProduct: (product) => {
+                if (product.stock <= 0) return;
+
                 set((state) => {
                     const existing = state.cart.find(item => item.id === product.id);
                     if (existing) {
                         return {
                             cart: state.cart.map(item =>
                                 item.id === product.id
-                                    ? { ...item, quantity: item.quantity + 1 }
+                                    ? { ...item, quantity: Math.min(item.quantity + 1, product.stock) }
                                     : item
                             ),
                             isCartOpen: true

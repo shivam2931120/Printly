@@ -30,6 +30,10 @@ export const UploadCard: React.FC<UploadCardProps> = ({
  onDrop,
  accept: { 'application/pdf': ['.pdf'] },
  maxSize: 50 * 1024 * 1024,
+ multiple: true,
+ onDragEnter: () => undefined,
+ onDragOver: () => undefined,
+ onDragLeave: () => undefined,
  });
 
  const handleMouseMove = (e: React.MouseEvent) => {

@@ -47,6 +47,16 @@ function runTests() {
   assert(bind !== undefined, "Binding entry exists");
   assert(bind!.amount === 3, `Binding coils = 3 (got ${bind!.amount})`);
 
+  // Test 3b: Explicit no-binding string from app orders should not consume coils
+  const item3b: PrintItem = {
+    type: "print",
+    pageCount: 50,
+    printConfig: { paperSize: "a4", colorMode: "bw", copies: 1, binding: "none", sides: "single" },
+  };
+  const res3b = computeConsumption(item3b, "test-003b");
+  const noBind = res3b.find((e) => e.inventoryName === "Spiral Binding Coils");
+  assert(noBind === undefined, "No binding coils for binding=none");
+
   // Test 4: Non-print item returns empty
   const item4: PrintItem = { type: "scan" };
   const res4 = computeConsumption(item4, "test-004");

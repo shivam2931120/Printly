@@ -1,51 +1,70 @@
 /**
- * Vercel Serverless Function: /api/razorpay-webhook
+ * Vercel Edge Function: /api/razorpay-webhook
  *
- * Responsibilities:
- *  1. Verify Razorpay webhook signature (HMAC-SHA256)
- *  2. Mark the matching Order as PAID in Supabase
- *  3. Optionally verify caller identity via Clerk JWT (for manual triggers)
- *
- * Required env vars (set in Vercel Dashboard):
- *   RAZORPAY_WEBHOOK_SECRET   — from Razorpay Dashboard → Webhooks
- *   SUPABASE_URL              — same as VITE_SUPABASE_URL
- *   SUPABASE_SERVICE_ROLE_KEY — service role key (NEVER expose to client)
- *   CLERK_SECRET_KEY          — already present in .env
+ * Verifies Razorpay webhook signatures and marks the matching Order in Supabase.
+ * Uses Edge runtime to avoid Node serverless resource provisioning issues.
  */
 
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 
-// ── Supabase admin client (bypasses RLS for server-side writes) ──
+type StatusUpdate = { paymentStatus: 'PAID' | 'UNPAID'; status: 'CONFIRMED' | 'PENDING' };
+
+function json(body: Record<string, unknown>, init?: ResponseInit) {
+    return new Response(JSON.stringify(body), {
+        ...init,
+        headers: {
+            'content-type': 'application/json',
+            ...(init?.headers || {}),
+        },
+    });
+}
+
 function getSupabaseAdmin() {
     const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (!url || !key) {
         throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY env vars');
     }
-    return createClient(url, key);
+    return createClient(url, key, {
+        auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+            detectSessionInUrl: false,
+        },
+    });
 }
 
-// ── Verify Razorpay signature ──
-function verifyRazorpaySignature(
-    body: string,
-    signature: string | string[] | undefined,
-    secret: string
-): boolean {
-    if (!signature || Array.isArray(signature)) return false;
-    const expected = crypto
-        .createHmac('sha256', secret)
-        .update(body)
-        .digest('hex');
-    return crypto.timingSafeEqual(
-        Buffer.from(expected, 'hex'),
-        Buffer.from(signature, 'hex')
+async function hmacSha256Hex(body: string, secret: string): Promise<string> {
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+        'raw',
+        encoder.encode(secret),
+        { name: 'HMAC', hash: 'SHA-256' },
+        false,
+        ['sign']
     );
+    const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(body));
+    return Array.from(new Uint8Array(signature))
+        .map(byte => byte.toString(16).padStart(2, '0'))
+        .join('');
 }
 
-// ── Map Razorpay event → order status ──
-function resolveStatus(event: string): { paymentStatus: string; status: string } | null {
+function constantTimeEqual(a: string, b: string): boolean {
+    if (a.length !== b.length) return false;
+    let result = 0;
+    for (let index = 0; index < a.length; index++) {
+        result |= a.charCodeAt(index) ^ b.charCodeAt(index);
+    }
+    return result === 0;
+}
+
+async function verifyRazorpaySignature(body: string, signature: string | null, secret: string): Promise<boolean> {
+    if (!signature || !/^[a-f0-9]{64}$/i.test(signature)) return false;
+    const expected = await hmacSha256Hex(body, secret);
+    return constantTimeEqual(expected, signature.toLowerCase());
+}
+
+function resolveStatus(event: string): StatusUpdate | null {
     switch (event) {
         case 'payment.captured':
             return { paymentStatus: 'PAID', status: 'CONFIRMED' };
@@ -56,83 +75,96 @@ function resolveStatus(event: string): { paymentStatus: string; status: string }
     }
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-    // Only accept POST
+const isMissingPaymentIdColumn = (error: any) => {
+    const message = `${error?.message || ''} ${error?.details || ''}`;
+    return error?.code === 'PGRST204' || message.includes('paymentId') || message.includes('schema cache');
+};
+
+export default async function handler(req: Request) {
     if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
+        return json({ error: 'Method not allowed' }, { status: 405 });
     }
 
     const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
     if (!webhookSecret) {
         console.error('[webhook] RAZORPAY_WEBHOOK_SECRET not set');
-        return res.status(500).json({ error: 'Webhook secret not configured' });
+        return json({ error: 'Webhook secret not configured' }, { status: 500 });
     }
 
-    // Raw body for signature verification
-    // Vercel provides the raw body as a Buffer when bodyParser is disabled
-    const rawBody =
-        typeof req.body === 'string'
-            ? req.body
-            : Buffer.isBuffer(req.body)
-                ? req.body.toString('utf8')
-                : JSON.stringify(req.body);
+    const rawBody = await req.text();
+    const signature = req.headers.get('x-razorpay-signature');
 
-    const signature = req.headers['x-razorpay-signature'];
-
-    if (!verifyRazorpaySignature(rawBody, signature, webhookSecret)) {
-        console.warn('[webhook] Invalid Razorpay signature — request rejected');
-        return res.status(401).json({ error: 'Invalid signature' });
+    if (!(await verifyRazorpaySignature(rawBody, signature, webhookSecret))) {
+        console.warn('[webhook] Invalid Razorpay signature - request rejected');
+        return json({ error: 'Invalid signature' }, { status: 401 });
     }
 
-    // Parse payload
     let payload: any;
     try {
-        payload = typeof req.body === 'object' ? req.body : JSON.parse(rawBody);
+        payload = JSON.parse(rawBody);
     } catch {
-        return res.status(400).json({ error: 'Invalid JSON payload' });
+        return json({ error: 'Invalid JSON payload' }, { status: 400 });
     }
 
     const event: string = payload?.event;
     const paymentEntity = payload?.payload?.payment?.entity;
 
     if (!event || !paymentEntity) {
-        return res.status(400).json({ error: 'Missing event or payment entity' });
+        return json({ error: 'Missing event or payment entity' }, { status: 400 });
     }
 
     console.log(`[webhook] Received event: ${event}, payment_id: ${paymentEntity.id}`);
 
     const statusUpdate = resolveStatus(event);
     if (!statusUpdate) {
-        // Unhandled event — acknowledge without processing
-        return res.status(200).json({ received: true, processed: false });
+        return json({ received: true, processed: false });
     }
 
-    // Find the order by payment ID (stored as Order.id = razorpay_payment_id in CartDrawer)
     const supabase = getSupabaseAdmin();
     const paymentId: string = paymentEntity.id;
+    const appOrderId: string | undefined =
+        paymentEntity.notes?.app_order_id ||
+        paymentEntity.notes?.order_id;
     const now = new Date().toISOString();
 
-    // Try matching by order ID first (order.id was set to razorpay_payment_id in CartDrawer)
-    const { data: orderById } = await supabase
+    const { data: orderByAppId } = appOrderId ? await supabase
         .from('Order')
         .select('id, paymentStatus, status')
-        .eq('id', paymentId)
-        .maybeSingle();
+        .eq('id', appOrderId)
+        .maybeSingle() : { data: null };
 
-    const targetId = orderById?.id ?? null;
+    let order = orderByAppId;
 
-    if (!targetId) {
-        // No exact ID match — log and acknowledge (order may have crypto.randomUUID() id)
-        console.warn(`[webhook] No order found for payment_id: ${paymentId}`);
-        return res.status(200).json({ received: true, processed: false, reason: 'order_not_found' });
+    if (!order) {
+        const { data: orderByPaymentId } = await supabase
+            .from('Order')
+            .select('id, paymentStatus, status')
+            .eq('paymentId', paymentId)
+            .maybeSingle();
+        order = orderByPaymentId;
     }
 
-    // Idempotency: skip if already in the target state
+    if (!order) {
+        const { data: legacyOrderById } = await supabase
+            .from('Order')
+            .select('id, paymentStatus, status')
+            .eq('id', paymentId)
+            .maybeSingle();
+        order = legacyOrderById;
+    }
+
+    const targetId = order?.id ?? null;
+
+    if (!targetId) {
+        console.warn(`[webhook] No order found for payment_id: ${paymentId}, app_order_id: ${appOrderId || 'none'}`);
+        return json({ received: true, processed: false, reason: 'order_not_found' });
+    }
+
     if (
-        orderById.paymentStatus === statusUpdate.paymentStatus &&
-        orderById.status === statusUpdate.status
+        order.paymentStatus === statusUpdate.paymentStatus &&
+        order.status === statusUpdate.status
     ) {
-        return res.status(200).json({ received: true, processed: false, reason: 'already_updated' });
+        return json({ received: true, processed: false, reason: 'already_updated' });
     }
 
     const { error: updateError } = await supabase
@@ -140,24 +172,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .update({
             paymentStatus: statusUpdate.paymentStatus,
             status: statusUpdate.status,
+            paymentId,
             updatedAt: now,
         })
         .eq('id', targetId);
 
     if (updateError) {
+        if (isMissingPaymentIdColumn(updateError)) {
+            const { error: fallbackError } = await supabase
+                .from('Order')
+                .update({
+                    paymentStatus: statusUpdate.paymentStatus,
+                    status: statusUpdate.status,
+                    updatedAt: now,
+                })
+                .eq('id', targetId);
+
+            if (!fallbackError) {
+                console.log(`[webhook] Order ${targetId} updated without paymentId column`);
+                return json({ received: true, processed: true, orderId: targetId });
+            }
+
+            console.error('[webhook] Failed to update order:', fallbackError.message);
+            return json({ error: 'Failed to update order' }, { status: 500 });
+        }
+
         console.error('[webhook] Failed to update order:', updateError.message);
-        return res.status(500).json({ error: 'Failed to update order' });
+        return json({ error: 'Failed to update order' }, { status: 500 });
     }
 
-    console.log(`[webhook] ✓ Order ${targetId} — paymentStatus=${statusUpdate.paymentStatus}, status=${statusUpdate.status}`);
-    return res.status(200).json({ received: true, processed: true, orderId: targetId });
+    console.log(`[webhook] Order ${targetId} - paymentStatus=${statusUpdate.paymentStatus}, status=${statusUpdate.status}`);
+    return json({ received: true, processed: true, orderId: targetId });
 }
 
-// Disable body parsing so we can read the raw body for signature verification
 export const config = {
-    api: {
-        bodyParser: {
-            sizeLimit: '1mb',
-        },
-    },
+    runtime: 'edge',
 };

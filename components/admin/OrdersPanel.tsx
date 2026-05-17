@@ -6,12 +6,14 @@ import { OrderDetails } from './OrderDetails';
 import { Order, OrderStatus } from '../../types';
 import { fetchOrders, fetchAdminOrders, supabase, exportToCSV, bulkUpdateOrderStatus, bulkDeleteOrders } from '../../services/data';
 import { Skeleton } from '../ui/Skeleton';
+import { useClerkSupabase } from '../../services/clerkSupabase';
 
 interface OrdersPanelProps {
  currentUserId: string;
 }
 
 export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
+ const { getAuthenticatedClient } = useClerkSupabase();
  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
  const [orders, setOrders] = useState<Order[]>([]);
  const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -30,10 +32,11 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  setLoading(true);
  try {
  let data;
+ const dbClient = await getAuthenticatedClient();
  if (currentUserId) {
- data = await fetchAdminOrders(currentUserId);
+ data = await fetchAdminOrders(currentUserId, dbClient);
  } else {
- data = await fetchOrders();
+ data = await fetchOrders(undefined, undefined, dbClient);
  }
  setOrders(data);
 
@@ -51,7 +54,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  } finally {
  setLoading(false);
  }
- }, [currentUserId]);
+ }, [currentUserId, getAuthenticatedClient]);
 
  useEffect(() => {
  loadOrders();
@@ -125,7 +128,8 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
 
  const updateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {
  const now = new Date();
- const { error } = await supabase
+ const dbClient = await getAuthenticatedClient();
+ const { error } = await dbClient
  .from('Order')
  .update({ status: newStatus.toUpperCase(), updatedAt: now.toISOString() })
  .eq('id', orderId);
@@ -146,7 +150,8 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  const deleteOrder = async (orderId: string) => {
  if (!window.confirm('Are you sure you want to delete this order? It will be hidden from the dashboard but preserved for analytics.')) return;
 
- const { error } = await supabase
+ const dbClient = await getAuthenticatedClient();
+ const { error } = await dbClient
  .from('Order')
  .update({ isDeleted: true, deletedAt: new Date().toISOString() })
  .eq('id', orderId);
@@ -204,9 +209,10 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  };
 
  const handleBulkStatus = async (status: OrderStatus) => {
- const ids = Array.from(selectedIds);
+ const ids = Array.from(selectedIds) as string[];
  if (ids.length === 0) return;
- const { success } = await bulkUpdateOrderStatus(ids, status);
+ const dbClient = await getAuthenticatedClient();
+ const { success } = await bulkUpdateOrderStatus(ids, status, dbClient);
  if (success) {
  setOrders(prev => prev.map(o => ids.includes(o.id) ? { ...o, status, updatedAt: new Date() } : o));
  setSelectedIds(new Set());
@@ -217,10 +223,11 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  };
 
  const handleBulkDelete = async () => {
- const ids = Array.from(selectedIds);
+ const ids = Array.from(selectedIds) as string[];
  if (ids.length === 0) return;
  if (!window.confirm(`Delete ${ids.length} orders?`)) return;
- const { success } = await bulkDeleteOrders(ids);
+ const dbClient = await getAuthenticatedClient();
+ const { success } = await bulkDeleteOrders(ids, dbClient);
  if (success) {
  setOrders(prev => prev.filter(o => !ids.includes(o.id)));
  setSelectedIds(new Set());
@@ -322,7 +329,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
 
  {/* Status Tabs */}
  <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
- {(['all', 'confirmed', 'printing', 'ready', 'completed'] as const).map((status) => (
+ {(['all', 'pending', 'confirmed', 'printing', 'ready', 'completed'] as const).map((status) => (
  <button
  key={status}
  onClick={() => setStatusFilter(status)}

@@ -8,7 +8,7 @@ export const config = {
   BATCH_SIZE: parseInt(process.env.BATCH_SIZE || "20", 10),
 
   // Which order statuses trigger inventory deduction
-  TRIGGER_STATUSES: ["confirmed", "printing"],
+  TRIGGER_STATUSES: ["CONFIRMED", "PRINTING"],
 
   // Consumption rules
   CONSUMPTION: {

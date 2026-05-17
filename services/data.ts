@@ -1,7 +1,57 @@
 import { supabase, supabaseAdmin } from './supabase';
 export { supabase };
-import { Product, Order, CartItem, OrderStatus, PaymentStatus, PricingConfig, DEFAULT_PRICING, ShopConfig, DEFAULT_SHOP_CONFIG, Service, DEFAULT_SERVICES } from '../types';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { Product, Order, CartItem, OrderStatus, PaymentStatus, PrintOptions, PricingConfig, DEFAULT_PRICING, ShopConfig, DEFAULT_SHOP_CONFIG, Service, DEFAULT_SERVICES } from '../types';
 import { generateId } from '../lib/utils';
+import { toast } from 'sonner';
+
+const DEFAULT_ORDER_PRINT_OPTIONS: PrintOptions = {
+    copies: 1,
+    paperSize: 'a4',
+    orientation: 'portrait',
+    colorMode: 'bw',
+    sides: 'single',
+    binding: 'none',
+    paperType: 'normal',
+    pageRangeText: '',
+    holePunch: false,
+    coverPage: 'none',
+};
+
+const toDbOrderStatus = (status?: string): 'PENDING' | 'CONFIRMED' | 'PRINTING' | 'READY' | 'COMPLETED' => {
+    const normalized = (status || '').toUpperCase();
+    return (['PENDING', 'CONFIRMED', 'PRINTING', 'READY', 'COMPLETED'].includes(normalized)
+        ? normalized
+        : 'PENDING') as 'PENDING' | 'CONFIRMED' | 'PRINTING' | 'READY' | 'COMPLETED';
+};
+
+const toDbPaymentStatus = (status?: string): 'PAID' | 'UNPAID' => {
+    return (status || '').toUpperCase() === 'PAID' ? 'PAID' : 'UNPAID';
+};
+
+const normalizeOrderStatus = (status?: string): OrderStatus => {
+    const normalized = (status || 'pending').toLowerCase();
+    return (['pending', 'confirmed', 'printing', 'ready', 'completed'].includes(normalized)
+        ? normalized
+        : 'pending') as OrderStatus;
+};
+
+const normalizePaymentStatus = (status?: string): PaymentStatus => {
+    const normalized = (status || 'unpaid').toLowerCase();
+    return (['paid', 'failed', 'unpaid'].includes(normalized) ? normalized : 'unpaid') as PaymentStatus;
+};
+
+const generatePickupToken = () => Math.floor(1000 + Math.random() * 9000).toString();
+
+const isMissingOptionalOrderColumn = (error: any) => {
+    const message = `${error?.message || ''} ${error?.details || ''}`;
+    return error?.code === 'PGRST204' || message.includes('schema cache') || message.includes('paymentId') || message.includes('clerkId');
+};
+
+const isOrderTokenConflict = (error: any) => {
+    const message = `${error?.message || ''} ${error?.details || ''}`;
+    return error?.code === '23505' && message.includes('orderToken');
+};
 
 // ===== PRODUCTS =====
 export const fetchProducts = async (): Promise<Product[]> => {
@@ -74,11 +124,15 @@ export const deleteProduct = async (productId: string): Promise<{ success: boole
 };
 
 // ===== ORDERS =====
-export const createOrder = async (order: Order, _userRole?: string): Promise<{ success: boolean; error?: any }> => {
+export const createOrder = async (
+    order: Order,
+    _userRole?: string,
+    client: SupabaseClient = supabase
+): Promise<{ success: boolean; error?: any; data?: { id: string; orderToken?: string } }> => {
     // 1. Resolve Shop ID (read-only lookup)
     let shopId = order.shopId;
     if (!shopId || shopId === 'default') {
-        const { data: shop } = await supabase
+        const { data: shop } = await client
             .from('Shop')
             .select('id')
             .eq('isActive', true)
@@ -89,6 +143,7 @@ export const createOrder = async (order: Order, _userRole?: string): Promise<{ s
 
     // 2. Resolve User ID — ensure user record exists in DB before FK insert
     let finalUserId = order.userId;
+    const clerkId = (order as any).clerkId as string | undefined;
     const resolvedEmail = order.userEmail || 'guest@example.com';
     const resolvedName = order.userName || resolvedEmail.split('@')[0] || 'Guest';
 
@@ -97,7 +152,7 @@ export const createOrder = async (order: Order, _userRole?: string): Promise<{ s
 
     // If we have a userId, verify it exists in the User table (prevent FK violation)
     if (finalUserId) {
-        const { data: existingUser } = await supabase
+        const { data: existingUser } = await client
             .from('User')
             .select('id')
             .eq('id', finalUserId)
@@ -111,7 +166,7 @@ export const createOrder = async (order: Order, _userRole?: string): Promise<{ s
 
     // Fallback: look up user by email if no valid userId
     if (!finalUserId && resolvedEmail !== 'guest@example.com') {
-        const { data: emailUser } = await supabase
+        const { data: emailUser } = await client
             .from('User')
             .select('id')
             .eq('email', resolvedEmail.trim().toLowerCase())
@@ -123,10 +178,11 @@ export const createOrder = async (order: Order, _userRole?: string): Promise<{ s
             // Auto-create user record so the order is properly linked
             const newUserId = generateId();
             const now = new Date().toISOString();
-            const { data: created } = await supabase
+            const { data: created } = await client
                 .from('User')
                 .insert({
                     id: newUserId,
+                    authId: clerkId || null,
                     email: resolvedEmail.trim().toLowerCase(),
                     name: resolvedName,
                     role: 'USER',
@@ -144,9 +200,8 @@ export const createOrder = async (order: Order, _userRole?: string): Promise<{ s
     }
 
     // Backfill authId (Clerk ID) on existing user record if not yet set
-    const clerkId = (order as any).clerkId as string | undefined;
     if (clerkId && finalUserId) {
-        supabase
+        client
             .from('User')
             .update({ authId: clerkId, updatedAt: new Date().toISOString() })
             .eq('id', finalUserId)
@@ -158,7 +213,7 @@ export const createOrder = async (order: Order, _userRole?: string): Promise<{ s
     const itemsJson = order.items.map(item => {
         if (item.type === 'product') {
             return {
-                id: generateId(),
+                id: item.id || generateId(),
                 type: 'product',
                 productId: (item as any).productId,
                 name: item.name,
@@ -168,12 +223,12 @@ export const createOrder = async (order: Order, _userRole?: string): Promise<{ s
             };
         } else {
             return {
-                id: generateId(),
+                id: item.id || generateId(),
                 type: 'print',
                 name: item.name,
                 fileUrl: (item as any).fileUrl || '',
                 fileName: (item as any).fileName || '',
-                printConfig: (item as any).options || null,
+                printConfig: { ...DEFAULT_ORDER_PRINT_OPTIONS, ...((item as any).options || {}) },
                 pageCount: (item as any).pageCount || 0,
                 quantity: item.quantity,
                 price: item.price,
@@ -182,35 +237,142 @@ export const createOrder = async (order: Order, _userRole?: string): Promise<{ s
     });
 
     // 4. Single INSERT into Order (items embedded as JSONB)
-    const { error: orderError } = await supabase
-        .from('Order')
-        .insert({
+    let payload: Record<string, any> = {
             id: order.id,
-            orderToken: order.orderToken || Math.floor(1000 + Math.random() * 9000).toString(),
+            orderToken: order.orderToken || generatePickupToken(),
             userId: finalUserId || null,
             userEmail: resolvedEmail,
             userName: resolvedName,
             totalAmount: order.totalAmount,
-            status: (['PENDING', 'PRINTING', 'READY', 'COMPLETED'].includes(order.status.toUpperCase()) ? order.status.toUpperCase() : 'PENDING'),
-            paymentStatus: (['PAID', 'UNPAID'].includes(order.paymentStatus.toUpperCase()) ? order.paymentStatus.toUpperCase() : 'UNPAID'),
+            status: toDbOrderStatus(order.status),
+            paymentStatus: toDbPaymentStatus(order.paymentStatus),
             shopId: shopId || null,
             items: itemsJson,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
-        });
+    };
+
+    if (clerkId) payload.clerkId = clerkId;
+    if (order.paymentId) payload.paymentId = order.paymentId;
+
+    let orderError: any = null;
+    let insertedOrder: { id: string; orderToken?: string } | null = null;
+
+    for (let attempt = 0; attempt < 5; attempt++) {
+        if (attempt > 0) {
+            payload = { ...payload, orderToken: generatePickupToken() };
+        }
+
+        const { data: inserted, error } = await client
+            .from('Order')
+            .insert(payload)
+            .select('id, orderToken')
+            .single();
+
+        if (!error) {
+            insertedOrder = inserted as { id: string; orderToken?: string };
+            orderError = null;
+            break;
+        }
+
+        if (isMissingOptionalOrderColumn(error)) {
+            const fallbackPayload = { ...payload };
+            delete fallbackPayload.clerkId;
+            delete fallbackPayload.paymentId;
+            const { data: fallbackInserted, error: fallbackError } = await client
+                .from('Order')
+                .insert(fallbackPayload)
+                .select('id, orderToken')
+                .single();
+
+            if (!fallbackError) {
+                insertedOrder = fallbackInserted as { id: string; orderToken?: string };
+                orderError = null;
+                break;
+            }
+
+            orderError = fallbackError;
+            if (isOrderTokenConflict(fallbackError)) continue;
+            break;
+        }
+
+        orderError = error;
+        if (!isOrderTokenConflict(error)) break;
+    }
 
     if (orderError) {
         console.error('Error creating order:', orderError);
         return { success: false, error: orderError };
     }
 
-    return { success: true };
+    return { success: true, data: insertedOrder || { id: order.id, orderToken: order.orderToken } };
+};
+
+export const confirmOrderPayment = async (
+    orderId: string,
+    paymentId: string,
+    client: SupabaseClient = supabase
+): Promise<{ success: boolean; error?: any }> => {
+    const now = new Date().toISOString();
+    const payload = {
+        paymentStatus: 'PAID',
+        status: 'CONFIRMED',
+        paymentId,
+        updatedAt: now,
+    };
+
+    const { error } = await client
+        .from('Order')
+        .update(payload)
+        .eq('id', orderId);
+
+    if (!error) return { success: true };
+
+    if (isMissingOptionalOrderColumn(error)) {
+        const { error: fallbackError } = await client
+            .from('Order')
+            .update({
+                paymentStatus: 'PAID',
+                status: 'CONFIRMED',
+                updatedAt: now,
+            })
+            .eq('id', orderId);
+
+        if (!fallbackError) return { success: true };
+        console.error('Error confirming order payment:', fallbackError);
+        return { success: false, error: fallbackError };
+    }
+
+    console.error('Error confirming order payment:', error);
+    return { success: false, error };
+};
+
+export const abandonUnpaidOrder = async (
+    orderId: string,
+    client: SupabaseClient = supabase
+): Promise<void> => {
+    const { error } = await client
+        .from('Order')
+        .update({
+            isDeleted: true,
+            deletedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        })
+        .eq('id', orderId)
+        .eq('paymentStatus', 'UNPAID');
+
+    if (error) {
+        console.error('Error cleaning up unpaid order:', error);
+    }
 };
 
 // cancelOrder has been removed — orders cannot be cancelled after placement.
 
-export const markOrderCollected = async (orderId: string): Promise<{ success: boolean; error?: any }> => {
-    const { error } = await supabase.rpc('mark_order_collected', { order_id: orderId });
+export const markOrderCollected = async (
+    orderId: string,
+    client: SupabaseClient = supabase
+): Promise<{ success: boolean; error?: any }> => {
+    const { error } = await client.rpc('mark_order_collected', { order_id: orderId });
     if (error) {
         console.error('Error marking order collected:', error);
         return { success: false, error };
@@ -218,10 +380,14 @@ export const markOrderCollected = async (orderId: string): Promise<{ success: bo
     return { success: true };
 };
 
-export const fetchOrders = async (userId?: string, userEmail?: string): Promise<Order[]> => {
+export const fetchOrders = async (
+    userId?: string,
+    userEmail?: string,
+    client: SupabaseClient = supabase
+): Promise<Order[]> => {
     if (!userId && !userEmail) return [];
 
-    let query = supabase
+    let query = client
         .from('Order')
         .select('*, user:User(name, email, avatar)')
         .eq('isDeleted', false)
@@ -246,8 +412,11 @@ export const fetchOrders = async (userId?: string, userEmail?: string): Promise<
     return mapOrderData(data);
 };
 
-export const fetchAdminOrders = async (_adminId?: string): Promise<Order[]> => {
-    const { data, error } = await supabaseAdmin
+export const fetchAdminOrders = async (
+    _adminId?: string,
+    client: SupabaseClient = supabaseAdmin
+): Promise<Order[]> => {
+    const { data, error } = await client
         .from('Order')
         .select('*, user:User(name, email, avatar)')
         .eq('isDeleted', false)
@@ -280,29 +449,30 @@ const mapOrderData = (data: any[]): Order[] => {
     return (data || []).map((row) => {
         // Parse items from JSONB
         const rawItems: any[] = Array.isArray(row.items) ? row.items : [];
+        const paymentStatus = normalizePaymentStatus(row.paymentStatus);
 
         const items: CartItem[] = rawItems.map((item: any) => {
             if (item.type === 'product') {
                 return {
-                    id: item.id,
+                    id: item.id || generateId(),
                     type: 'product' as const,
                     productId: item.productId || '',
                     name: item.name || item.productName || 'Unknown Product',
-                    price: item.price,
-                    quantity: item.quantity,
+                    price: Number(item.price) || 0,
+                    quantity: Number(item.quantity) || 1,
                     image: item.image || item.productImage || '',
                 };
             } else {
                 return {
-                    id: item.id,
+                    id: item.id || generateId(),
                     type: 'print' as const,
                     name: item.fileName || item.name || 'Print Job',
-                    price: item.price,
-                    quantity: item.quantity,
+                    price: Number(item.price) || 0,
+                    quantity: Number(item.quantity) || 1,
                     fileUrl: item.fileUrl || '',
                     fileName: item.fileName || item.name || '',
-                    options: item.printConfig || {},
-                    pageCount: item.pageCount || item.details?.pageCount || 0,
+                    options: { ...DEFAULT_ORDER_PRINT_OPTIONS, ...(item.printConfig || item.options || {}) },
+                    pageCount: Number(item.pageCount || item.details?.pageCount) || 0,
                 };
             }
         });
@@ -310,20 +480,21 @@ const mapOrderData = (data: any[]): Order[] => {
         return {
             id: row.id,
             userId: row.userId || '',
+            clerkId: row.clerkId || undefined,
             userEmail: row.user?.email || row.userEmail || '',
             userName: row.user?.name || row.userName || 'Unknown',
             type: 'mixed',
-            totalAmount: row.totalAmount,
+            totalAmount: Number(row.totalAmount) || 0,
             orderToken: row.orderToken,
-            status: (row.status || 'pending').toLowerCase() as OrderStatus,
-            paymentStatus: (row.paymentStatus || 'unpaid').toLowerCase() as PaymentStatus,
+            status: normalizeOrderStatus(row.status),
+            paymentStatus,
+            paymentId: row.paymentId || (paymentStatus === 'paid' ? row.id : undefined),
             createdAt: new Date(row.createdAt),
             updatedAt: new Date(row.updatedAt),
             items,
         };
     });
 };
-import { toast } from 'sonner';
 
 // ===== INVENTORY =====
 
@@ -846,9 +1017,10 @@ export const exportToCSV = (rows: Record<string, any>[], filename: string) => {
 // ===== BULK ORDER OPERATIONS =====
 export const bulkUpdateOrderStatus = async (
     orderIds: string[],
-    newStatus: OrderStatus
+    newStatus: OrderStatus,
+    client: SupabaseClient = supabase
 ): Promise<{ success: boolean; error?: any }> => {
-    const { error } = await supabase
+    const { error } = await client
         .from('Order')
         .update({ status: newStatus.toUpperCase(), updatedAt: new Date().toISOString() })
         .in('id', orderIds);
@@ -861,9 +1033,10 @@ export const bulkUpdateOrderStatus = async (
 };
 
 export const bulkDeleteOrders = async (
-    orderIds: string[]
+    orderIds: string[],
+    client: SupabaseClient = supabase
 ): Promise<{ success: boolean; error?: any }> => {
-    const { error } = await supabase
+    const { error } = await client
         .from('Order')
         .update({ isDeleted: true, deletedAt: new Date().toISOString() })
         .in('id', orderIds);
@@ -874,4 +1047,3 @@ export const bulkDeleteOrders = async (
     }
     return { success: true };
 };
-

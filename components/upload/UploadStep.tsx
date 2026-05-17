@@ -25,6 +25,10 @@ export const UploadStep: React.FC<UploadStepProps> = ({
         onDrop,
         accept: { 'application/pdf': ['.pdf'] },
         maxSize: 50 * 1024 * 1024, // 50MB
+        multiple: true,
+        onDragEnter: () => undefined,
+        onDragOver: () => undefined,
+        onDragLeave: () => undefined,
     });
 
     return (

@@ -113,7 +113,7 @@ export const DEFAULT_PRICING: PricingConfig = {
 
 // ===== ORDER =====
 export type OrderStatus = 'pending' | 'confirmed' | 'printing' | 'ready' | 'completed';
-export type PaymentStatus = 'pending' | 'paid' | 'failed';
+export type PaymentStatus = 'unpaid' | 'paid' | 'failed';
 
 // ===== CART & ORDER =====
 export type CartItemType = 'product' | 'print';

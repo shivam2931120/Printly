@@ -91,9 +91,12 @@ model Order {
   totalAmount   Float
   status        OrderStatus   @default(PENDING)
   paymentStatus PaymentStatus @default(UNPAID)
+  paymentId     String?
+  clerkId       String?
   userEmail     String?
   userName      String?
   items         Json          @default("[]") // JSONB array of cart items
+  inventoryProcessed Boolean?
   isDeleted     Boolean       @default(false)
   deletedAt     DateTime?
   createdAt     DateTime      @default(now())

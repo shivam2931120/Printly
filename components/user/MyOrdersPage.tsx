@@ -12,6 +12,7 @@ import {
  Check
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useClerkSupabase } from '../../services/clerkSupabase';
 import { Button } from '../ui/Button';
 import { cn } from '../../lib/utils';
 import { useOrderStore } from '../../store/useOrderStore';
@@ -31,6 +32,7 @@ const statusConfig: Record<string, { color: string; icon: any; label: string }> 
 
 export const MyOrdersPage: React.FC = () => {
  const { user, isLoaded } = useAuth();
+ const { getAuthenticatedClient } = useClerkSupabase();
  const { orders: storeOrders, setOrders } = useOrderStore();
  const [filterStatus, setFilterStatus] = useState<string>('all');
  const [loading, setLoading] = useState(true);
@@ -56,7 +58,8 @@ export const MyOrdersPage: React.FC = () => {
  try {
  // Try userId first, but also accept temp_ users by fetching via email
  const userId = user.id.startsWith('temp_') ? undefined : user.id;
- const data = await fetchOrders(userId, user.email);
+ const dbClient = await getAuthenticatedClient();
+ const data = await fetchOrders(userId, user.email, dbClient);
  if (!cancelled) setOrders(data);
  } catch (error) {
  console.error('Failed to sync orders:', error);
@@ -92,10 +95,10 @@ export const MyOrdersPage: React.FC = () => {
  if (channel) supabase.removeChannel(channel);
  };
  }
- }, [isLoaded, user?.id, user?.email, setOrders]);
+ }, [isLoaded, user?.id, user?.email, setOrders, getAuthenticatedClient]);
 
  // Derived state for orders (sorting)
- const orders = storeOrders.sort((a, b) =>
+ const orders = [...storeOrders].sort((a, b) =>
  new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
  );
 
@@ -119,7 +122,8 @@ export const MyOrdersPage: React.FC = () => {
  if (!confirm('Have you collected this order? This will mark it as completed.')) return;
 
  try {
- const result = await markOrderCollected(orderId);
+ const dbClient = await getAuthenticatedClient();
+ const result = await markOrderCollected(orderId, dbClient);
 
  if (!result.success) {
  toast.error('Failed to update order. Please try again.');
@@ -204,7 +208,7 @@ export const MyOrdersPage: React.FC = () => {
 
  {/* Filters */}
  <div className="flex flex-wrap gap-1.5">
- {['all', 'pending', 'printing', 'completed'].map(status => (
+ {['all', 'pending', 'confirmed', 'printing', 'ready', 'completed'].map(status => (
  <button
  key={status}
  onClick={() => setFilterStatus(status)}

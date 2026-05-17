@@ -7,7 +7,7 @@ export interface PrintItem {
     paperSize?: string;   // "a4" | "a3"
     colorMode?: string;   // "bw" | "color"
     copies?: number;
-    binding?: boolean;
+    binding?: string | boolean;
     sides?: string;       // "single" | "double"
   };
 }
@@ -69,7 +69,8 @@ export function computeConsumption(item: PrintItem, orderId: string): Consumptio
   }
 
   // ---- Binding ----
-  if (item.printConfig?.binding) {
+  const binding = item.printConfig?.binding;
+  if (binding && binding !== "none") {
     entries.push({
       inventoryName: "Spiral Binding Coils",
       amount: rules.BINDING_COIL_PER_BIND * copies,

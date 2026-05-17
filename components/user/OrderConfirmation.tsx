@@ -65,8 +65,8 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({
  const labels: Record<string, string> = {
  none: 'No Binding',
  spiral: 'Spiral Binding',
- softcover: 'Soft Cover',
- hardcover: 'Hard Cover',
+ soft: 'Soft Cover',
+ hard: 'Hard Cover',
  };
  return labels[binding] || binding;
  };

@@ -18,7 +18,7 @@ const steps = [
 ];
 
 export const OrderTracker: React.FC<OrderTrackerProps> = ({ status, className, onStepClick }) => {
- const currentStepIndex = steps.findIndex(s => s.id === status.toLowerCase()) ?? 0;
+ const currentStepIndex = Math.max(0, steps.findIndex(s => s.id === status.toLowerCase()));
 
  return (
  <div className={cn("w-full py-2", className)}>

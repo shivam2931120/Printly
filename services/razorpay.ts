@@ -85,7 +85,7 @@ export const initiatePayment = async (
         key: key,
         amount: Math.round(details.amount * 100), // Convert to paise
         currency: 'INR',
-        name: 'PrintWise',
+        name: 'Printly',
         description: details.description,
         prefill: {
             name: details.customerName,
@@ -93,7 +93,7 @@ export const initiatePayment = async (
             contact: details.customerPhone,
         },
         notes: {
-            order_id: details.orderId,
+            app_order_id: details.orderId,
         },
         theme: {
             color: '#3B82F6', // Primary blue

@@ -70,6 +70,8 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const addToCartProduct = (product: Product) => {
+        if (product.stock <= 0) return;
+
         setCart(prev => {
             const existing = prev.find(item => item.type === 'product' && item.productId === product.id);
             if (existing) {

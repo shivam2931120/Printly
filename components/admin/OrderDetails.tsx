@@ -24,8 +24,14 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ order: initialOrder,
  { event: 'UPDATE', schema: 'public', table: 'Order', filter: `id=eq.${order.id}` },
  (payload) => {
  if (payload.new && payload.new.status) {
- const updatedOrder = { ...order, ...payload.new, status: payload.new.status.toLowerCase() as OrderStatus };
- setOrder(updatedOrder);
+ setOrder(prev => ({
+ ...prev,
+ status: (payload.new.status?.toLowerCase() ?? prev.status) as OrderStatus,
+ paymentStatus: (payload.new.paymentStatus?.toLowerCase() ?? prev.paymentStatus) as Order['paymentStatus'],
+ paymentId: payload.new.paymentId ?? prev.paymentId,
+ orderToken: payload.new.orderToken ?? prev.orderToken,
+ updatedAt: payload.new.updatedAt ? new Date(payload.new.updatedAt) : prev.updatedAt,
+ }));
  }
  }
  )
@@ -174,7 +180,11 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ order: initialOrder,
  <div className="flex gap-4">
  {/* Icon/Image */}
  <div className="size-12 bg-background-subtle flex items-center justify-center shrink-0 text-xl">
- {item.type === 'product' ? (item.image || '📦') : <Icon name="description" className="text-primary" />}
+ {item.type === 'product' ? (
+ item.image && (item.image.startsWith('http') || item.image.startsWith('/'))
+ ? <img src={item.image} alt={item.name} className="size-full object-cover" />
+ : <Icon name="inventory_2" className="text-primary" />
+ ) : <Icon name="description" className="text-primary" />}
  </div>
 
  {/* Details */}

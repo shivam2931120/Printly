@@ -143,7 +143,7 @@ const AppContent: React.FC = () => {
     <div className="relative min-h-screen bg-background text-foreground font-sans selection:bg-white/20">
       <Suspense fallback={<LoadingSpinner />}>
         <AnimatePresence mode="wait">
-          <Routes location={location} key={location.pathname}>
+          <Routes location={location}>
             {/* Auth Routes — redirect away if already signed in */}
             <Route path="/sign-in" element={<AuthRoute currentUser={currentUser}><CustomSignIn /></AuthRoute>} />
             <Route path="/sign-up" element={<AuthRoute currentUser={currentUser}><CustomSignUp /></AuthRoute>} />
