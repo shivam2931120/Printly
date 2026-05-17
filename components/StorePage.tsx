@@ -284,7 +284,7 @@ export const StorePage: React.FC = () => {
                       <Magnetic strength={0.3}>
                         <Button
                           onClick={(e) => { e.stopPropagation(); addToCartProduct(product); }}
-                          disabled={product.stock === 0}
+                          disabled={product.stock <= 0 || product.isActive === false}
                           className="px-8 h-12 bg-primary text-foreground hover:bg-primary-hover font-black translate-y-4 group-hover:translate-y-0 transition-transform duration-500"
                         >
                           <Plus size={20} className="mr-2 stroke-[3]" />
@@ -293,7 +293,7 @@ export const StorePage: React.FC = () => {
                       </Magnetic>
                     </div>
 
-                    {product.stock === 0 && (
+                    {product.stock <= 0 && (
                       <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
                         <span className="bg-primary text-foreground px-4 py-2 text-[10px] uppercase font-black tracking-widest ">
                           Sold Out
@@ -324,7 +324,7 @@ export const StorePage: React.FC = () => {
                       </span>
                       <button
                         onClick={() => addToCartProduct(product)}
-                        disabled={product.stock === 0}
+                        disabled={product.stock <= 0 || product.isActive === false}
                         className="lg:hidden size-12 bg-primary flex items-center justify-center text-foreground active:scale-90 transition-transform disabled:opacity-20 hover:bg-primary-hover"
                       >
                         <Plus size={24} strokeWidth={3} />

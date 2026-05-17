@@ -89,6 +89,12 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  ...o,
  status: (raw.status?.toLowerCase() ?? o.status) as Order['status'],
  paymentStatus: (raw.paymentStatus?.toLowerCase() ?? o.paymentStatus) as Order['paymentStatus'],
+ cancelRequested: raw.cancelRequested ?? o.cancelRequested,
+ cancelReason: raw.cancelReason ?? o.cancelReason,
+ cancelRequestedAt: raw.cancelRequestedAt ? new Date(raw.cancelRequestedAt) : o.cancelRequestedAt,
+ printJobStatus: raw.printJobStatus ?? o.printJobStatus,
+ printJobError: raw.printJobError ?? o.printJobError,
+ printJobAttempts: raw.printJobAttempts ?? o.printJobAttempts,
  updatedAt: raw.updatedAt ? new Date(raw.updatedAt) : o.updatedAt,
  }
  : o
@@ -99,6 +105,12 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  ...prev,
  status: (raw.status?.toLowerCase() ?? prev.status) as Order['status'],
  paymentStatus: (raw.paymentStatus?.toLowerCase() ?? prev.paymentStatus) as Order['paymentStatus'],
+ cancelRequested: raw.cancelRequested ?? prev.cancelRequested,
+ cancelReason: raw.cancelReason ?? prev.cancelReason,
+ cancelRequestedAt: raw.cancelRequestedAt ? new Date(raw.cancelRequestedAt) : prev.cancelRequestedAt,
+ printJobStatus: raw.printJobStatus ?? prev.printJobStatus,
+ printJobError: raw.printJobError ?? prev.printJobError,
+ printJobAttempts: raw.printJobAttempts ?? prev.printJobAttempts,
  updatedAt: raw.updatedAt ? new Date(raw.updatedAt) : prev.updatedAt,
  }
  : prev
@@ -545,6 +557,16 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium ${statusColors[order.status] || 'bg-background-subtle'} `}>
  {order.status}
  </span>
+ {order.cancelRequested && (
+ <span className="mt-1 inline-flex items-center px-2 py-0.5 text-[10px] font-bold uppercase bg-amber-500/10 text-amber-300 border border-amber-500/30">
+ cancel
+ </span>
+ )}
+ {order.printJobStatus === 'failed' && (
+ <span className="mt-1 inline-flex items-center px-2 py-0.5 text-[10px] font-bold uppercase bg-red-500/10 text-error border border-red-500/30">
+ job failed
+ </span>
+ )}
  </td>
  <td className="py-4 px-4 text-right" onClick={(e) => e.stopPropagation()}>
  <div className="flex items-center justify-end gap-2">
@@ -648,6 +670,11 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  <span className={`inline-flex items-center px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase ${paymentColors[order.paymentStatus] || 'bg-background-subtle'}`}>
  {order.paymentStatus}
  </span>
+ {order.cancelRequested && (
+ <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase bg-amber-500/10 text-amber-300 border border-amber-500/30">
+ cancel
+ </span>
+ )}
  </div>
  </div>
 

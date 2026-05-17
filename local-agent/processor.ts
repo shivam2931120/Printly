@@ -22,8 +22,16 @@ export async function processOrder(client: SupabaseClient, order: any) {
   const merged = mergeEntries(allEntries);
 
   // Process each entry
+  const failures: string[] = [];
   for (const entry of merged) {
-    await deductInventory(client, entry, shopId, userEmail);
+    const success = await deductInventory(client, entry, shopId, userEmail);
+    if (!success) {
+      failures.push(entry.inventoryName);
+    }
+  }
+
+  if (failures.length > 0) {
+    throw new Error(`Inventory deduction failed for: ${failures.join(", ")}`);
   }
 }
 
@@ -53,7 +61,7 @@ async function deductInventory(
   entry: ConsumptionEntry,
   shopId: string | null,
   userEmail: string
-) {
+): Promise<boolean> {
   // Find matching inventory row
   let query = client
     .from("Inventory")
@@ -70,7 +78,7 @@ async function deductInventory(
     console.warn(
       `[Processor] Inventory "${entry.inventoryName}" not found (shop: ${shopId}): ${findErr?.message}`
     );
-    return;
+    return false;
   }
 
   const inventoryRow = rows as { id: string; stock: number; name: string };
@@ -91,7 +99,7 @@ async function deductInventory(
 
   if (updateErr) {
     console.error(`[Processor] Failed to update "${inventoryRow.name}":`, updateErr.message);
-    return;
+    return false;
   }
 
   // Insert stock log
@@ -104,5 +112,8 @@ async function deductInventory(
 
   if (logErr) {
     console.error(`[Processor] Failed to log "${inventoryRow.name}":`, logErr.message);
+    return false;
   }
+
+  return true;
 }

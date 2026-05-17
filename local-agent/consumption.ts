@@ -9,6 +9,7 @@ export interface PrintItem {
     copies?: number;
     binding?: string | boolean;
     sides?: string;       // "single" | "double"
+    pageRangeText?: string;
   };
 }
 
@@ -25,7 +26,7 @@ export function computeConsumption(item: PrintItem, orderId: string): Consumptio
   if (item.type !== "print") return [];
 
   const entries: ConsumptionEntry[] = [];
-  const pages = item.pageCount ?? 0;
+  const pages = getSelectedPageCount(item.printConfig?.pageRangeText, item.pageCount ?? 0);
   const copies = item.printConfig?.copies ?? 1;
   const totalSheets = computeSheets(pages, copies, item.printConfig?.sides);
   const isColor = item.printConfig?.colorMode === "color";
@@ -90,4 +91,35 @@ function computeSheets(pages: number, copies: number, sides?: string): number {
     return Math.ceil(totalPages / 2);
   }
   return totalPages;
+}
+
+function getSelectedPageCount(pageRangeText: string | undefined, totalPages: number): number {
+  if (!pageRangeText || totalPages <= 0) return totalPages;
+
+  const pages = new Set<number>();
+  for (const rawPart of pageRangeText.split(",")) {
+    const part = rawPart.trim();
+    if (!part) continue;
+
+    const range = part.match(/^(\d+)\s*-\s*(\d+)$/);
+    const single = part.match(/^(\d+)$/);
+    if (range) {
+      const start = Number(range[1]);
+      const end = Number(range[2]);
+      if (start < 1 || end < start || end > totalPages) return totalPages;
+      for (let page = start; page <= end; page++) pages.add(page);
+      continue;
+    }
+
+    if (single) {
+      const page = Number(single[1]);
+      if (page < 1 || page > totalPages) return totalPages;
+      pages.add(page);
+      continue;
+    }
+
+    return totalPages;
+  }
+
+  return pages.size > 0 ? pages.size : totalPages;
 }

@@ -92,11 +92,18 @@ model Order {
   status        OrderStatus   @default(PENDING)
   paymentStatus PaymentStatus @default(UNPAID)
   paymentId     String?
+  razorpayOrderId String?
   clerkId       String?
   userEmail     String?
   userName      String?
   items         Json          @default("[]") // JSONB array of cart items
   inventoryProcessed Boolean?
+  cancelRequested Boolean      @default(false)
+  cancelReason    String?
+  cancelRequestedAt DateTime?
+  printJobStatus String?
+  printJobError  String?
+  printJobAttempts Int         @default(0)
   isDeleted     Boolean       @default(false)
   deletedAt     DateTime?
   createdAt     DateTime      @default(now())

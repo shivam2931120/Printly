@@ -1,7 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { FileText, X, CheckCircle2 } from 'lucide-react';
+import { Document, Page, pdfjs } from 'react-pdf';
 import { cn } from '../../lib/utils';
+
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 interface FilePreviewProps {
  file: File;
@@ -22,9 +25,25 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, pageCount, onRem
  transition={{ duration: 0.25, delay: index * 0.05 }}
  className="group flex items-center gap-4 p-4 bg-background-card border border-border rounded-2xl shadow-2xl/[0.06] hover:bg-background-subtle transition-all duration-200"
  >
- {/* Icon */}
- <div className="size-11 bg-background-subtle flex items-center justify-center shrink-0">
+ {/* Thumbnail */}
+ <div className="size-14 bg-background-subtle flex items-center justify-center shrink-0 overflow-hidden border border-border">
+ {isAnalyzing ? (
  <FileText size={20} className="text-gray-400" />
+ ) : (
+ <Document
+ file={file}
+ loading={<FileText size={20} className="text-gray-400" />}
+ error={<FileText size={20} className="text-gray-400" />}
+ className="flex items-center justify-center"
+ >
+ <Page
+ pageNumber={1}
+ width={50}
+ renderTextLayer={false}
+ renderAnnotationLayer={false}
+ />
+ </Document>
+ )}
  </div>
 
  {/* Info */}

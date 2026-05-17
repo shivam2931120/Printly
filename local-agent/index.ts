@@ -42,7 +42,8 @@ async function pollOrders(client: SupabaseClient) {
     .from("Order")
     .select("*")
     .in("status", config.TRIGGER_STATUSES)
-    .is("inventoryProcessed", null)
+    .or("inventoryProcessed.is.null,printJobStatus.eq.failed")
+    .lt("printJobAttempts", config.MAX_JOB_ATTEMPTS)
     .order("createdAt", { ascending: true })
     .limit(config.BATCH_SIZE);
 
@@ -56,18 +57,44 @@ async function pollOrders(client: SupabaseClient) {
   console.log(`[Agent] Found ${orders.length} order(s) to process`);
 
   for (const order of orders) {
+    const attempts = Number(order.printJobAttempts || 0) + 1;
     try {
+      await client
+        .from("Order")
+        .update({
+          printJobStatus: "running",
+          printJobAttempts: attempts,
+          printJobError: null,
+          updatedAt: new Date().toISOString(),
+        })
+        .eq("id", order.id);
+
       await processOrder(client, order);
 
       // Mark order as inventory-processed (idempotency flag)
       await client
         .from("Order")
-        .update({ inventoryProcessed: true })
+        .update({
+          inventoryProcessed: true,
+          printJobStatus: "completed",
+          printJobError: null,
+          updatedAt: new Date().toISOString(),
+        })
         .eq("id", order.id);
 
       console.log(`[Agent] ✓ Order ${order.id} processed`);
     } catch (err) {
-      console.error(`[Agent] ✗ Order ${order.id} failed:`, err);
+      const message = err instanceof Error ? err.message : String(err);
+      await client
+        .from("Order")
+        .update({
+          printJobStatus: "failed",
+          printJobError: message.slice(0, 500),
+          printJobAttempts: attempts,
+          updatedAt: new Date().toISOString(),
+        })
+        .eq("id", order.id);
+      console.error(`[Agent] ✗ Order ${order.id} failed:`, message);
     }
   }
 }

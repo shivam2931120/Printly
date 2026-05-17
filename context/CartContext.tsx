@@ -98,7 +98,9 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 name: product.name,
                 price: product.price,
                 quantity: 1,
-                image: product.image
+                image: product.image,
+                stock: product.stock,
+                isActive: product.isActive,
             }];
         });
         setIsCartOpen(true);

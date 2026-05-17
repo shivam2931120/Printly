@@ -6,6 +6,7 @@ export const config = {
   // Polling
   POLL_INTERVAL_MS: parseInt(process.env.POLL_INTERVAL_MS || "5000", 10),
   BATCH_SIZE: parseInt(process.env.BATCH_SIZE || "20", 10),
+  MAX_JOB_ATTEMPTS: parseInt(process.env.MAX_JOB_ATTEMPTS || "3", 10),
 
   // Which order statuses trigger inventory deduction
   TRIGGER_STATUSES: ["CONFIRMED", "PRINTING"],

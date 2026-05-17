@@ -45,7 +45,13 @@ const generatePickupToken = () => Math.floor(1000 + Math.random() * 9000).toStri
 
 const isMissingOptionalOrderColumn = (error: any) => {
     const message = `${error?.message || ''} ${error?.details || ''}`;
-    return error?.code === 'PGRST204' || message.includes('schema cache') || message.includes('paymentId') || message.includes('clerkId');
+    return error?.code === 'PGRST204' ||
+        message.includes('schema cache') ||
+        message.includes('paymentId') ||
+        message.includes('razorpayOrderId') ||
+        message.includes('clerkId') ||
+        message.includes('cancelRequested') ||
+        message.includes('printJobStatus');
 };
 
 const isOrderTokenConflict = (error: any) => {
@@ -218,6 +224,8 @@ export const createOrder = async (
                 productId: (item as any).productId,
                 name: item.name,
                 image: (item as any).image || '',
+                stock: (item as any).stock,
+                isActive: (item as any).isActive,
                 quantity: item.quantity,
                 price: item.price,
             };
@@ -254,6 +262,7 @@ export const createOrder = async (
 
     if (clerkId) payload.clerkId = clerkId;
     if (order.paymentId) payload.paymentId = order.paymentId;
+    if (order.razorpayOrderId) payload.razorpayOrderId = order.razorpayOrderId;
 
     let orderError: any = null;
     let insertedOrder: { id: string; orderToken?: string } | null = null;
@@ -279,6 +288,7 @@ export const createOrder = async (
             const fallbackPayload = { ...payload };
             delete fallbackPayload.clerkId;
             delete fallbackPayload.paymentId;
+            delete fallbackPayload.razorpayOrderId;
             const { data: fallbackInserted, error: fallbackError } = await client
                 .from('Order')
                 .insert(fallbackPayload)
@@ -366,7 +376,46 @@ export const abandonUnpaidOrder = async (
     }
 };
 
-// cancelOrder has been removed — orders cannot be cancelled after placement.
+// Cancellation is a request before printing starts; staff decides final handling.
+export const requestOrderCancellation = async (
+    orderId: string,
+    reason: string,
+    client: SupabaseClient = supabase
+): Promise<{ success: boolean; error?: any }> => {
+    const now = new Date().toISOString();
+    const { data: existing, error: fetchError } = await client
+        .from('Order')
+        .select('status, cancelRequested')
+        .eq('id', orderId)
+        .maybeSingle();
+
+    if (fetchError) {
+        console.error('Error loading order before cancellation request:', fetchError);
+        return { success: false, error: fetchError };
+    }
+
+    const status = String(existing?.status || '').toUpperCase();
+    if (!['PENDING', 'CONFIRMED'].includes(status)) {
+        return { success: false, error: new Error('Cancellation can be requested only before printing starts.') };
+    }
+
+    const { error } = await client
+        .from('Order')
+        .update({
+            cancelRequested: true,
+            cancelReason: reason.trim() || null,
+            cancelRequestedAt: now,
+            updatedAt: now,
+        })
+        .eq('id', orderId);
+
+    if (error) {
+        console.error('Error requesting order cancellation:', error);
+        return { success: false, error };
+    }
+
+    return { success: true };
+};
 
 export const markOrderCollected = async (
     orderId: string,
@@ -461,6 +510,8 @@ const mapOrderData = (data: any[]): Order[] => {
                     price: Number(item.price) || 0,
                     quantity: Number(item.quantity) || 1,
                     image: item.image || item.productImage || '',
+                    stock: typeof item.stock === 'number' ? item.stock : undefined,
+                    isActive: typeof item.isActive === 'boolean' ? item.isActive : undefined,
                 };
             } else {
                 return {
@@ -489,6 +540,13 @@ const mapOrderData = (data: any[]): Order[] => {
             status: normalizeOrderStatus(row.status),
             paymentStatus,
             paymentId: row.paymentId || (paymentStatus === 'paid' ? row.id : undefined),
+            razorpayOrderId: row.razorpayOrderId || undefined,
+            cancelRequested: Boolean(row.cancelRequested),
+            cancelReason: row.cancelReason || undefined,
+            cancelRequestedAt: row.cancelRequestedAt ? new Date(row.cancelRequestedAt) : undefined,
+            printJobStatus: row.printJobStatus || undefined,
+            printJobError: row.printJobError || undefined,
+            printJobAttempts: Number(row.printJobAttempts || 0),
             createdAt: new Date(row.createdAt),
             updatedAt: new Date(row.updatedAt),
             items,
@@ -716,6 +774,42 @@ export const fetchShopConfig = async (): Promise<ShopConfig> => {
     } catch { /* ignore */ }
 
     return DEFAULT_SHOP_CONFIG;
+};
+
+export const fetchShopConfigs = async (): Promise<ShopConfig[]> => {
+    const { data, error } = await supabase
+        .from('Shop')
+        .select('*')
+        .eq('isActive', true)
+        .order('shopName');
+
+    if (error) {
+        console.error('Error fetching shops:', error);
+        return [DEFAULT_SHOP_CONFIG];
+    }
+
+    const shops = (data || []).map((row: any) => {
+        const embedded = row.shopConfig && typeof row.shopConfig === 'object' ? row.shopConfig : {};
+        return {
+            ...DEFAULT_SHOP_CONFIG,
+            ...embedded,
+            shopId: row.id || embedded.shopId || DEFAULT_SHOP_CONFIG.shopId,
+            shopName: embedded.shopName || row.shopName || DEFAULT_SHOP_CONFIG.shopName,
+            tagline: embedded.tagline || row.tagline || DEFAULT_SHOP_CONFIG.tagline,
+            operatingHours: embedded.operatingHours || row.operatingHours || DEFAULT_SHOP_CONFIG.operatingHours,
+            location: embedded.location || row.location || DEFAULT_SHOP_CONFIG.location,
+            contact: embedded.contact || row.contact || DEFAULT_SHOP_CONFIG.contact,
+            email: embedded.email || row.email || DEFAULT_SHOP_CONFIG.email,
+            logo: embedded.logo || row.logo || DEFAULT_SHOP_CONFIG.logo,
+            primaryColor: embedded.primaryColor || row.primaryColor || DEFAULT_SHOP_CONFIG.primaryColor,
+            directionsUrl: embedded.directionsUrl || DEFAULT_SHOP_CONFIG.directionsUrl,
+            mapEmbed: embedded.mapEmbed || DEFAULT_SHOP_CONFIG.mapEmbed,
+            isActive: row.isActive ?? embedded.isActive ?? true,
+            createdAt: row.createdAt || embedded.createdAt || DEFAULT_SHOP_CONFIG.createdAt,
+        } as ShopConfig;
+    });
+
+    return shops.length > 0 ? shops : [DEFAULT_SHOP_CONFIG];
 };
 
 /** Persist shop config to the active Shop row and also cache in localStorage */

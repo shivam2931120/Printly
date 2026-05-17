@@ -7,11 +7,13 @@ import {
  Receipt,
  Clock,
  ArrowRight,
+ Download,
  Copy,
  Check
 } from 'lucide-react';
-import { PrintOptions } from '../../types';
+import { Order, PrintOptions } from '../../types';
 import { Button } from '../ui/Button';
+import { downloadOrderReceipt } from '../../lib/receipt';
 
 interface OrderConfirmationProps {
  order: {
@@ -27,11 +29,13 @@ interface OrderConfirmationProps {
  // Compatibility with new Order structure if needed
  items?: any[];
  };
+ fullOrder?: Order;
  onClose: () => void;
 }
 
 export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({
  order,
+ fullOrder,
  onClose,
 }) => {
  const navigate = useNavigate();
@@ -47,6 +51,12 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({
  const handleViewOrders = () => {
  onClose();
  navigate('/my-orders');
+ };
+
+ const handleDownloadReceipt = () => {
+ if (fullOrder) {
+ downloadOrderReceipt(fullOrder);
+ }
  };
 
  const handleClose = () => {
@@ -73,6 +83,8 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({
 
  // Helper to get token (fallback)
  const token = order.tokenNumber || order.id.slice(-6).toUpperCase();
+ const isPaymentVerified = fullOrder?.paymentStatus !== 'unpaid';
+ const HeaderIcon = isPaymentVerified ? CheckCircle2 : Clock;
 
  return (
  <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -82,14 +94,18 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({
  {/* Modal */}
  <div className="relative w-full max-w-lg bg-surface-dark border rounded-2xl shadow-xl border-border overflow-hidden animate-zoom-in">
  {/* Success Header */}
- <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-8 text-center text-foreground relative overflow-hidden">
+ <div className={`${isPaymentVerified ? 'bg-gradient-to-br from-green-500 to-emerald-600' : 'bg-gradient-to-br from-amber-500 to-orange-600'} p-8 text-center text-foreground relative overflow-hidden`}>
  <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
  <div className="relative z-10">
  <div className="inline-flex items-center justify-center size-20 bg-background-subtle mb-4 ">
- <CheckCircle2 className="w-10 h-10 text-foreground" />
+ <HeaderIcon className="w-10 h-10 text-foreground" />
  </div>
- <h2 className="text-3xl font-black mb-1 tracking-tight">Order Confirmed!</h2>
- <p className="text-foreground/90 font-medium">Your print job has been queued</p>
+ <h2 className="text-3xl font-black mb-1 tracking-tight">
+ {isPaymentVerified ? 'Order Confirmed!' : 'Verification Pending'}
+ </h2>
+ <p className="text-foreground/90 font-medium">
+ {isPaymentVerified ? 'Your print job has been queued' : 'Your saved order is waiting for payment verification'}
+ </p>
  </div>
  </div>
 
@@ -156,7 +172,7 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({
  {/* Total & Time */}
  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-primary/10 to-transparent border border-primary/20">
  <div>
- <p className="text-xs text-foreground-muted font-bold uppercase">Amount Paid</p>
+ <p className="text-xs text-foreground-muted font-bold uppercase">{isPaymentVerified ? 'Amount Paid' : 'Order Amount'}</p>
  <p className="text-2xl font-black text-primary">₹{order.totalAmount.toFixed(2)}</p>
  </div>
  <div className="text-right">
@@ -175,6 +191,16 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({
  >
  Close
  </Button>
+ {fullOrder?.paymentStatus === 'paid' && (
+ <Button
+ variant="outline"
+ onClick={handleDownloadReceipt}
+ className="flex-1 gap-2"
+ >
+ <Download size={16} />
+ Receipt
+ </Button>
+ )}
  <Button
  onClick={handleViewOrders}
  className="flex-1"

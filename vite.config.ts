@@ -18,6 +18,24 @@ export default defineConfig(({ mode }) => {
         includeAssets: ['favicon.svg', 'Printly.png'],
         workbox: {
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
+          navigateFallback: '/index.html',
+          runtimeCaching: [
+            {
+              urlPattern: ({ request }) => request.mode === 'navigate',
+              handler: 'NetworkFirst',
+              options: {
+                cacheName: 'printly-pages',
+                networkTimeoutSeconds: 3,
+              },
+            },
+            {
+              urlPattern: ({ url }) => url.origin === self.location.origin && url.pathname.startsWith('/assets/'),
+              handler: 'StaleWhileRevalidate',
+              options: {
+                cacheName: 'printly-assets',
+              },
+            },
+          ],
         },
         manifest: {
           name: 'Printly - College Print Shop',

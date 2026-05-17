@@ -122,6 +122,7 @@ export default async function handler(req: Request) {
 
     const supabase = getSupabaseAdmin();
     const paymentId: string = paymentEntity.id;
+    const razorpayOrderId: string | undefined = paymentEntity.order_id;
     const appOrderId: string | undefined =
         paymentEntity.notes?.app_order_id ||
         paymentEntity.notes?.order_id;
@@ -134,6 +135,15 @@ export default async function handler(req: Request) {
         .maybeSingle() : { data: null };
 
     let order = orderByAppId;
+
+    if (!order) {
+        const { data: orderByRazorpayOrderId } = razorpayOrderId ? await supabase
+            .from('Order')
+            .select('id, paymentStatus, status')
+            .eq('razorpayOrderId', razorpayOrderId)
+            .maybeSingle() : { data: null };
+        order = orderByRazorpayOrderId;
+    }
 
     if (!order) {
         const { data: orderByPaymentId } = await supabase
@@ -156,7 +166,7 @@ export default async function handler(req: Request) {
     const targetId = order?.id ?? null;
 
     if (!targetId) {
-        console.warn(`[webhook] No order found for payment_id: ${paymentId}, app_order_id: ${appOrderId || 'none'}`);
+        console.warn(`[webhook] No order found for payment_id: ${paymentId}, app_order_id: ${appOrderId || 'none'}, razorpay_order_id: ${razorpayOrderId || 'none'}`);
         return json({ received: true, processed: false, reason: 'order_not_found' });
     }
 

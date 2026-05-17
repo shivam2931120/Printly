@@ -8,6 +8,9 @@ import {
  Loader2,
  Package,
  ChevronRight,
+ Download,
+ Ban,
+ WifiOff,
  Copy,
  Check
 } from 'lucide-react';
@@ -17,10 +20,11 @@ import { Button } from '../ui/Button';
 import { cn } from '../../lib/utils';
 import { useOrderStore } from '../../store/useOrderStore';
 import { Order } from '../../types';
-import { fetchOrders, markOrderCollected, supabase } from '../../services/data';
+import { fetchOrders, markOrderCollected, requestOrderCancellation, supabase } from '../../services/data';
 import { toast } from 'sonner';
 import { Skeleton } from '../ui/Skeleton';
 import { OrderTracker } from './OrderTracker';
+import { downloadOrderReceipt } from '../../lib/receipt';
 
 const statusConfig: Record<string, { color: string; icon: any; label: string }> = {
  pending: { color: 'text-yellow-500 bg-yellow-900/200/10 border-yellow-500/20', icon: Clock, label: 'Pending' },
@@ -38,6 +42,7 @@ export const MyOrdersPage: React.FC = () => {
  const [loading, setLoading] = useState(true);
  const navigate = useNavigate();
  const [copiedId, setCopiedId] = useState<string | null>(null);
+ const [isOnline, setIsOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
 
  const handleCopyOtp = useCallback((orderId: string, otp: string) => {
  navigator.clipboard.writeText(otp).then(() => {
@@ -45,6 +50,16 @@ export const MyOrdersPage: React.FC = () => {
  toast.success('OTP copied!');
  setTimeout(() => setCopiedId(null), 2000);
  }).catch(() => toast.error('Failed to copy'));
+ }, []);
+
+ React.useEffect(() => {
+ const updateOnlineStatus = () => setIsOnline(navigator.onLine);
+ window.addEventListener('online', updateOnlineStatus);
+ window.addEventListener('offline', updateOnlineStatus);
+ return () => {
+ window.removeEventListener('online', updateOnlineStatus);
+ window.removeEventListener('offline', updateOnlineStatus);
+ };
  }, []);
 
  // Fetch latest orders on mount — use email-based query as fast fallback
@@ -139,6 +154,36 @@ export const MyOrdersPage: React.FC = () => {
  }
  };
 
+ const handleCancellationRequest = async (order: Order) => {
+ if (!['pending', 'confirmed'].includes(order.status)) {
+ toast.error('Cancellation can be requested only before printing starts.');
+ return;
+ }
+
+ const reason = window.prompt('Reason for cancellation request');
+ if (reason === null) return;
+
+ try {
+ const dbClient = await getAuthenticatedClient();
+ const result = await requestOrderCancellation(order.id, reason, dbClient);
+ if (!result.success) {
+ toast.error(result.error?.message || 'Could not request cancellation.');
+ return;
+ }
+
+ setOrders(storeOrders.map(o => o.id === order.id ? {
+ ...o,
+ cancelRequested: true,
+ cancelReason: reason.trim() || undefined,
+ cancelRequestedAt: new Date(),
+ } : o));
+ toast.success('Cancellation request sent.');
+ } catch (error) {
+ console.error('Failed to request cancellation:', error);
+ toast.error('An error occurred.');
+ }
+ };
+
  const filteredOrders = filterStatus === 'all'
  ? orders
  : orders.filter(o => o.status.toLowerCase() === filterStatus);
@@ -207,6 +252,14 @@ export const MyOrdersPage: React.FC = () => {
  </div>
 
  {/* Filters */}
+ {!isOnline && (
+ <div className="flex items-center gap-2 border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-100">
+ <WifiOff size={16} />
+ Offline mode: showing cached orders and receipts.
+ </div>
+ )}
+
+ {/* Filters */}
  <div className="flex flex-wrap gap-1.5">
  {['all', 'pending', 'confirmed', 'printing', 'ready', 'completed'].map(status => (
  <button
@@ -264,6 +317,11 @@ export const MyOrdersPage: React.FC = () => {
  </div>
  <div className="flex items-center gap-2 mt-0.5">
  <span className="text-xs text-foreground-muted font-mono">#{order.id.slice(-6)}</span>
+ {order.cancelRequested && (
+ <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 border border-amber-500/30 bg-amber-500/10 text-amber-200">
+ Cancel requested
+ </span>
+ )}
  </div>
  </div>
  </div>
@@ -278,6 +336,24 @@ export const MyOrdersPage: React.FC = () => {
  <OrderTracker status={order.status} className="!py-1" />
 
  <div className="flex items-center gap-2 shrink-0 ml-3">
+ {order.paymentStatus === 'paid' && (
+ <button
+ onClick={() => downloadOrderReceipt(order)}
+ className="text-xs px-3 py-1.5 bg-background-subtle hover:bg-background text-foreground-muted hover:text-foreground border border-border font-bold transition-colors flex items-center gap-1.5"
+ >
+ <Download size={12} />
+ Receipt
+ </button>
+ )}
+ {!order.cancelRequested && ['pending', 'confirmed'].includes(order.status) && (
+ <button
+ onClick={() => handleCancellationRequest(order)}
+ className="text-xs px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-200 border border-amber-500/30 font-bold transition-colors flex items-center gap-1.5"
+ >
+ <Ban size={12} />
+ Cancel
+ </button>
+ )}
  {order.status === 'ready' && (
  <button
  onClick={() => handleMarkCollected(order.id)}

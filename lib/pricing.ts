@@ -1,4 +1,5 @@
 import { PricingConfig, PrintOptions, CartItem } from '../types';
+import { getSelectedPageCount } from './pageRanges';
 
 /**
  * Calculates the price for a single print job based on options and configuration.
@@ -9,16 +10,17 @@ export const calculatePrintPrice = (
     config: PricingConfig
 ): number => {
     let total = 0;
+    const billablePageCount = getSelectedPageCount(options.pageRangeText, pageCount);
 
     // 1. Base Copy Price (Black & White vs Color)
     const baseRate = options.colorMode === 'color' ? config.perPageColor : config.perPageBW;
-    let pageCost = baseRate * pageCount;
+    let pageCost = baseRate * billablePageCount;
 
     // 2. Double-Sided Discount
     // If double-sided, we might apply a discount per sheet (2 pages) or per page.
     // The config has `doubleSidedDiscount` which implies a per-page reduction.
     if (options.sides === 'double') {
-        pageCost -= (config.doubleSidedDiscount * pageCount);
+        pageCost -= (config.doubleSidedDiscount * billablePageCount);
     }
 
     // Ensure we don't go below zero
@@ -30,7 +32,7 @@ export const calculatePrintPrice = (
 
     // 4. Paper Type Fees (Per Page)
     const paperTypeFee = config.paperTypeFees[options.paperType] || 0;
-    pageCost += (paperTypeFee * pageCount);
+    pageCost += (paperTypeFee * billablePageCount);
 
     total += pageCost;
 
@@ -70,19 +72,20 @@ export const calculatePriceBreakdown = (
     config: PricingConfig
 ): { lines: PriceBreakdownLine[]; total: number } => {
     const lines: PriceBreakdownLine[] = [];
+    const billablePageCount = getSelectedPageCount(options.pageRangeText, pageCount);
 
     // 1. Base print cost
     const baseRate = options.colorMode === 'color' ? config.perPageColor : config.perPageBW;
-    const baseCost = baseRate * pageCount;
+    const baseCost = baseRate * billablePageCount;
     lines.push({
         label: options.colorMode === 'color' ? 'Color printing' : 'B&W printing',
         amount: baseCost,
-        detail: `${pageCount} pg × ₹${baseRate}`,
+        detail: `${billablePageCount} pg × ₹${baseRate}`,
     });
 
     // 2. Double-sided discount
     if (options.sides === 'double' && config.doubleSidedDiscount > 0) {
-        const discount = -(config.doubleSidedDiscount * pageCount);
+        const discount = -(config.doubleSidedDiscount * billablePageCount);
         lines.push({ label: 'Double-sided discount', amount: discount, detail: `-₹${config.doubleSidedDiscount}/pg` });
     }
 
@@ -97,7 +100,7 @@ export const calculatePriceBreakdown = (
     // 4. Paper type fee
     const paperFee = config.paperTypeFees[options.paperType] || 0;
     if (paperFee > 0) {
-        lines.push({ label: `${options.paperType.charAt(0).toUpperCase() + options.paperType.slice(1)} paper`, amount: paperFee * pageCount, detail: `${pageCount} pg × ₹${paperFee}` });
+        lines.push({ label: `${options.paperType.charAt(0).toUpperCase() + options.paperType.slice(1)} paper`, amount: paperFee * billablePageCount, detail: `${billablePageCount} pg × ₹${paperFee}` });
     }
 
     // 5. Binding

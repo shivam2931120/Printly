@@ -28,7 +28,7 @@ const faqs = [
  },
  {
  question: 'Can I cancel my order after placing it?',
- answer: 'No. Once an order is placed, it cannot be cancelled. Our print shop begins processing orders immediately, so please double-check your files and settings before confirming your order.',
+ answer: 'You can request cancellation while the order is still pending or confirmed. Once printing starts, the shop cannot cancel it automatically.',
  },
  {
  question: 'Do you offer refunds?',
@@ -109,7 +109,7 @@ export const SupportPage: React.FC = () => {
  <div>
  <h3 className="font-bold text-foreground text-sm mb-1">No Cancellations &middot; No Refunds</h3>
  <p className="text-sm text-foreground-muted leading-relaxed">
- All orders are <span className="text-foreground font-semibold">final once placed</span>. We begin processing immediately and cannot cancel or refund any order. Please review your files, print settings, and total amount carefully before confirming payment.
+ Cancellation can be requested while an order is still <span className="text-foreground font-semibold">pending or confirmed</span>. Once printing starts, staff will handle it as already in production.
  </p>
  </div>
  </div>

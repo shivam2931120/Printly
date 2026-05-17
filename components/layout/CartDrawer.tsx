@@ -8,7 +8,9 @@ import {
     Package,
     Minus,
     Plus,
-    CreditCard
+    CreditCard,
+    AlertTriangle,
+    RefreshCcw
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -16,7 +18,8 @@ import { useClerkSupabase } from '../../services/clerkSupabase';
 import { useCartStore } from '../../store/useCartStore';
 import { compressPdf } from '../../lib/compressPdf';
 import { useOrderStore } from '../../store/useOrderStore';
-import { abandonUnpaidOrder, confirmOrderPayment, createOrder, uploadFile } from '../../services/data';
+import { useShopStore } from '../../store/useShopStore';
+import { abandonUnpaidOrder, createOrder, uploadFile } from '../../services/data';
 import { useNotificationStore } from '../../store/useNotificationStore';
 import { toast } from 'sonner';
 import { Button } from '../ui/Button';
@@ -60,6 +63,105 @@ const loadRazorpayScript = (): Promise<boolean> => {
     });
 };
 
+type CartIssue = {
+    id: string;
+    severity: 'error' | 'warning';
+    message: string;
+};
+
+const buildCartIssues = (cart: CartItem[], paymentRetryMessage: string | null): CartIssue[] => {
+    const issues: CartIssue[] = [];
+
+    cart.forEach((item) => {
+        if (item.type === 'print') {
+            if (!item.file && !item.fileUrl) {
+                issues.push({
+                    id: `missing-file-${item.id}`,
+                    severity: 'error',
+                    message: `${item.name} is missing its file. Remove it and upload the PDF again.`,
+                });
+            }
+
+            if (!item.pageCount || item.pageCount <= 0) {
+                issues.push({
+                    id: `page-count-${item.id}`,
+                    severity: 'warning',
+                    message: `${item.name} is still being checked for page count. Wait for analysis to finish before checkout.`,
+                });
+            }
+        }
+
+        if (item.type === 'product') {
+            if (item.isActive === false) {
+                issues.push({
+                    id: `inactive-product-${item.id}`,
+                    severity: 'error',
+                    message: `${item.name} is no longer available. Remove it from the cart.`,
+                });
+            }
+
+            if (typeof item.stock === 'number') {
+                if (item.stock <= 0) {
+                    issues.push({
+                        id: `sold-out-${item.id}`,
+                        severity: 'error',
+                        message: `${item.name} is out of stock. Remove it from the cart.`,
+                    });
+                } else if (item.quantity > item.stock) {
+                    issues.push({
+                        id: `low-stock-${item.id}`,
+                        severity: 'error',
+                        message: `Only ${item.stock} ${item.name} available. Reduce the quantity to continue.`,
+                    });
+                }
+            }
+        }
+    });
+
+    if (paymentRetryMessage) {
+        issues.unshift({
+            id: 'payment-retry',
+            severity: 'warning',
+            message: paymentRetryMessage,
+        });
+    }
+
+    return issues;
+};
+
+const createRazorpayOrder = async (appOrderId: string, amountPaise: number) => {
+    const response = await fetch('/api/razorpay-order', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ appOrderId, amountPaise }),
+    });
+    const body = await response.json().catch(() => null);
+    if (!response.ok || !body?.order?.id) {
+        throw new Error(body?.error || 'Could not create Razorpay order.');
+    }
+    return body as { keyId?: string; order: { id: string; amount: number; currency: string; receipt?: string } };
+};
+
+const verifyRazorpayPayment = async (
+    appOrderId: string,
+    response: {
+        razorpay_order_id?: string;
+        razorpay_payment_id?: string;
+        razorpay_signature?: string;
+    }
+) => {
+    const verifyResponse = await fetch('/api/verify-razorpay-payment', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ appOrderId, ...response }),
+    });
+    const body = await verifyResponse.json().catch(() => null);
+    if (!verifyResponse.ok || body?.success !== true) {
+        throw new Error(body?.error || 'Payment verification failed.');
+    }
+    return body as { success: true; orderId: string; alreadyPaid?: boolean };
+};
+
 export const CartDrawer: React.FC = () => {
     const { user } = useAuth();
     const { getAuthenticatedClient } = useClerkSupabase();
@@ -74,6 +176,7 @@ export const CartDrawer: React.FC = () => {
         clearCart
     } = useCartStore();
     const { addOrder } = useOrderStore();
+    const selectedShopId = useShopStore((state) => state.selectedShopId);
 
     const cartTotal = getCartTotal();
 
@@ -81,10 +184,18 @@ export const CartDrawer: React.FC = () => {
     const [uploadProgress, setUploadProgress] = React.useState(0);
     const [isProcessing, setIsProcessing] = React.useState(false);
     const [confirmedOrder, setConfirmedOrder] = React.useState<Order | null>(null);
+    const [paymentRetryMessage, setPaymentRetryMessage] = React.useState<string | null>(null);
+    const cartIssues = React.useMemo(() => buildCartIssues(cart, paymentRetryMessage), [cart, paymentRetryMessage]);
+    const blockingIssues = React.useMemo(() => cartIssues.filter((issue) => issue.severity === 'error'), [cartIssues]);
 
     const handlePayment = useCallback(async () => {
         if (cart.length === 0 || cartTotal <= 0) {
             toast.error('Your cart is empty.');
+            return;
+        }
+
+        if (blockingIssues.length > 0) {
+            toast.error(blockingIssues[0].message);
             return;
         }
 
@@ -104,10 +215,11 @@ export const CartDrawer: React.FC = () => {
 
         setIsProcessing(true);
         setUploadProgress(0);
+        setPaymentRetryMessage(null);
 
         const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
-        if (!razorpayKey || !/^rzp_(test|live)_/i.test(razorpayKey)) {
-            toast.error('Payment gateway key is missing or invalid. Please configure VITE_RAZORPAY_KEY_ID.');
+        if (razorpayKey && !/^rzp_(test|live)_/i.test(razorpayKey)) {
+            toast.error('Payment gateway key is invalid. Please configure VITE_RAZORPAY_KEY_ID.');
             setIsProcessing(false);
             return;
         }
@@ -178,6 +290,7 @@ export const CartDrawer: React.FC = () => {
             totalAmount,
             status: 'pending',
             paymentStatus: 'unpaid',
+            shopId: selectedShopId,
             createdAt: now,
             updatedAt: now
         };
@@ -198,45 +311,67 @@ export const CartDrawer: React.FC = () => {
             orderToken: createResult.data?.orderToken || pendingOrder.orderToken,
         };
 
+        let razorpayOrder: Awaited<ReturnType<typeof createRazorpayOrder>>;
+        try {
+            razorpayOrder = await createRazorpayOrder(savedOrder.id, Math.round(totalAmount * 100));
+        } catch (error: any) {
+            console.error('Failed to create Razorpay order:', error?.message || error);
+            abandonUnpaidOrder(savedOrder.id, dbClient);
+            setPaymentRetryMessage('Payment could not start. Please retry after checking your connection.');
+            toast.error(error?.message || 'Could not start payment. Please try again.');
+            setIsProcessing(false);
+            return;
+        }
+
+        savedOrder.razorpayOrderId = razorpayOrder.order.id;
         let paymentHandled = false;
 
         const options = {
-            key: razorpayKey,
-            amount: Math.round(totalAmount * 100).toString(),
-            currency: "INR",
+            key: razorpayOrder.keyId || razorpayKey,
+            amount: String(razorpayOrder.order.amount),
+            currency: razorpayOrder.order.currency || "INR",
+            order_id: razorpayOrder.order.id,
             name: "Printly",
             description: "Print Order Payment",
             handler: async (response: any) => {
                 paymentHandled = true;
                 const paymentId = response.razorpay_payment_id;
-                const confirmResult = await confirmOrderPayment(savedOrder.id, paymentId, dbClient);
+                let verificationSucceeded = false;
+                try {
+                    await verifyRazorpayPayment(savedOrder.id, response);
+                    verificationSucceeded = true;
+                } catch (error: any) {
+                    console.error('Payment captured but verification failed:', error?.message || error);
+                    setPaymentRetryMessage('Payment was captured but verification is pending. Refresh orders or retry only if it still shows unpaid.');
+                    toast.warning('Payment was captured. Verification may take a moment.');
+                }
 
                 const paidOrder: Order = {
                     ...savedOrder,
-                    status: confirmResult.success ? 'confirmed' : 'pending',
-                    paymentStatus: confirmResult.success ? 'paid' : 'unpaid',
+                    status: verificationSucceeded ? 'confirmed' : 'pending',
+                    paymentStatus: verificationSucceeded ? 'paid' : 'unpaid',
                     paymentId,
+                    razorpayOrderId: response.razorpay_order_id || savedOrder.razorpayOrderId,
                     updatedAt: new Date()
                 };
-
-                if (!confirmResult.success) {
-                    console.error('Payment captured but order confirmation update failed:', confirmResult.error?.message || confirmResult.error);
-                    toast.warning('Payment was captured and your order was saved. It may show as unpaid until verification completes.');
-                }
 
                 addOrder(paidOrder); // Update local store too
 
                 // Add Notification
                 const { addNotification } = useNotificationStore.getState();
                 addNotification({
-                    title: 'Order Placed Successfully',
-                    message: `Your order #${paidOrder.orderToken || paidOrder.id.slice(-6)} has been placed.`,
-                    type: 'success'
+                    title: verificationSucceeded ? 'Order Placed Successfully' : 'Payment Verification Pending',
+                    message: verificationSucceeded
+                        ? `Your order #${paidOrder.orderToken || paidOrder.id.slice(-6)} has been placed.`
+                        : `Your order #${paidOrder.orderToken || paidOrder.id.slice(-6)} was saved and is waiting for verification.`,
+                    type: verificationSucceeded ? 'success' : 'warning'
                 });
 
                 clearCart();
                 setConfirmedOrder(paidOrder); // Show confirmation modal instead of direct navigation
-                toast.success(`Payment successful. Your collection OTP is ${paidOrder.orderToken || paidOrder.id.slice(-6)}`, { duration: 5000 });
+                if (verificationSucceeded) {
+                    toast.success(`Payment successful. Your collection OTP is ${paidOrder.orderToken || paidOrder.id.slice(-6)}`, { duration: 5000 });
+                }
                 setIsProcessing(false);
             },
             prefill: {
@@ -255,6 +390,7 @@ export const CartDrawer: React.FC = () => {
                 ondismiss: () => {
                     if (!paymentHandled) {
                         abandonUnpaidOrder(savedOrder.id, dbClient);
+                        setPaymentRetryMessage('Payment was not completed. You can retry checkout when ready.');
                     }
                     setIsProcessing(false);
                 },
@@ -265,11 +401,12 @@ export const CartDrawer: React.FC = () => {
         paymentObject.on('payment.failed', function (response: any) {
             paymentHandled = true;
             abandonUnpaidOrder(savedOrder.id, dbClient);
+            setPaymentRetryMessage(response?.error?.description || 'Payment failed. Please retry checkout.');
             toast.error(response?.error?.description || 'Payment failed. Please try again.');
             setIsProcessing(false);
         });
         paymentObject.open();
-    }, [cartTotal, clearCart, toggleCart, addOrder, cart, user, navigate, getAuthenticatedClient]);
+    }, [cartTotal, clearCart, toggleCart, addOrder, cart, user, navigate, getAuthenticatedClient, selectedShopId, blockingIssues]);
 
     if (!isCartOpen) return null;
 
@@ -317,6 +454,28 @@ export const CartDrawer: React.FC = () => {
                             </div>
                             <h3 className="text-foreground font-bold mb-2">Uploading Files ({uploadProgress}%)</h3>
                             <p className="text-xs text-foreground-muted">Please do not close this window...</p>
+                        </div>
+                    )}
+
+                    {cartIssues.length > 0 && (
+                        <div className="space-y-2">
+                            {cartIssues.map((issue) => {
+                                const Icon = issue.id === 'payment-retry' ? RefreshCcw : AlertTriangle;
+                                return (
+                                    <div
+                                        key={issue.id}
+                                        className={cn(
+                                            "flex gap-2 rounded-xl border p-3 text-xs leading-relaxed",
+                                            issue.severity === 'error'
+                                                ? "border-red-500/30 bg-red-500/10 text-red-200"
+                                                : "border-amber-500/30 bg-amber-500/10 text-amber-100"
+                                        )}
+                                    >
+                                        <Icon size={15} className="mt-0.5 shrink-0" />
+                                        <span>{issue.message}</span>
+                                    </div>
+                                );
+                            })}
                         </div>
                     )}
 
@@ -384,7 +543,11 @@ export const CartDrawer: React.FC = () => {
                                                     <span>{(item as any).options?.copies} copies</span>
                                                 </span>
                                             ) : (
-                                                <span>Product</span>
+                                                <span>
+                                                    {typeof item.stock === 'number'
+                                                        ? `${Math.max(0, item.stock)} available`
+                                                        : 'Product'}
+                                                </span>
                                             )}
                                         </p>
                                     </div>
@@ -403,7 +566,7 @@ export const CartDrawer: React.FC = () => {
                                             <button
                                                 onClick={() => updateQuantity(item.id, 1)}
                                                 className="size-6 flex items-center justify-center rounded-full hover:bg-border transition-colors text-foreground"
-                                                disabled={isProcessing}
+                                                disabled={isProcessing || (item.type === 'product' && typeof item.stock === 'number' && item.quantity >= item.stock)}
                                             >
                                                 <Plus size={12} />
                                             </button>
@@ -440,7 +603,7 @@ export const CartDrawer: React.FC = () => {
                         <Button
                             className="w-full py-6 text-base font-bold bg-primary text-primary-foreground hover:bg-primary-hover border-primary hover:border-primary-hover rounded-2xl shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 relative overflow-hidden"
                             onClick={handlePayment}
-                            disabled={isProcessing}
+                            disabled={isProcessing || blockingIssues.length > 0}
                         >
                             {isProcessing ? (
                                 <span className="flex items-center gap-2">
@@ -471,6 +634,7 @@ export const CartDrawer: React.FC = () => {
                         createdAt: confirmedOrder.createdAt.toISOString(),
                         fileName: confirmedOrder.items?.[0]?.name || 'Print Order'
                     }}
+                    fullOrder={confirmedOrder}
                     onClose={() => {
                         setConfirmedOrder(null);
                         toggleCart(false);

@@ -130,6 +130,8 @@ export interface ProductCartItem extends BaseCartItem {
   type: 'product';
   productId: string;
   image?: string;
+  stock?: number;
+  isActive?: boolean;
 }
 
 export interface PrintCartItem extends BaseCartItem {
@@ -143,6 +145,8 @@ export interface PrintCartItem extends BaseCartItem {
 }
 
 export type CartItem = ProductCartItem | PrintCartItem;
+
+export type PrintJobStatus = 'queued' | 'running' | 'completed' | 'failed';
 
 export interface Order {
   id: string;
@@ -164,9 +168,16 @@ export interface Order {
   status: OrderStatus;
   paymentStatus: PaymentStatus;
   paymentId?: string;
+  razorpayOrderId?: string;
   orderToken?: string;
   otp?: string; // Random 6-digit OTP for pickup
   shopId?: string;
+  cancelRequested?: boolean;
+  cancelReason?: string;
+  cancelRequestedAt?: Date;
+  printJobStatus?: PrintJobStatus;
+  printJobError?: string;
+  printJobAttempts?: number;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -29,6 +29,12 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ order: initialOrder,
  status: (payload.new.status?.toLowerCase() ?? prev.status) as OrderStatus,
  paymentStatus: (payload.new.paymentStatus?.toLowerCase() ?? prev.paymentStatus) as Order['paymentStatus'],
  paymentId: payload.new.paymentId ?? prev.paymentId,
+ cancelRequested: payload.new.cancelRequested ?? prev.cancelRequested,
+ cancelReason: payload.new.cancelReason ?? prev.cancelReason,
+ cancelRequestedAt: payload.new.cancelRequestedAt ? new Date(payload.new.cancelRequestedAt) : prev.cancelRequestedAt,
+ printJobStatus: payload.new.printJobStatus ?? prev.printJobStatus,
+ printJobError: payload.new.printJobError ?? prev.printJobError,
+ printJobAttempts: payload.new.printJobAttempts ?? prev.printJobAttempts,
  orderToken: payload.new.orderToken ?? prev.orderToken,
  updatedAt: payload.new.updatedAt ? new Date(payload.new.updatedAt) : prev.updatedAt,
  }));
@@ -83,6 +89,11 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ order: initialOrder,
  <span className={`px-2 py-0.5 text-xs font-medium ${paymentColors[order.paymentStatus] || 'bg-background-subtle'}`}>
  {order.paymentStatus}
  </span>
+ {order.cancelRequested && (
+ <span className="px-2 py-0.5 text-xs font-medium bg-amber-500/10 text-amber-300 border border-amber-500/30">
+ cancel requested
+ </span>
+ )}
  </div>
  </div>
  </div>
@@ -166,6 +177,30 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ order: initialOrder,
  )}
  </div>
  </section>
+ {order.cancelRequested && (
+ <section>
+ <h3 className="text-xs font-semibold text-foreground-muted uppercase tracking-wider mb-2">Cancellation Request</h3>
+ <div className="p-3 bg-amber-500/10 border border-amber-500/30 text-sm text-amber-100">
+ <p className="font-semibold">Requested before printing</p>
+ {order.cancelReason && <p className="mt-1 text-amber-100/80">{order.cancelReason}</p>}
+ {order.cancelRequestedAt && (
+ <p className="mt-1 text-xs text-amber-100/60">{order.cancelRequestedAt.toLocaleString()}</p>
+ )}
+ </div>
+ </section>
+ )}
+ {(order.printJobStatus || order.printJobError) && (
+ <section>
+ <h3 className="text-xs font-semibold text-foreground-muted uppercase tracking-wider mb-2">Printer Agent</h3>
+ <div className="p-3 bg-background-card border border-border text-sm">
+ <div className="flex items-center justify-between">
+ <span className="font-semibold text-foreground capitalize">{order.printJobStatus || 'queued'}</span>
+ <span className="text-xs text-foreground-muted">{order.printJobAttempts || 0} attempt{(order.printJobAttempts || 0) === 1 ? '' : 's'}</span>
+ </div>
+ {order.printJobError && <p className="mt-2 text-xs text-error">{order.printJobError}</p>}
+ </div>
+ </section>
+ )}
  </div>
 
  {/* Order Items */}

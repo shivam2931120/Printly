@@ -1,6 +1,7 @@
 import React, { useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { UploadCloud, FileText, X } from 'lucide-react';
+import { Cloud, FileText, HardDrive, UploadCloud, X } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '../ui/Button';
 import { cn } from '../../lib/utils';
 
@@ -21,7 +22,7 @@ export const UploadStep: React.FC<UploadStepProps> = ({
         onFilesAdded(acceptedFiles);
     }, [onFilesAdded]);
 
-    const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
         onDrop,
         accept: { 'application/pdf': ['.pdf'] },
         maxSize: 50 * 1024 * 1024, // 50MB
@@ -30,6 +31,19 @@ export const UploadStep: React.FC<UploadStepProps> = ({
         onDragOver: () => undefined,
         onDragLeave: () => undefined,
     });
+
+    const handleCloudPicker = (provider: 'Google Drive' | 'OneDrive') => {
+        const configured = provider === 'Google Drive'
+            ? Boolean(import.meta.env.VITE_GOOGLE_PICKER_API_KEY && import.meta.env.VITE_GOOGLE_CLIENT_ID)
+            : Boolean(import.meta.env.VITE_ONEDRIVE_CLIENT_ID);
+
+        if (!configured) {
+            toast.info(`${provider} upload needs OAuth credentials configured first.`);
+            return;
+        }
+
+        toast.info(`${provider} picker credentials found. Picker wiring can be enabled for this deployment.`);
+    };
 
     return (
         <div className="space-y-6 animate-fade-in">
@@ -60,8 +74,16 @@ export const UploadStep: React.FC<UploadStepProps> = ({
                 </p>
 
                 <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs relative z-10" onClick={(e) => e.stopPropagation()}>
-                    <Button variant="outline" className="w-full">
+                    <Button variant="outline" className="w-full" onClick={() => open()}>
                         Browse Files
+                    </Button>
+                    <Button variant="outline" className="w-full gap-2" onClick={() => handleCloudPicker('Google Drive')}>
+                        <Cloud size={16} />
+                        Drive
+                    </Button>
+                    <Button variant="outline" className="w-full gap-2" onClick={() => handleCloudPicker('OneDrive')}>
+                        <HardDrive size={16} />
+                        OneDrive
                     </Button>
                 </div>
             </div>

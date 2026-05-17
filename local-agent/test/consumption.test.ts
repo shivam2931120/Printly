@@ -73,6 +73,17 @@ function runTests() {
   assert(paper5 !== undefined, "Zero-page still produces paper entry");
   assert(paper5!.amount === 0, `Zero pages = 0 sheets (got ${paper5!.amount})`);
 
+  // Test 6: selected page ranges reduce paper and ink consumption
+  const item6: PrintItem = {
+    type: "print",
+    pageCount: 20,
+    printConfig: { paperSize: "a4", colorMode: "bw", copies: 1, sides: "single", pageRangeText: "1-3, 10" },
+  };
+  const res6 = computeConsumption(item6, "test-006");
+  const paper6 = res6.find((e) => e.inventoryName === "A4 Paper (White)");
+  assert(paper6 !== undefined, "Page range paper entry exists");
+  assert(paper6!.amount === 4, `Selected range sheets = 4 (got ${paper6!.amount})`);
+
   console.log("\n✅ All tests passed!");
 }
 

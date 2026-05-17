@@ -88,7 +88,9 @@ export const useCartStore = create<CartState>()(
                             name: product.name,
                             price: product.price,
                             quantity: 1,
-                            image: product.image
+                            image: product.image,
+                            stock: product.stock,
+                            isActive: product.isActive,
                         }],
                         isCartOpen: true
                     };
@@ -106,7 +108,11 @@ export const useCartStore = create<CartState>()(
                     cart: state.cart.map(item => {
                         if (item.id === itemId) {
                             const newQty = item.quantity + delta;
-                            return newQty > 0 ? { ...item, quantity: newQty } : item;
+                            if (newQty <= 0) return item;
+                            if (item.type === 'product' && typeof item.stock === 'number') {
+                                return { ...item, quantity: Math.min(newQty, Math.max(0, item.stock)) };
+                            }
+                            return { ...item, quantity: newQty };
                         }
                         return item;
                     })

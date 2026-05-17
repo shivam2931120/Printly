@@ -9,7 +9,8 @@ import { PageTransition } from './components/layout/PageTransition';
 import { MainLayout } from './components/layout/MainLayout';
 import { CartDrawer } from './components/layout/CartDrawer';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { fetchPricing, fetchShopConfig } from './services/data';
+import { fetchPricing, fetchShopConfig, fetchShopConfigs } from './services/data';
+import { useShopStore } from './store/useShopStore';
 
 const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
@@ -74,7 +75,8 @@ const ProtectedRoute = ({
 const HomeRoute: React.FC<{
   currentUser: User | null;
   pricing: PricingConfig;
-}> = ({ currentUser, pricing }) => {
+  shopConfig: ShopConfig;
+}> = ({ currentUser, pricing, shopConfig }) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -95,6 +97,7 @@ const HomeRoute: React.FC<{
       <PageTransition>
         <StudentPortal
           pricing={pricing}
+          shopConfig={shopConfig}
           currentUser={currentUser}
           onSignInClick={() => navigate('/sign-in')}
         />
@@ -123,12 +126,20 @@ const AppContent: React.FC = () => {
   const location = useLocation();
   const [pricing, setPricing] = useState<PricingConfig>(DEFAULT_PRICING);
   const [shopConfig, setShopConfig] = useState<ShopConfig>(DEFAULT_SHOP_CONFIG);
+  const shops = useShopStore((state) => state.shops);
+  const selectedShopId = useShopStore((state) => state.selectedShopId);
+  const setShops = useShopStore((state) => state.setShops);
+  const selectedShopConfig = shops.find((shop) => shop.shopId === selectedShopId) || shopConfig;
 
   // Load pricing and shop config from Supabase on mount
   useEffect(() => {
     fetchPricing().then(setPricing);
     fetchShopConfig().then(setShopConfig);
-  }, []);
+    fetchShopConfigs().then((loadedShops) => {
+      setShops(loadedShops);
+      setShopConfig(loadedShops[0] || DEFAULT_SHOP_CONFIG);
+    });
+  }, [setShops]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -152,7 +163,7 @@ const AppContent: React.FC = () => {
             <Route path="/auth/callback" element={<Navigate to="/" replace />} />
 
             {/* Home — inline redirect for admin/developer, no flash */}
-            <Route path="/" element={<HomeRoute currentUser={currentUser} pricing={pricing} />} />
+            <Route path="/" element={<HomeRoute currentUser={currentUser} pricing={pricing} shopConfig={selectedShopConfig} />} />
 
             {/* Student Routes */}
             <Route path="/store" element={<MainLayout user={currentUser}><PageTransition><StorePage /></PageTransition></MainLayout>} />
