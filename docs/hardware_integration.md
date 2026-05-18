@@ -10,8 +10,8 @@ To achieve direct printing, you need a **Local Print Agent** (Bridge) that sits 
 
 ### Components
 1.  **Printly Web App**: Where users submit PDF files.
-2.  **Supabase/Backend**: Stores the PDF files and job status ("PENDING").
-3.  **Local Print Agent**: A software running on the computer connected to the printer.
+2.  **Supabase/Backend**: Stores uploaded files in the `prints` bucket and stores order/job state on the `Order` row.
+3.  **Local Print Agent**: Software running on the computer connected to the printer.
 4.  **Physical Printer**: The hardware device.
 
 ## Step 1: The Local Print Agent
@@ -20,12 +20,20 @@ You need to build a small desktop utility (using Node.js/Electron, Python, or Go
 ### Agent Logic (Pseudo-code)
 ```python
 while True:
-    # 1. Poll Supabase for new "PENDING" jobs for this Shop ID
-    jobs = supabase.table('OrderItems').select('*').eq('status', 'PENDING')
+    # 1. Poll Supabase for paid orders that are ready to print for this Shop ID
+    jobs = (
+        supabase.table('Order')
+        .select('*')
+        .in_('status', ['CONFIRMED', 'PRINTING'])
+        .or_('inventoryProcessed.is.null,inventoryProcessed.eq.false,printJobStatus.eq.failed')
+        .lt('printJobAttempts', MAX_JOB_ATTEMPTS)
+        .eq('shopId', SHOP_ID)
+    )
     
     for job in jobs:
         # 2. Download the PDF file
-        pdf_path = download_file(job['fileUrl'])
+        file_url = first_print_item(job['items'])['fileUrl']
+        pdf_path = download_file(file_url)
         
         # 3. Send to Printer (OS native command)
         # Windows: print /d:PrinterName file.pdf
@@ -33,8 +41,12 @@ while True:
         print_result = os.system(f"lp -d {PRINTER_NAME} {pdf_path}")
         
         if print_result == SUCCESS:
-            # 4. Update Status to "PRINTED"
-            supabase.table('OrderItems').update({'status': 'PRINTED'}).eq('id', job['id'])
+            # 4. Mark the order as printed/processed
+            supabase.table('Order').update({
+                'status': 'READY',
+                'inventoryProcessed': True,
+                'printJobStatus': 'completed'
+            }).eq('id', job['id'])
     
     # Wait for 10 seconds before next poll
     sleep(10)
@@ -55,14 +67,15 @@ A simple Python script running as a background service.
   - Linux/Mac: `lp file.pdf`
 
 ## Step 3: Security & Auth
-- The Agent needs a **Service Role Key** or a dedicated **Admin User** token to query all jobs.
+- The Agent needs `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in its local environment. The service role key is server-side only and must never be exposed in the web app.
 - Secure the agent so it only processes jobs for the specific `ShopID` it is configured for.
 
 ## Detailed Flow
-1.  **Student** uploads `thesis.pdf` -> Saved to Supabase Storage. Order Status: `PENDING`.
-2.  **Local Agent** (running at shop) detects new row in `Order` table via Supabase Realtime subscription.
-3.  **Local Agent** downloads `thesis.pdf` to a temporary folder config options (e.g., `copies=2`, `duplex=true`).
-4.  **Local Agent** executes OS print command.
-5.  **Printer** starts printing.
-6.  **Local Agent** updates Order Status to `COMPLETED` on Supabase.
-7.  **Student** sees "Completed" on their screen instantly.
+1.  **Student** uploads `thesis.pdf` -> Saved to Supabase Storage. Unpaid order is created as `PENDING`.
+2.  **Payment succeeds** -> Order becomes `CONFIRMED` with `paymentStatus = PAID`.
+3.  **Local Agent** (running at shop) polls the `Order` table for unprocessed `CONFIRMED`/`PRINTING` rows.
+4.  **Local Agent** downloads `thesis.pdf` to a temporary folder and applies print options from `Order.items` (for example `copies=2`, `duplex=true`).
+5.  **Local Agent** executes OS print command.
+6.  **Printer** starts printing.
+7.  **Local Agent** marks `inventoryProcessed = true`, stores print job status, and can move the order to `READY`.
+8.  **Student** sees the updated status in the app.

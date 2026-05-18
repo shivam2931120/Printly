@@ -3,14 +3,27 @@ import { createClient } from '@supabase/supabase-js';
 import * as dotenv from 'dotenv';
 import path from 'path';
 
-// Load .env.local
+// Load local environment. .env.local wins when both files define a key.
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const allowedMimeTypes = [
+    'application/pdf',
+    'image/jpeg',
+    'image/jpg',
+    'image/png',
+    'image/gif',
+    'image/bmp',
+    'image/tiff',
+    'image/webp',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/msword',
+];
 
 if (!supabaseUrl || !supabaseServiceKey) {
-    console.error('Missing Supabase URL or Service Key in .env.local');
+    console.error('Missing Supabase URL or SUPABASE_SERVICE_ROLE_KEY in .env.local or .env');
     process.exit(1);
 }
 
@@ -21,13 +34,23 @@ async function createBucket() {
 
     const { data, error } = await supabase.storage.createBucket('prints', {
         public: true,
-        fileSizeLimit: 10485760, // 10MB
-        allowedMimeTypes: ['application/pdf']
+        fileSizeLimit: 50 * 1024 * 1024,
+        allowedMimeTypes
     });
 
     if (error) {
         if (error.message.includes('already exists')) {
             console.log('Bucket "prints" already exists.');
+            const { error: updateError } = await supabase.storage.updateBucket('prints', {
+                public: true,
+                fileSizeLimit: 50 * 1024 * 1024,
+                allowedMimeTypes
+            });
+            if (updateError) {
+                console.error('Error updating bucket:', updateError);
+                process.exit(1);
+            }
+            console.log('Bucket "prints" configuration updated.');
         } else {
             console.error('Error creating bucket:', error);
             process.exit(1);

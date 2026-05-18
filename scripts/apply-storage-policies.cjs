@@ -4,11 +4,12 @@ const fs = require('fs');
 const path = require('path');
 const dotenv = require('dotenv');
 
-// Load .env.local
+// Load local environment. .env.local wins when both files define a key.
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 if (!process.env.DATABASE_URL) {
-    console.error('Missing DATABASE_URL in .env.local');
+    console.error('Missing DATABASE_URL in .env.local or .env');
     process.exit(1);
 }
 

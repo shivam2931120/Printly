@@ -1,12 +1,13 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { processOrder } from "./processor";
 import { runAlertCheck } from "./alerts";
-import { config } from "./config";
+import { config, validateConfig } from "./config";
 
 let supabase: SupabaseClient;
 
 async function main() {
   console.log("[Agent] Starting Printly Local Inventory Agent...");
+  validateConfig();
 
   supabase = createClient(config.SUPABASE_URL, config.SUPABASE_SERVICE_KEY);
 
@@ -42,7 +43,7 @@ async function pollOrders(client: SupabaseClient) {
     .from("Order")
     .select("*")
     .in("status", config.TRIGGER_STATUSES)
-    .or("inventoryProcessed.is.null,printJobStatus.eq.failed")
+    .or("inventoryProcessed.is.null,inventoryProcessed.eq.false,printJobStatus.eq.failed")
     .lt("printJobAttempts", config.MAX_JOB_ATTEMPTS)
     .order("createdAt", { ascending: true })
     .limit(config.BATCH_SIZE);

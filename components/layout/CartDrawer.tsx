@@ -232,8 +232,9 @@ export const CartDrawer: React.FC = () => {
             return;
         }
 
+        const dbClient = await getAuthenticatedClient();
         let uploadError = false;
-        const totalFiles = cart.filter(i => i.type === 'print').length;
+        const totalFiles = cart.filter(i => i.type === 'print' && !(i as any).fileUrl).length;
         let filesUploaded = 0;
 
         const processedCart = await Promise.all(cart.map(async (item) => {
@@ -251,7 +252,7 @@ export const CartDrawer: React.FC = () => {
 
             try {
                 const compressedFile = await compressPdf((item as any).file);
-                const publicUrl = await uploadFile(compressedFile);
+                const publicUrl = await uploadFile(compressedFile, dbClient);
                 if (!publicUrl) {
                     uploadError = true;
                     return item;
@@ -295,7 +296,6 @@ export const CartDrawer: React.FC = () => {
             updatedAt: now
         };
 
-        const dbClient = await getAuthenticatedClient();
         const userRole = user.isAdmin ? 'ADMIN' : (user.isDeveloper ? 'DEVELOPER' : 'USER');
         const createResult = await createOrder(pendingOrder, userRole, dbClient);
 

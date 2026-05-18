@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { CartItem, Product, PrintOptions, PricingConfig } from '../types';
-import { calculatePrintPrice, calculateCartTotal } from '../lib/pricing';
+import { calculatePrintPrice } from '../lib/pricing';
 
 interface CartState {
     cart: CartItem[];

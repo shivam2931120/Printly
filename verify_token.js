@@ -1,30 +1,36 @@
-
 // Verification script for Token Generation Logic
 
-const mockOrderIds = [
-    'ORD-ABC123-17258392123',
-    'ORD-XYZ789-12345678900',
-    'ORD-TOKEN1-99999999999'
+const validTokens = [
+    '1234',
+    '9087',
+    '0000'
 ];
 
-console.log('--- Verifying Token Extraction Logic ---');
+const invalidTokens = [
+    '123',
+    '12345',
+    '12A4',
+    'ORD-ABC123-17258392123'
+];
 
-mockOrderIds.forEach(id => {
-    const extractedToken = id.split('-')[1] || id; // The fixed logic
-    console.log(`ID: ${id} -> Token: ${extractedToken}`);
+const isPickupToken = (token) => /^\d{4}$/.test(token);
 
-    if (extractedToken.length === 6) {
-        console.log('✅ Token length is correct (6 chars)');
-    } else {
-        console.log(`✅ Token extracted (Length: ${extractedToken.length})`);
-    }
+console.log('--- Verifying 4-digit pickup token format ---');
 
-    // Verify it's NOT the timestamp
-    const timestampPart = id.split('-')[2];
-    if (extractedToken !== timestampPart) {
-        console.log('✅ Correctly avoided timestamp');
-    } else {
-        console.error('❌ Error: Extracted timestamp instead of token!');
-    }
-    console.log('---');
-});
+const validResults = validTokens.every(isPickupToken);
+const invalidResults = invalidTokens.every((token) => !isPickupToken(token));
+
+for (const token of validTokens) {
+    console.log(`${token}: ${isPickupToken(token) ? 'valid' : 'invalid'}`);
+}
+
+for (const token of invalidTokens) {
+    console.log(`${token}: ${isPickupToken(token) ? 'valid' : 'invalid'}`);
+}
+
+if (!validResults || !invalidResults) {
+    console.error('Token format verification failed.');
+    process.exit(1);
+}
+
+console.log('Token format verification passed.');

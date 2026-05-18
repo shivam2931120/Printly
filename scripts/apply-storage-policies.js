@@ -3,18 +3,15 @@ import pg from 'pg';
 import fs from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
-import { fileURLToPath } from 'url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Load .env.local
+// Load local environment. .env.local wins when both files define a key.
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 const connectionString = process.env.DATABASE_URL;
 
 if (!connectionString) {
-    console.error('Missing DATABASE_URL in .env.local');
+    console.error('Missing DATABASE_URL in .env.local or .env');
     process.exit(1);
 }
 

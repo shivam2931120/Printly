@@ -3,6 +3,8 @@ import { Icon } from '../ui/Icon';
 import { Product, PRODUCT_CATEGORIES, ProductCategory } from '../../types';
 import { fetchProducts, createProduct, updateProduct, deleteProduct } from '../../services/data';
 import { useClerkSupabase } from '../../services/clerkSupabase';
+import { generateId } from '../../lib/utils';
+import { toast } from 'sonner';
 
 interface ProductFormData {
  name: string;
@@ -71,11 +73,11 @@ export const ProductManagement: React.FC = () => {
  setProducts(prev => prev.map(p => p.id === updatedProduct.id ? updatedProduct : p));
  setIsModalOpen(false);
  } else {
- alert('Failed to update product');
+ toast.error('Failed to update product');
  }
  } else {
  const newProduct: Product = {
- id: `P${Date.now()}`, // Simple ID generation
+ id: generateId(),
  ...formData,
  image: '📦',
  isActive: true,
@@ -85,20 +87,22 @@ export const ProductManagement: React.FC = () => {
  setProducts(prev => [...prev, newProduct]);
  setIsModalOpen(false);
  } else {
- alert('Failed to create product');
+ toast.error('Failed to create product');
  }
  }
  };
 
- const handleDeleteProduct = async (productId: string) => {
- if (!confirm('Are you sure you want to delete this product?')) return;
+ const handleDeleteProduct = async (productId: string, skipConfirm = false) => {
+ if (!skipConfirm && !confirm('Are you sure you want to delete this product?')) return false;
 
  const dbClient = await getAuthenticatedClient();
  const { success } = await deleteProduct(productId, dbClient);
  if (success) {
  setProducts(prev => prev.filter(p => p.id !== productId));
+ return true;
  } else {
- alert('Failed to delete product');
+ toast.error('Failed to delete product');
+ return false;
  }
  };
 
@@ -115,7 +119,7 @@ export const ProductManagement: React.FC = () => {
  if (!success) {
  // Revert if failed
  setProducts(prev => prev.map(p => p.id === productId ? product : p));
- alert('Failed to update stock');
+ toast.error('Failed to update stock');
  }
  };
 
@@ -132,7 +136,7 @@ export const ProductManagement: React.FC = () => {
  if (!success) {
  // Revert if failed
  setProducts(prev => prev.map(p => p.id === productId ? product : p));
- alert('Failed to update status');
+ toast.error('Failed to update status');
  }
  };
 
@@ -151,13 +155,15 @@ export const ProductManagement: React.FC = () => {
  </div>
  <button
  onClick={async () => {
- const outOfStock = products.filter(p => p.stock === 0);
+ const outOfStock = products.filter(p => p.stock <= 0);
  if (outOfStock.length === 0) {
- alert('No out-of-stock products to delete.');
+ toast.info('No out-of-stock products to delete.');
  return;
  }
  if (confirm(`Delete ${outOfStock.length} out-of-stock products?`)) {
- outOfStock.forEach(p => handleDeleteProduct(p.id));
+ const results = await Promise.all(outOfStock.map(p => handleDeleteProduct(p.id, true)));
+ const deletedCount = results.filter(Boolean).length;
+ if (deletedCount > 0) toast.success(`Deleted ${deletedCount} out-of-stock product${deletedCount === 1 ? '' : 's'}.`);
  }
  }}
  className="inline-flex items-center justify-center h-10 px-4 bg-red-900/20 text-error text-sm font-bold hover:bg-red-900/30 transition-colors mr-2"

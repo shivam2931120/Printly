@@ -3,27 +3,26 @@ import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import path from 'path';
 
-// Load env
+// Load local environment. .env.local wins when both files define a key.
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-// Warning: Using anon key might not have delete permissions due to RLS.
-// Ideally should use service_role key if available for full wipe,
-// but let's try with what we have first, assuming the user's RLS policy allows deletion of own data.
-// If this fails, we ask user to do it manually or provide service key.
-// UPDATE: The request is to delete ALL "data", implying admin wipe.
-// Checking if we have a service role key in env... usually not in client env.
-// Let's look for service key.
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!supabaseUrl || (!supabaseKey && !serviceKey)) {
-    console.error("Missing Supabase credentials.");
+if (!supabaseUrl || !serviceKey) {
+    console.error("Missing Supabase URL or SUPABASE_SERVICE_ROLE_KEY.");
     process.exit(1);
 }
 
-const supabase = createClient(supabaseUrl, serviceKey || supabaseKey!);
+if (process.env.CONFIRM_RESET_DB !== 'YES') {
+    console.error("Refusing to wipe data. Set CONFIRM_RESET_DB=YES to run this script.");
+    process.exit(1);
+}
+
+const supabase = createClient(supabaseUrl, serviceKey, {
+    auth: { persistSession: false },
+});
 
 async function resetDb() {
     console.log("Starting DB Wipe...");

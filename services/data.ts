@@ -1050,7 +1050,7 @@ const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
  * Validate a file before upload:
  *  1. Extension + MIME type allowlist
  *  2. Size limit (50 MB)
- *  3. Magic bytes check (PDF, JPEG, PNG, GIF, BMP, TIFF, WEBP, DOCX)
+ *  3. Magic bytes check (PDF, JPEG, PNG, GIF, BMP, TIFF, WEBP, DOCX, DOC)
  */
 async function validateFile(file: File): Promise<{ valid: boolean; reason?: string }> {
     // 1. Type check
@@ -1078,6 +1078,8 @@ async function validateFile(file: File): Promise<{ valid: boolean; reason?: stri
         const isWebp = header[0] === 0x52 && header[1] === 0x49 && header[2] === 0x46 && header[3] === 0x46 && // RIFF
             header[8] === 0x57 && header[9] === 0x45 && header[10] === 0x42 && header[11] === 0x50; // WEBP
         const isZip = header[0] === 0x50 && header[1] === 0x4B && header[2] === 0x03 && header[3] === 0x04; // ZIP (DOCX)
+        const isOleCompound = header[0] === 0xD0 && header[1] === 0xCF && header[2] === 0x11 && header[3] === 0xE0 &&
+            header[4] === 0xA1 && header[5] === 0xB1 && header[6] === 0x1A && header[7] === 0xE1; // DOC
 
         if (file.type === 'application/pdf' && !isPdf) {
             return { valid: false, reason: 'File does not appear to be a valid PDF.' };
@@ -1100,9 +1102,11 @@ async function validateFile(file: File): Promise<{ valid: boolean; reason?: stri
         if (file.type === 'image/webp' && !isWebp) {
             return { valid: false, reason: 'File does not appear to be a valid WEBP.' };
         }
-        if ((file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-            file.type === 'application/msword') && !isZip) {
-            return { valid: false, reason: 'File does not appear to be a valid Word document.' };
+        if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' && !isZip) {
+            return { valid: false, reason: 'File does not appear to be a valid DOCX document.' };
+        }
+        if (file.type === 'application/msword' && !isOleCompound) {
+            return { valid: false, reason: 'File does not appear to be a valid DOC document.' };
         }
     } catch {
         // Ignore — magic byte check is best-effort
@@ -1111,7 +1115,7 @@ async function validateFile(file: File): Promise<{ valid: boolean; reason?: stri
     return { valid: true };
 }
 
-export const uploadFile = async (file: File): Promise<string | null> => {
+export const uploadFile = async (file: File, client: SupabaseClient = supabase): Promise<string | null> => {
     // Validate before uploading
     const validation = await validateFile(file);
     if (!validation.valid) {
@@ -1124,7 +1128,7 @@ export const uploadFile = async (file: File): Promise<string | null> => {
         const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
         const filePath = `${fileName}`;
 
-        const { error: uploadError } = await supabase.storage
+        const { error: uploadError } = await client.storage
             .from('prints')
             .upload(filePath, file);
 
@@ -1134,7 +1138,7 @@ export const uploadFile = async (file: File): Promise<string | null> => {
             return null;
         }
 
-        const { data } = supabase.storage
+        const { data } = client.storage
             .from('prints')
             .getPublicUrl(filePath);
 

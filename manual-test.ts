@@ -1,18 +1,28 @@
-
 import { createClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
 
-const SUPABASE_URL = 'https://jteydozmrscfvltwpxaw.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0ZXlkb3ptcnNjZnZsdHdweGF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1MTY5ODQsImV4cCI6MjA4NjA5Mjk4NH0.CLNsZ9v58LHBlX_yH08s7PeNwESBze-frnhP82RUQy4';
+dotenv.config({ path: '.env.local' });
+dotenv.config({ path: '.env' });
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('Missing Supabase URL or anon key. Set SUPABASE_URL/VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+    process.exit(1);
+}
+
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+const generatePickupToken = () => Math.floor(1000 + Math.random() * 9000).toString();
 
 async function main() {
-    console.log('Testing Supabase Connection with Anon Key...');
+    console.log('Testing Supabase connection with anon key...');
 
-    // Try fetching products
     const { data, error } = await supabase
         .from('Product')
-        .select('*')
+        .select('id,name,isActive')
         .limit(1);
 
     if (error) {
@@ -21,30 +31,71 @@ async function main() {
         console.log('Successfully fetched products:', data);
     }
 
-    // Try creating a dummy order (simulating guest checkout)
+    const { data: shop, error: shopError } = await supabase
+        .from('Shop')
+        .select('id,name')
+        .eq('isActive', true)
+        .limit(1)
+        .maybeSingle();
+
+    if (shopError) {
+        console.error('Error fetching active shop:', shopError);
+    } else {
+        console.log('Active shop:', shop || 'none');
+    }
+
+    if (!supabaseServiceKey) {
+        console.log('Skipping order write test because SUPABASE_SERVICE_ROLE_KEY is not set.');
+        return;
+    }
+
+    const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
+        auth: { persistSession: false },
+    });
+
     const orderId = `TEST-${Date.now()}`;
-    const { data: orderData, error: orderError } = await supabase
+    const { data: orderData, error: orderError } = await adminClient
+        .from('Order')
+        .delete()
+        .eq('id', orderId)
+        .select();
+
+    if (orderError) {
+        console.error('Pre-test cleanup failed:', orderError);
+        return;
+    }
+
+    if (orderData?.length) {
+        console.log('Removed stale test order:', orderData.length);
+    }
+
+    const { data: insertedOrder, error: insertError } = await adminClient
         .from('Order')
         .insert({
             id: orderId,
-            orderToken: `TEST-${Date.now()}`,
+            orderToken: generatePickupToken(),
             userEmail: 'test@example.com',
             userName: 'Test User',
+            items: [],
             totalAmount: 10,
             status: 'PENDING',
             paymentStatus: 'UNPAID',
-            shopId: 'default',
+            shopId: shop?.id || null,
             updatedAt: new Date().toISOString()
         })
         .select()
         .single();
 
-    if (orderError) {
-        console.error('Error creating order:', orderError);
+    if (insertError) {
+        console.error('Error creating order:', insertError);
     } else {
-        console.log('Successfully created order:', orderData);
-        // Clean up
-        await supabase.from('Order').delete().eq('id', orderId);
+        console.log('Successfully created order:', insertedOrder);
+        const { error: cleanupError } = await adminClient.from('Order').delete().eq('id', orderId);
+        if (cleanupError) {
+            console.error('Cleanup failed:', cleanupError);
+        } else {
+            console.log('Cleaned up test order.');
+        }
     }
 }
 
