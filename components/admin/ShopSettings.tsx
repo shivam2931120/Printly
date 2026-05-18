@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { Icon } from '../ui/Icon';
 import { ShopConfig, DEFAULT_SHOP_CONFIG } from '../../types';
 import { fetchShopConfig, saveShopConfig } from '../../services/data';
+import { useClerkSupabase } from '../../services/clerkSupabase';
 
 interface ShopSettingsProps {
  shopConfig?: ShopConfig;
@@ -10,6 +11,7 @@ interface ShopSettingsProps {
 }
 
 export const ShopSettings: React.FC<ShopSettingsProps> = ({ shopConfig, onUpdate }) => {
+ const { getAuthenticatedClient } = useClerkSupabase();
  const [config, setConfig] = useState<ShopConfig>(shopConfig ?? DEFAULT_SHOP_CONFIG);
  const [isEditing, setIsEditing] = useState(false);
  const [isSaving, setIsSaving] = useState(false);
@@ -28,7 +30,8 @@ export const ShopSettings: React.FC<ShopSettingsProps> = ({ shopConfig, onUpdate
 
  const handleSave = async () => {
  setIsSaving(true);
- const result = await saveShopConfig(config);
+ const dbClient = await getAuthenticatedClient();
+ const result = await saveShopConfig(config, dbClient);
  setIsSaving(false);
  if (result.success) {
  toast.success('Shop settings saved!');
@@ -165,7 +168,7 @@ const EditableSettingRow: React.FC<{
  placeholder?: string;
  multiline?: boolean;
 }> = ({ icon, title, value, isEditing, onChange, placeholder, multiline }) => (
- <div className="flex items-start gap-4 p-3 hover:bg-background-card /50 transition-colors">
+ <div className="flex items-start gap-4 p-3 hover:bg-background-card/50 transition-colors">
  <div className="p-2 bg-background-subtle shrink-0 mt-0.5">
  <Icon name={icon} className="text-foreground-muted " />
  </div>

@@ -19,7 +19,7 @@ export const ProfilePage: React.FC = () => {
  return (
  <div className="max-w-2xl mx-auto space-y-8 animate-fade-in pb-32 pt-10 px-6">
  <div className="bg-background-card border border-border rounded-2xl shadow-2xl p-8 flex flex-col items-center text-center space-y-6">
- <div className="size-20 bg-yellow-900/200/10 flex items-center justify-center text-yellow-500 border border-yellow-500/20">
+ <div className="size-20 bg-yellow-900/20 flex items-center justify-center text-yellow-500 border border-yellow-500/20">
  <AlertTriangle size={32} />
  </div>
  <div>
@@ -71,7 +71,7 @@ export const ProfilePage: React.FC = () => {
  </div>
  <div className="flex flex-col items-end gap-1">
  <span className="font-bold text-foreground">₹{order.totalAmount.toFixed(2)}</span>
- <span className="px-2 py-0.5 bg-green-900/20/10 text-green-500 text-[10px] font-bold uppercase border border-green-500/20">
+ <span className="px-2 py-0.5 bg-green-900/20 text-green-500 text-[10px] font-bold uppercase border border-green-500/20">
  {order.status}
  </span>
  </div>
@@ -113,7 +113,7 @@ export const ProfilePage: React.FC = () => {
  <span className="px-4 py-1.5 bg-primary text-foreground text-[10px] font-black uppercase tracking-[0.15em]">Administrator</span>
  )}
  {user.isDeveloper && (
- <span className="px-4 py-1.5 bg-background-subtle0 text-foreground text-[10px] font-black uppercase tracking-[0.15em]">Developer</span>
+ <span className="px-4 py-1.5 bg-background-subtle text-foreground text-[10px] font-black uppercase tracking-[0.15em]">Developer</span>
  )}
  {!user.isAdmin && !user.isDeveloper && (
  <span className="px-4 py-1.5 bg-background-subtle border border-border rounded-2xl shadow-2xl text-foreground/60 text-[10px] font-black uppercase tracking-[0.15em]">Member</span>
@@ -125,7 +125,7 @@ export const ProfilePage: React.FC = () => {
  {(user.isDeveloper || user.isAdmin) && (
  <button
  onClick={() => navigate(user.isDeveloper ? '/developer' : '/admin')}
- className="w-full flex items-center justify-between p-5 bg-background-subtle0/10 border border-primary/20 hover:bg-background-subtle0/15 transition-all group"
+ className="w-full flex items-center justify-between p-5 bg-background-subtle/10 border border-primary/20 hover:bg-background-subtle/15 transition-all group"
  >
  <div className="flex items-center gap-4">
  <div className="size-12 bg-background-subtle flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
@@ -207,7 +207,7 @@ export const ProfilePage: React.FC = () => {
  </div>
  <div className="flex flex-col items-end gap-1">
  <span className="font-bold text-foreground">₹{order.totalAmount.toFixed(2)}</span>
- <span className="px-2 py-0.5 bg-green-900/20/10 text-green-500 text-[10px] font-bold uppercase border border-green-500/20">
+ <span className="px-2 py-0.5 bg-green-900/20 text-green-500 text-[10px] font-bold uppercase border border-green-500/20">
  {order.status}
  </span>
  </div>
@@ -223,10 +223,10 @@ export const ProfilePage: React.FC = () => {
  <div className="bg-background-card border border-border rounded-2xl shadow-2xl overflow-hidden">
  <button
  onClick={handleSignOut}
- className="w-full flex items-center justify-between p-6 text-error hover:bg-red-900/20/5 transition-colors group"
+ className="w-full flex items-center justify-between p-6 text-error hover:bg-red-900/20 transition-colors group"
  >
  <div className="flex items-center gap-4">
- <div className="size-10 bg-red-900/20/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+ <div className="size-10 bg-red-900/20 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
  <LogOut size={20} />
  </div>
  <span className="font-black text-sm uppercase tracking-widest">Sign Out</span>

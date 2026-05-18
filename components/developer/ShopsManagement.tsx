@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '../ui/Icon';
-import { supabase } from '../../services/data';
+import { useClerkSupabase } from '../../services/clerkSupabase';
 
 interface Shop {
  id: string;
@@ -16,6 +16,7 @@ interface Shop {
 }
 
 export const ShopsManagement: React.FC<{ onSelectShop?: (shopId: string) => void; onManageShop?: (shopId: string) => void }> = ({ onSelectShop, onManageShop }) => {
+ const { getAuthenticatedClient } = useClerkSupabase();
  const [shops, setShops] = useState<Shop[]>([]);
  const [loading, setLoading] = useState(true);
  const [isAddingShop, setIsAddingShop] = useState(false);
@@ -24,7 +25,8 @@ export const ShopsManagement: React.FC<{ onSelectShop?: (shopId: string) => void
  const loadShops = async () => {
  setLoading(true);
  try {
- const { data: shopRows, error } = await supabase
+ const dbClient = await getAuthenticatedClient();
+ const { data: shopRows, error } = await dbClient
  .from('Shop')
  .select('*')
  .order('createdAt', { ascending: false });
@@ -36,7 +38,7 @@ export const ShopsManagement: React.FC<{ onSelectShop?: (shopId: string) => void
  }
 
  // Get order counts / revenue per shop
- const { data: orderStats } = await supabase
+ const { data: orderStats } = await dbClient
  .from('Order')
  .select('shopId, totalAmount');
 
@@ -74,7 +76,8 @@ export const ShopsManagement: React.FC<{ onSelectShop?: (shopId: string) => void
  const addShop = async () => {
  if (!newShopName.trim()) return;
  try {
- const { error } = await supabase.from('Shop').insert({
+ const dbClient = await getAuthenticatedClient();
+ const { error } = await dbClient.from('Shop').insert({
  shopName: newShopName.trim(),
  tagline: 'Print Shop',
  isActive: true,
@@ -93,7 +96,8 @@ export const ShopsManagement: React.FC<{ onSelectShop?: (shopId: string) => void
 
  const toggleShopStatus = async (shopId: string, currentlyActive: boolean) => {
  try {
- const { error } = await supabase
+ const dbClient = await getAuthenticatedClient();
+ const { error } = await dbClient
  .from('Shop')
  .update({ isActive: !currentlyActive })
  .eq('id', shopId);
@@ -137,9 +141,9 @@ export const ShopsManagement: React.FC<{ onSelectShop?: (shopId: string) => void
 
  {/* Stats Overview */}
  <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
- <div className="bg-background-card border border-border rounded-2xl shadow-2xl/[0.06] p-5 transition-colors duration-200">
+ <div className="bg-background-card border border-border rounded-2xl shadow-2xl p-5 transition-colors duration-200">
  <div className="flex items-center gap-3">
- <div className="p-2.5 bg-background-subtle0/10">
+ <div className="p-2.5 bg-background-subtle/10">
  <Icon name="store" className="text-xl text-primary" />
  </div>
  <div>
@@ -148,9 +152,9 @@ export const ShopsManagement: React.FC<{ onSelectShop?: (shopId: string) => void
  </div>
  </div>
  </div>
- <div className="bg-background-card border border-border rounded-2xl shadow-2xl/[0.06] p-5 transition-colors duration-200">
+ <div className="bg-background-card border border-border rounded-2xl shadow-2xl p-5 transition-colors duration-200">
  <div className="flex items-center gap-3">
- <div className="p-2.5 bg-green-900/20/10">
+ <div className="p-2.5 bg-green-900/20">
  <Icon name="check_circle" className="text-xl text-green-400" />
  </div>
  <div>
@@ -159,7 +163,7 @@ export const ShopsManagement: React.FC<{ onSelectShop?: (shopId: string) => void
  </div>
  </div>
  </div>
- <div className="bg-background-card border border-border rounded-2xl shadow-2xl/[0.06] p-5 transition-colors duration-200">
+ <div className="bg-background-card border border-border rounded-2xl shadow-2xl p-5 transition-colors duration-200">
  <div className="flex items-center gap-3">
  <div className="p-2.5 bg-primary/10">
  <Icon name="receipt_long" className="text-xl text-primary" />
@@ -170,9 +174,9 @@ export const ShopsManagement: React.FC<{ onSelectShop?: (shopId: string) => void
  </div>
  </div>
  </div>
- <div className="bg-background-card border border-border rounded-2xl shadow-2xl/[0.06] p-5 transition-colors duration-200">
+ <div className="bg-background-card border border-border rounded-2xl shadow-2xl p-5 transition-colors duration-200">
  <div className="flex items-center gap-3">
- <div className="p-2.5 bg-amber-900/200/10">
+ <div className="p-2.5 bg-amber-900/20">
  <Icon name="payments" className="text-xl text-amber-400" />
  </div>
  <div>
@@ -197,7 +201,7 @@ export const ShopsManagement: React.FC<{ onSelectShop?: (shopId: string) => void
  />
  <button
  onClick={addShop}
- className="px-4 py-2 bg-green-900/20/90 text-foreground font-semibold hover:bg-green-400 transition-colors"
+ className="px-4 py-2 bg-green-900/20 text-foreground font-semibold hover:bg-green-400 transition-colors"
  >
  Create
  </button>
@@ -217,7 +221,7 @@ export const ShopsManagement: React.FC<{ onSelectShop?: (shopId: string) => void
  <div className="size-8 border-2 border-border border-t-white animate-spin" />
  </div>
  ) : (
- <div className="bg-background-card border border-border rounded-2xl shadow-2xl/[0.06] overflow-hidden">
+ <div className="bg-background-card border border-border rounded-2xl shadow-2xl overflow-hidden">
  <table className="w-full">
  <thead>
  <tr className="bg-surface-darker/50 border-b border-border-dark">
@@ -249,7 +253,7 @@ export const ShopsManagement: React.FC<{ onSelectShop?: (shopId: string) => void
  <td className="py-4 px-4">
  <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium ${shop.isActive
  ? 'bg-success/10 text-success'
- : 'bg-red-900/20/10 text-primary'
+ : 'bg-red-900/20 text-primary'
  }`}>
  {shop.isActive ? 'Active' : 'Suspended'}
  </span>

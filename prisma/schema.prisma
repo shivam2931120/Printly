@@ -41,6 +41,9 @@ model Shop {
   email          String   @default("")
   logo           String?
   primaryColor   String?
+  pricingConfig  Json?
+  shopConfig     Json?
+  servicesConfig Json?
   isActive       Boolean  @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -139,4 +142,16 @@ model StockLog {
 
   inventoryId String
   inventory   Inventory @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+}
+
+// ===== AUDIT LOG =====
+model AuditLog {
+  id        String   @id @default(cuid())
+  tableName String
+  recordId  String
+  action    String
+  oldData   Json?
+  newData   Json?
+  changedBy String?
+  createdAt DateTime @default(now())
 }

@@ -153,7 +153,7 @@ export const StorePage: React.FC = () => {
 
       {/* Sidebar Filters */}
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 bg-background-card border rounded-2xl shadow-xl-r border-border transform transition-transform duration-300 lg:translate-x-0 lg:static lg:h-[calc(100vh-100px)] lg:w-64 lg:bg-transparent lg:border-none lg:z-0 lg:sticky lg:top-24",
+        "fixed inset-y-0 left-0 z-50 w-64 bg-background-card border rounded-2xl shadow-xl border-border transform transition-transform duration-300 lg:translate-x-0 lg:static lg:h-[calc(100vh-100px)] lg:w-64 lg:bg-transparent lg:border-none lg:z-0 lg:sticky lg:top-24",
         isMobileFilterOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="h-full flex flex-col p-6 lg:p-0 pt-20 lg:pt-0">
@@ -264,7 +264,7 @@ export const StorePage: React.FC = () => {
             {filteredProducts.map(product => (
               <motion.div key={product.id} variants={itemVariants}>
                 <SpotlightCard
-                  className="group flex flex-col bg-[#0C0C0C] border border-border overflow-hidden hover:border-border transition-all duration-500 hover:-translate-y-2 -[0_20px_40px_rgba(0,0,0,0.6)]"
+                  className="group flex flex-col bg-[#0C0C0C] border border-border overflow-hidden hover:border-border transition-all duration-500 hover:-translate-y-2 shadow-[0_20px_40px_rgba(0,0,0,0.6)]"
                 >
                   {/* Image Area */}
                   <div className="aspect-[4/3] bg-background-card relative overflow-hidden">

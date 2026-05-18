@@ -74,7 +74,7 @@ export const UploadCard: React.FC<UploadCardProps> = ({
  whileHover={{ scale: 1.05 }}
  whileTap={{ scale: 0.95 }}
  onClick={onPreview}
- className="flex items-center gap-2 px-4 py-2 bg-background-subtle border border-border rounded-2xl shadow-2xl/[0.06] text-sm font-medium text-gray-400 hover:text-foreground hover:border-border transition-all"
+ className="flex items-center gap-2 px-4 py-2 bg-background-subtle border border-border rounded-2xl shadow-2xl text-sm font-medium text-gray-400 hover:text-foreground hover:border-border transition-all"
  >
  <Eye size={16} />
  Preview
@@ -112,7 +112,7 @@ export const UploadCard: React.FC<UploadCardProps> = ({
  <motion.div
  animate={isDragActive ? { scale: 1.15, rotate: 5 } : { scale: 1, rotate: 0 }}
  transition={{ type: 'spring', stiffness: 300, damping: 20 }}
- className="size-14 bg-background-subtle border border-border rounded-2xl shadow-2xl/[0.06] flex items-center justify-center mb-4"
+ className="size-14 bg-background-subtle border border-border rounded-2xl shadow-2xl flex items-center justify-center mb-4"
  >
  <UploadCloud size={28} className={cn('transition-colors', isDragActive ? 'text-foreground' : 'text-foreground-muted')} />
  </motion.div>

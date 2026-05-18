@@ -1,22 +1,25 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Icon } from '../ui/Icon';
 import { getDbUsage, DbUsage } from '../../services/data';
+import { useClerkSupabase } from '../../services/clerkSupabase';
 
 export const StoragePanel: React.FC = () => {
+  const { getAuthenticatedClient } = useClerkSupabase();
   const [usage, setUsage] = useState<DbUsage | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadUsage = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await getDbUsage();
+      const dbClient = await getAuthenticatedClient();
+      const data = await getDbUsage(dbClient);
       setUsage(data);
     } catch {
       /* silent */
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [getAuthenticatedClient]);
 
   useEffect(() => {
     loadUsage();
@@ -25,8 +28,8 @@ export const StoragePanel: React.FC = () => {
   const usagePercent = usage?.percent_used ?? 0;
   const barColor =
     usagePercent >= 90 ? 'bg-red-900/20' :
-      usagePercent >= 70 ? 'bg-amber-900/200' :
-        'bg-emerald-900/200';
+      usagePercent >= 70 ? 'bg-amber-900/20' :
+        'bg-emerald-900/20';
 
   const statusColor =
     usagePercent >= 90 ? 'text-primary ' :

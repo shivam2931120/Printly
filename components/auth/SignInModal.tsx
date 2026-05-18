@@ -81,7 +81,7 @@ export const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose }) => 
  <h2 className="text-2xl font-black text-foreground tracking-tight mb-2">Check Your Email</h2>
  <p className="text-foreground-muted text-xs mb-6">Code sent to <span className="text-foreground font-bold">{email}</span></p>
  <form onSubmit={handleVerifyCode} className="space-y-6">
- {error && <div className="p-3 bg-red-900/20/10 border border-error/20 text-error text-xs font-bold text-center">{error}</div>}
+ {error && <div className="p-3 bg-red-900/20 border border-error/20 text-error text-xs font-bold text-center">{error}</div>}
  <input type="text" value={code} onChange={(e) => setCode(e.target.value)} className="w-full px-4 py-4 bg-background-subtle border border-border rounded-2xl shadow-2xl focus:border-primary outline-none transition-all text-foreground placeholder-[#333] text-center text-2xl font-bold tracking-widest" placeholder="000000" maxLength={6} autoFocus required />
  <button type="submit" disabled={isLoading || !isLoaded} className="w-full py-3.5 bg-primary text-foreground hover:bg-primary-hover font-black text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-2">
  {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <span className="flex items-center justify-center gap-2">VERIFY & SIGN IN <ArrowRight className="w-4 h-4" /></span>}
@@ -103,7 +103,7 @@ export const SignInModal: React.FC<SignInModalProps> = ({ isOpen, onClose }) => 
  <p className="text-foreground-muted text-xs">Welcome back to Printly</p>
  </div>
  <form onSubmit={handleSubmit} className="space-y-6">
- {error && <div className="p-3 bg-red-900/20/10 border border-error/20 text-error text-xs font-bold text-center">{error}</div>}
+ {error && <div className="p-3 bg-red-900/20 border border-error/20 text-error text-xs font-bold text-center">{error}</div>}
  <div className="space-y-2">
  <label className="text-[10px] font-black text-foreground-muted uppercase tracking-[0.15em] ml-1">Email</label>
  <div className="relative">

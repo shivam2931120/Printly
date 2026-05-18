@@ -4,7 +4,7 @@ import { FileText, X, CheckCircle2 } from 'lucide-react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { cn } from '../../lib/utils';
 
-pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 
 interface FilePreviewProps {
  file: File;
@@ -23,7 +23,7 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, pageCount, onRem
  animate={{ opacity: 1, y: 0 }}
  exit={{ opacity: 0, x: -20 }}
  transition={{ duration: 0.25, delay: index * 0.05 }}
- className="group flex items-center gap-4 p-4 bg-background-card border border-border rounded-2xl shadow-2xl/[0.06] hover:bg-background-subtle transition-all duration-200"
+ className="group flex items-center gap-4 p-4 bg-background-card border border-border rounded-2xl shadow-2xl hover:bg-background-subtle transition-all duration-200"
  >
  {/* Thumbnail */}
  <div className="size-14 bg-background-subtle flex items-center justify-center shrink-0 overflow-hidden border border-border">
@@ -74,7 +74,7 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, pageCount, onRem
  {/* Remove */}
  <button
  onClick={(e) => { e.stopPropagation(); onRemove(); }}
- className="p-1.5 text-foreground-muted hover:text-error hover:bg-red-900/20/10 transition-all opacity-0 group-hover:opacity-100"
+ className="p-1.5 text-foreground-muted hover:text-error hover:bg-red-900/20 transition-all opacity-0 group-hover:opacity-100"
  aria-label="Remove file"
  >
  <X size={16} />

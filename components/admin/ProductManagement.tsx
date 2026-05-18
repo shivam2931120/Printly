@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Icon } from '../ui/Icon';
 import { Product, PRODUCT_CATEGORIES, ProductCategory } from '../../types';
 import { fetchProducts, createProduct, updateProduct, deleteProduct } from '../../services/data';
+import { useClerkSupabase } from '../../services/clerkSupabase';
 
 interface ProductFormData {
  name: string;
@@ -12,6 +13,7 @@ interface ProductFormData {
 }
 
 export const ProductManagement: React.FC = () => {
+ const { getAuthenticatedClient } = useClerkSupabase();
  const [products, setProducts] = useState<Product[]>([]);
  const [selectedCategory, setSelectedCategory] = useState<ProductCategory | 'all'>('all');
  const [searchQuery, setSearchQuery] = useState('');
@@ -26,14 +28,15 @@ export const ProductManagement: React.FC = () => {
  });
 
  // Load products on mount
+ const loadProducts = async () => {
+ const dbClient = await getAuthenticatedClient();
+ const data = await fetchProducts(dbClient, true);
+ setProducts(data);
+ };
+
  useEffect(() => {
  loadProducts();
  }, []);
-
- const loadProducts = async () => {
- const data = await fetchProducts();
- setProducts(data);
- };
 
  const filteredProducts = products.filter(product => {
  const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
@@ -60,9 +63,10 @@ export const ProductManagement: React.FC = () => {
  };
 
  const handleSaveProduct = async () => {
+ const dbClient = await getAuthenticatedClient();
  if (editingProduct) {
  const updatedProduct = { ...editingProduct, ...formData };
- const { success } = await updateProduct(updatedProduct);
+ const { success } = await updateProduct(updatedProduct, dbClient);
  if (success) {
  setProducts(prev => prev.map(p => p.id === updatedProduct.id ? updatedProduct : p));
  setIsModalOpen(false);
@@ -76,7 +80,7 @@ export const ProductManagement: React.FC = () => {
  image: '📦',
  isActive: true,
  };
- const { success } = await createProduct(newProduct);
+ const { success } = await createProduct(newProduct, dbClient);
  if (success) {
  setProducts(prev => [...prev, newProduct]);
  setIsModalOpen(false);
@@ -89,7 +93,8 @@ export const ProductManagement: React.FC = () => {
  const handleDeleteProduct = async (productId: string) => {
  if (!confirm('Are you sure you want to delete this product?')) return;
 
- const { success } = await deleteProduct(productId);
+ const dbClient = await getAuthenticatedClient();
+ const { success } = await deleteProduct(productId, dbClient);
  if (success) {
  setProducts(prev => prev.filter(p => p.id !== productId));
  } else {
@@ -105,7 +110,8 @@ export const ProductManagement: React.FC = () => {
  // Optimistic update
  setProducts(prev => prev.map(p => p.id === productId ? updatedProduct : p));
 
- const { success } = await updateProduct(updatedProduct);
+ const dbClient = await getAuthenticatedClient();
+ const { success } = await updateProduct(updatedProduct, dbClient);
  if (!success) {
  // Revert if failed
  setProducts(prev => prev.map(p => p.id === productId ? product : p));
@@ -121,7 +127,8 @@ export const ProductManagement: React.FC = () => {
  // Optimistic update
  setProducts(prev => prev.map(p => p.id === productId ? updatedProduct : p));
 
- const { success } = await updateProduct(updatedProduct);
+ const dbClient = await getAuthenticatedClient();
+ const { success } = await updateProduct(updatedProduct, dbClient);
  if (!success) {
  // Revert if failed
  setProducts(prev => prev.map(p => p.id === productId ? product : p));

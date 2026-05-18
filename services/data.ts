@@ -1,4 +1,4 @@
-import { supabase, supabaseAdmin } from './supabase';
+import { supabase } from './supabase';
 export { supabase };
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { Product, Order, CartItem, OrderStatus, PaymentStatus, PrintOptions, PricingConfig, DEFAULT_PRICING, ShopConfig, DEFAULT_SHOP_CONFIG, Service, DEFAULT_SERVICES } from '../types';
@@ -60,12 +60,20 @@ const isOrderTokenConflict = (error: any) => {
 };
 
 // ===== PRODUCTS =====
-export const fetchProducts = async (): Promise<Product[]> => {
-    const { data, error } = await supabase
+export const fetchProducts = async (
+    client: SupabaseClient = supabase,
+    includeInactive = false
+): Promise<Product[]> => {
+    let query = client
         .from('Product')
         .select('*')
-        .eq('isActive', true)
         .order('name');
+
+    if (!includeInactive) {
+        query = query.eq('isActive', true);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
         console.error('Error fetching products:', error);
@@ -74,8 +82,11 @@ export const fetchProducts = async (): Promise<Product[]> => {
     return data as Product[];
 };
 
-export const createProduct = async (product: Product): Promise<{ success: boolean; error?: any }> => {
-    const { error } = await supabase
+export const createProduct = async (
+    product: Product,
+    client: SupabaseClient = supabase
+): Promise<{ success: boolean; error?: any }> => {
+    const { error } = await client
         .from('Product')
         .insert({
             id: product.id,
@@ -95,8 +106,11 @@ export const createProduct = async (product: Product): Promise<{ success: boolea
     return { success: true };
 };
 
-export const updateProduct = async (product: Product): Promise<{ success: boolean; error?: any }> => {
-    const { error } = await supabase
+export const updateProduct = async (
+    product: Product,
+    client: SupabaseClient = supabase
+): Promise<{ success: boolean; error?: any }> => {
+    const { error } = await client
         .from('Product')
         .update({
             name: product.name,
@@ -116,8 +130,11 @@ export const updateProduct = async (product: Product): Promise<{ success: boolea
     return { success: true };
 };
 
-export const deleteProduct = async (productId: string): Promise<{ success: boolean; error?: any }> => {
-    const { error } = await supabase
+export const deleteProduct = async (
+    productId: string,
+    client: SupabaseClient = supabase
+): Promise<{ success: boolean; error?: any }> => {
+    const { error } = await client
         .from('Product')
         .delete()
         .eq('id', productId);
@@ -463,7 +480,7 @@ export const fetchOrders = async (
 
 export const fetchAdminOrders = async (
     _adminId?: string,
-    client: SupabaseClient = supabaseAdmin
+    client: SupabaseClient = supabase
 ): Promise<Order[]> => {
     const { data, error } = await client
         .from('Order')
@@ -479,8 +496,10 @@ export const fetchAdminOrders = async (
     return mapOrderData(data);
 };
 
-export const fetchAllOrdersForAnalytics = async (): Promise<Order[]> => {
-    const { data, error } = await supabaseAdmin
+export const fetchAllOrdersForAnalytics = async (
+    client: SupabaseClient = supabase
+): Promise<Order[]> => {
+    const { data, error } = await client
         .from('Order')
         .select('*, user:User(name, email, avatar)')
         .order('createdAt', { ascending: false });
@@ -585,8 +604,10 @@ const isTableAccessError = (err: { code?: string; message?: string; status?: num
         err.message?.includes('permission denied') ||
         err.message?.includes('does not exist');
 
-export const fetchInventory = async (): Promise<InventoryRow[]> => {
-    const { data, error } = await supabase
+export const fetchInventory = async (
+    client: SupabaseClient = supabase
+): Promise<InventoryRow[]> => {
+    const { data, error } = await client
         .from('Inventory')
         .select('*')
         .order('name');
@@ -604,8 +625,8 @@ export const addInventoryItem = async (item: {
     stock: number;
     unit: string;
     threshold: number;
-}): Promise<{ success: boolean; data?: InventoryRow; error?: any }> => {
-    const { data, error } = await supabase
+}, client: SupabaseClient = supabase): Promise<{ success: boolean; data?: InventoryRow; error?: any }> => {
+    const { data, error } = await client
         .from('Inventory')
         .insert({
             name: item.name,
@@ -628,10 +649,11 @@ export const updateInventoryStock = async (
     inventoryId: string,
     amount: number,
     note: string = '',
-    createdBy: string = ''
+    createdBy: string = '',
+    client: SupabaseClient = supabase
 ): Promise<{ success: boolean; error?: any }> => {
     // 1. Get current stock
-    const { data: item, error: fetchErr } = await supabase
+    const { data: item, error: fetchErr } = await client
         .from('Inventory')
         .select('stock')
         .eq('id', inventoryId)
@@ -644,7 +666,7 @@ export const updateInventoryStock = async (
     const newStock = Math.max(0, item.stock + amount);
 
     // 2. Update stock
-    const { error: updateErr } = await supabase
+    const { error: updateErr } = await client
         .from('Inventory')
         .update({ stock: newStock, updatedAt: new Date().toISOString() })
         .eq('id', inventoryId);
@@ -655,7 +677,7 @@ export const updateInventoryStock = async (
     }
 
     // 3. Log the change
-    const { error: logErr } = await supabase
+    const { error: logErr } = await client
         .from('StockLog')
         .insert({
             inventoryId,
@@ -672,8 +694,11 @@ export const updateInventoryStock = async (
     return { success: true };
 };
 
-export const deleteInventoryItem = async (inventoryId: string): Promise<{ success: boolean; error?: any }> => {
-    const { error } = await supabase
+export const deleteInventoryItem = async (
+    inventoryId: string,
+    client: SupabaseClient = supabase
+): Promise<{ success: boolean; error?: any }> => {
+    const { error } = await client
         .from('Inventory')
         .delete()
         .eq('id', inventoryId);
@@ -685,8 +710,11 @@ export const deleteInventoryItem = async (inventoryId: string): Promise<{ succes
     return { success: true };
 };
 
-export const fetchStockHistory = async (inventoryId: string): Promise<StockLogRow[]> => {
-    const { data, error } = await supabase
+export const fetchStockHistory = async (
+    inventoryId: string,
+    client: SupabaseClient = supabase
+): Promise<StockLogRow[]> => {
+    const { data, error } = await client
         .from('StockLog')
         .select('*')
         .eq('inventoryId', inventoryId)
@@ -706,24 +734,28 @@ export const fetchStockHistory = async (inventoryId: string): Promise<StockLogRo
 
 /** Load pricing from the active Shop row, fall back to localStorage then DEFAULT_PRICING */
 export const fetchPricing = async (): Promise<PricingConfig> => {
-    /* 
     try {
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await supabase
             .from('Shop')
             .select('pricingConfig')
             .eq('isActive', true)
+            .order('createdAt', { ascending: true })
             .limit(1)
             .maybeSingle();
 
         if (!error && data?.pricingConfig) {
-            return data.pricingConfig as PricingConfig;
+            const pricing = { ...DEFAULT_PRICING, ...(data.pricingConfig as Partial<PricingConfig>) };
+            try {
+                localStorage.setItem('printly_pricing', JSON.stringify(pricing));
+                localStorage.setItem('printwise_pricing', JSON.stringify(pricing));
+            } catch { /* ignore */ }
+            return pricing;
         }
     } catch {  }
-    */
 
     // fallback: localStorage cache (same device)
     try {
-        const cached = localStorage.getItem('printwise_pricing');
+        const cached = localStorage.getItem('printly_pricing') || localStorage.getItem('printwise_pricing');
         if (cached) return { ...DEFAULT_PRICING, ...JSON.parse(cached) };
     } catch { /* ignore */ }
 
@@ -731,12 +763,16 @@ export const fetchPricing = async (): Promise<PricingConfig> => {
 };
 
 /** Persist pricing to the active Shop row and also cache in localStorage */
-export const savePricing = async (pricing: PricingConfig): Promise<{ success: boolean; error?: any }> => {
+export const savePricing = async (
+    pricing: PricingConfig,
+    client: SupabaseClient = supabase
+): Promise<{ success: boolean; error?: any }> => {
     // Always cache locally so same-device is instant
+    localStorage.setItem('printly_pricing', JSON.stringify(pricing));
     localStorage.setItem('printwise_pricing', JSON.stringify(pricing));
 
     // Persist to Supabase so all users see the change
-    const { error } = await supabaseAdmin
+    const { error } = await client
         .from('Shop')
         .update({ pricingConfig: pricing, updatedAt: new Date().toISOString() })
         .eq('isActive', true);
@@ -752,24 +788,45 @@ export const savePricing = async (pricing: PricingConfig): Promise<{ success: bo
 
 /** Load shop config from the active Shop row, fall back to localStorage then DEFAULT_SHOP_CONFIG */
 export const fetchShopConfig = async (): Promise<ShopConfig> => {
-    /*
     try {
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await supabase
             .from('Shop')
-            .select('shopConfig')
+            .select('*')
             .eq('isActive', true)
+            .order('createdAt', { ascending: true })
             .limit(1)
             .maybeSingle();
 
-        if (!error && data?.shopConfig) {
-            return { ...DEFAULT_SHOP_CONFIG, ...(data.shopConfig as ShopConfig) };
+        if (!error && data) {
+            const embedded = data.shopConfig && typeof data.shopConfig === 'object' ? data.shopConfig : {};
+            const config = {
+                ...DEFAULT_SHOP_CONFIG,
+                ...embedded,
+                shopId: data.id || embedded.shopId || DEFAULT_SHOP_CONFIG.shopId,
+                shopName: embedded.shopName || data.shopName || DEFAULT_SHOP_CONFIG.shopName,
+                tagline: embedded.tagline || data.tagline || DEFAULT_SHOP_CONFIG.tagline,
+                operatingHours: embedded.operatingHours || data.operatingHours || DEFAULT_SHOP_CONFIG.operatingHours,
+                location: embedded.location || data.location || DEFAULT_SHOP_CONFIG.location,
+                contact: embedded.contact || data.contact || DEFAULT_SHOP_CONFIG.contact,
+                email: embedded.email || data.email || DEFAULT_SHOP_CONFIG.email,
+                logo: embedded.logo || data.logo || DEFAULT_SHOP_CONFIG.logo,
+                primaryColor: embedded.primaryColor || data.primaryColor || DEFAULT_SHOP_CONFIG.primaryColor,
+                directionsUrl: embedded.directionsUrl || DEFAULT_SHOP_CONFIG.directionsUrl,
+                mapEmbed: embedded.mapEmbed || DEFAULT_SHOP_CONFIG.mapEmbed,
+                isActive: data.isActive ?? embedded.isActive ?? true,
+                createdAt: data.createdAt || embedded.createdAt || DEFAULT_SHOP_CONFIG.createdAt,
+            } as ShopConfig;
+            try {
+                localStorage.setItem('printly_shop_config', JSON.stringify(config));
+                localStorage.setItem('printwise_shop_config', JSON.stringify(config));
+            } catch { /* ignore */ }
+            return config;
         }
     } catch {  }
-    */
 
     // fallback: localStorage cache
     try {
-        const cached = localStorage.getItem('printwise_shop_config');
+        const cached = localStorage.getItem('printly_shop_config') || localStorage.getItem('printwise_shop_config');
         if (cached) return { ...DEFAULT_SHOP_CONFIG, ...JSON.parse(cached) };
     } catch { /* ignore */ }
 
@@ -813,13 +870,35 @@ export const fetchShopConfigs = async (): Promise<ShopConfig[]> => {
 };
 
 /** Persist shop config to the active Shop row and also cache in localStorage */
-export const saveShopConfig = async (config: ShopConfig): Promise<{ success: boolean; error?: any }> => {
+export const saveShopConfig = async (
+    config: ShopConfig,
+    client: SupabaseClient = supabase
+): Promise<{ success: boolean; error?: any }> => {
+    localStorage.setItem('printly_shop_config', JSON.stringify(config));
     localStorage.setItem('printwise_shop_config', JSON.stringify(config));
 
-    const { error } = await supabaseAdmin
+    const updatePayload = {
+        shopName: config.shopName,
+        tagline: config.tagline,
+        operatingHours: config.operatingHours,
+        location: config.location,
+        contact: config.contact,
+        email: config.email,
+        logo: config.logo || null,
+        primaryColor: config.primaryColor || null,
+        shopConfig: config,
+        updatedAt: new Date().toISOString(),
+    };
+
+    let query = client
         .from('Shop')
-        .update({ shopConfig: config, updatedAt: new Date().toISOString() })
-        .eq('isActive', true);
+        .update(updatePayload);
+
+    query = config.shopId && config.shopId !== DEFAULT_SHOP_CONFIG.shopId
+        ? query.eq('id', config.shopId)
+        : query.eq('isActive', true);
+
+    const { error } = await query;
 
     if (error) {
         console.error('Failed to save shop config to Supabase:', error);
@@ -840,8 +919,10 @@ export interface CustomerSummary {
 }
 
 /** Aggregate all non-deleted orders by customer email */
-export const fetchCustomers = async (): Promise<CustomerSummary[]> => {
-    const { data, error } = await supabaseAdmin
+export const fetchCustomers = async (
+    client: SupabaseClient = supabase
+): Promise<CustomerSummary[]> => {
+    const { data, error } = await client
         .from('Order')
         .select('userEmail, userName, totalAmount, createdAt, user:User(name, email, avatar)')
         .eq('isDeleted', false)
@@ -871,24 +952,30 @@ export const fetchCustomers = async (): Promise<CustomerSummary[]> => {
 // ===== SERVICES (persisted in Shop.servicesConfig) =====
 
 /** Load services from the active Shop row, fall back to localStorage then DEFAULT_SERVICES */
-export const fetchServices = async (): Promise<Service[]> => {
-    /*
+export const fetchServices = async (
+    client: SupabaseClient = supabase
+): Promise<Service[]> => {
     try {
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await client
             .from('Shop')
             .select('servicesConfig')
             .eq('isActive', true)
+            .order('createdAt', { ascending: true })
             .limit(1)
             .maybeSingle();
 
         if (!error && data?.servicesConfig) {
-            return data.servicesConfig as Service[];
+            const services = data.servicesConfig as Service[];
+            try {
+                localStorage.setItem('printly_services', JSON.stringify(services));
+                localStorage.setItem('printwise_services', JSON.stringify(services));
+            } catch { /* ignore */ }
+            return services;
         }
     } catch {  }
-    */
 
     try {
-        const cached = localStorage.getItem('printwise_services');
+        const cached = localStorage.getItem('printly_services') || localStorage.getItem('printwise_services');
         if (cached) return JSON.parse(cached) as Service[];
     } catch { /* ignore */ }
 
@@ -896,10 +983,14 @@ export const fetchServices = async (): Promise<Service[]> => {
 };
 
 /** Persist services to the active Shop row and cache in localStorage */
-export const saveServices = async (services: Service[]): Promise<{ success: boolean; error?: any }> => {
+export const saveServices = async (
+    services: Service[],
+    client: SupabaseClient = supabase
+): Promise<{ success: boolean; error?: any }> => {
+    localStorage.setItem('printly_services', JSON.stringify(services));
     localStorage.setItem('printwise_services', JSON.stringify(services));
 
-    const { error } = await supabaseAdmin
+    const { error } = await client
         .from('Shop')
         .update({ servicesConfig: services, updatedAt: new Date().toISOString() })
         .eq('isActive', true);
@@ -919,9 +1010,11 @@ export interface DbUsage {
     percent_used: number;
 }
 
-export const getDbUsage = async (): Promise<DbUsage | null> => {
+export const getDbUsage = async (
+    client: SupabaseClient = supabase
+): Promise<DbUsage | null> => {
     try {
-        const { data, error } = await supabase.rpc('get_db_usage');
+        const { data, error } = await client.rpc('get_db_usage');
         if (error) {
             if (isTableAccessError(error) || error.code === '42883') return null;
             console.error('Error checking DB usage:', error);
@@ -1065,8 +1158,11 @@ export interface AuditLogEntry {
     createdAt: string;
 }
 
-export const fetchAuditLog = async (limit = 100): Promise<AuditLogEntry[]> => {
-    const { data, error } = await supabase
+export const fetchAuditLog = async (
+    limit = 100,
+    client: SupabaseClient = supabase
+): Promise<AuditLogEntry[]> => {
+    const { data, error } = await client
         .from('AuditLog')
         .select('*')
         .order('createdAt', { ascending: false })

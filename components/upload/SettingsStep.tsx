@@ -69,7 +69,7 @@ export const SettingsStep: React.FC<SettingsStepProps> = ({
  const pill = (selected: boolean) => cn(
  "flex items-center gap-1.5 px-3 py-2 text-xs font-bold transition-all duration-150 cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50",
  selected
- ? "bg-primary text-foreground -[0_0_12px_rgba(255,255,255,0.15)]"
+ ? "bg-primary text-foreground shadow-[0_0_12px_rgba(255,255,255,0.15)]"
  : "bg-background-subtle text-foreground-muted border border-border hover:bg-background-subtle hover:text-foreground"
  );
 

@@ -159,7 +159,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
  {currentUser?.name || 'Admin User'}
  </p>
  <p className="text-foreground-muted ">
- {currentUser?.email || 'admin@printwise.in'}
+ {currentUser?.email || 'admin@printly.in'}
  </p>
  <button
  onClick={onSignOut}
@@ -229,7 +229,7 @@ const SettingRow: React.FC<{
  title: string;
  description: string;
 }> = ({ icon, title, description }) => (
- <div className="flex items-start gap-4 p-3 hover:bg-background-card /50 transition-colors">
+ <div className="flex items-start gap-4 p-3 hover:bg-background-card/50 transition-colors">
  <div className="p-2 bg-background-subtle ">
  <Icon name={icon} className="text-foreground-muted " />
  </div>
@@ -250,7 +250,7 @@ const ToggleSetting: React.FC<{
  const [enabled, setEnabled] = useState(defaultValue);
 
  return (
- <div className="flex items-center justify-between p-3 hover:bg-background-card /50 transition-colors">
+ <div className="flex items-center justify-between p-3 hover:bg-background-card/50 transition-colors">
  <div className="flex items-start gap-4">
  <div className="p-2 bg-background-subtle ">
  <Icon name={icon} className="text-foreground-muted " />

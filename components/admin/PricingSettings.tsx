@@ -3,6 +3,7 @@ import { Icon } from '../ui/Icon';
 import { PricingConfig, DEFAULT_PRICING } from '../../types';
 import { savePricing } from '../../services/data';
 import { toast } from 'sonner';
+import { useClerkSupabase } from '../../services/clerkSupabase';
 
 interface PricingSettingsProps {
  pricing: PricingConfig;
@@ -10,6 +11,7 @@ interface PricingSettingsProps {
 }
 
 export const PricingSettings: React.FC<PricingSettingsProps> = ({ pricing, onUpdate }) => {
+ const { getAuthenticatedClient } = useClerkSupabase();
  const [localPricing, setLocalPricing] = useState<PricingConfig>(pricing);
  const [saved, setSaved] = useState(false);
  const [saving, setSaving] = useState(false);
@@ -36,7 +38,8 @@ export const PricingSettings: React.FC<PricingSettingsProps> = ({ pricing, onUpd
 
  const handleSave = async () => {
  setSaving(true);
- const result = await savePricing(localPricing);
+ const dbClient = await getAuthenticatedClient();
+ const result = await savePricing(localPricing, dbClient);
  setSaving(false);
  if (result.success) {
  onUpdate(localPricing);

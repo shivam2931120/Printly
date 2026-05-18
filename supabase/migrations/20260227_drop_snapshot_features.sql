@@ -26,10 +26,10 @@ BEGIN
         cutoff_date := now() - (keep_days || ' days')::interval;
     END IF;
 
-    -- STEP 2: Delete only COMPLETED / CANCELLED orders older than cutoff
+    -- STEP 2: Delete only COMPLETED orders older than cutoff
     DELETE FROM "Order"
     WHERE "createdAt" < cutoff_date
-      AND status IN ('COMPLETED', 'CANCELLED');
+      AND status = 'COMPLETED';
 
     GET DIAGNOSTICS deleted_count = ROW_COUNT;
 

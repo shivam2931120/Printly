@@ -10,6 +10,7 @@ import {
  StockLogRow,
 } from '../../services/data';
 import { useAuth } from '../../contexts/AuthContext';
+import { useClerkSupabase } from '../../services/clerkSupabase';
 
 type InventoryStatus = 'good' | 'low' | 'critical';
 
@@ -30,13 +31,14 @@ const getStatusColor = (status: InventoryStatus) => {
 const getProgressColor = (status: InventoryStatus) => {
  switch (status) {
  case 'good': return 'bg-green-900/20';
- case 'low': return 'bg-yellow-900/200';
+ case 'low': return 'bg-yellow-900/20';
  case 'critical': return 'bg-red-900/20';
  }
 };
 
 export const InventoryPanel: React.FC = () => {
  const { user } = useAuth();
+ const { getAuthenticatedClient } = useClerkSupabase();
  const [items, setItems] = useState<InventoryRow[]>([]);
  const [loading, setLoading] = useState(true);
  const [searchQuery, setSearchQuery] = useState('');
@@ -58,10 +60,11 @@ export const InventoryPanel: React.FC = () => {
 
  const loadInventory = useCallback(async () => {
  setLoading(true);
- const data = await fetchInventory();
+ const dbClient = await getAuthenticatedClient();
+ const data = await fetchInventory(dbClient);
  setItems(data);
  setLoading(false);
- }, []);
+ }, [getAuthenticatedClient]);
 
  useEffect(() => {
  loadInventory();
@@ -70,7 +73,8 @@ export const InventoryPanel: React.FC = () => {
  const handleAddItem = async () => {
  if (!newItem.name.trim()) return;
  setSaving(true);
- const result = await addInventoryItem(newItem);
+ const dbClient = await getAuthenticatedClient();
+ const result = await addInventoryItem(newItem, dbClient);
  if (result.success) {
  await loadInventory();
  setAddItemModal(false);
@@ -85,11 +89,13 @@ export const InventoryPanel: React.FC = () => {
 
  const createdBy = user?.email || 'admin';
 
+ const dbClient = await getAuthenticatedClient();
  const result = await updateInventoryStock(
  addStockModal.id,
  stockAmount,
  stockNote || (stockAmount > 0 ? 'Stock added' : 'Stock removed'),
- createdBy
+ createdBy,
+ dbClient
  );
  if (result.success) {
  await loadInventory();
@@ -102,7 +108,8 @@ export const InventoryPanel: React.FC = () => {
 
  const handleDeleteItem = async (item: InventoryRow) => {
  if (!confirm(`Delete "${item.name}" from inventory? This cannot be undone.`)) return;
- const result = await deleteInventoryItem(item.id);
+ const dbClient = await getAuthenticatedClient();
+ const result = await deleteInventoryItem(item.id, dbClient);
  if (result.success) {
  await loadInventory();
  }
@@ -111,7 +118,8 @@ export const InventoryPanel: React.FC = () => {
  const openHistory = async (item: InventoryRow) => {
  setHistoryModal(item);
  setHistoryLoading(true);
- const logs = await fetchStockHistory(item.id);
+ const dbClient = await getAuthenticatedClient();
+ const logs = await fetchStockHistory(item.id, dbClient);
  setHistoryLogs(logs);
  setHistoryLoading(false);
  };

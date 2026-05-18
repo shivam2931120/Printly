@@ -2,8 +2,10 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Icon } from '../ui/Icon';
 import { fetchAllOrdersForAnalytics, exportToCSV } from '../../services/data';
 import { Order } from '../../types';
+import { useClerkSupabase } from '../../services/clerkSupabase';
 
 export const SalesOverview: React.FC = () => {
+  const { getAuthenticatedClient } = useClerkSupabase();
   const [orders, setOrders] = useState<Order[]>([]);
 
   const [loading, setLoading] = useState(true);
@@ -11,7 +13,8 @@ export const SalesOverview: React.FC = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const orderData = await fetchAllOrdersForAnalytics();
+        const dbClient = await getAuthenticatedClient();
+        const orderData = await fetchAllOrdersForAnalytics(dbClient);
         setOrders(orderData);
       } catch (e) {
         console.error('Failed to load sales data:', e);
@@ -20,7 +23,7 @@ export const SalesOverview: React.FC = () => {
       }
     };
     load();
-  }, []);
+  }, [getAuthenticatedClient]);
 
   const stats = useMemo(() => {
     const totalRevenue = orders.reduce((s, o) => s + (o.totalAmount || 0), 0);
@@ -84,7 +87,7 @@ export const SalesOverview: React.FC = () => {
             }));
             exportToCSV(rows, 'printly_sales_report');
           }}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-background-subtle border border-border rounded-2xl shadow-2xl/[0.10] text-sm font-medium text-foreground hover:bg-background-card/[0.10] transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-background-subtle border border-border rounded-2xl shadow-2xl text-sm font-medium text-foreground hover:bg-background-card/[0.10] transition-colors"
           disabled={orders.length === 0}
         >
           <Icon name="download" className="text-lg" />

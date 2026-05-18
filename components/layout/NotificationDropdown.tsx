@@ -136,7 +136,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isSi
                                                 "size-2 mt-1.5 shrink-0",
                                                 notif.type === 'info' && "bg-background-card",
                                                 notif.type === 'success' && "bg-green-900/20",
-                                                notif.type === 'warning' && "bg-yellow-900/200",
+                                                notif.type === 'warning' && "bg-yellow-900/20",
                                                 notif.type === 'error' && "bg-red-900/20",
                                             )} />
 

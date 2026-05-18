@@ -25,7 +25,7 @@ BEGIN
 END;
 $$;
 
--- 2. Cleanup: snapshot first, then delete old completed/cancelled orders
+-- 2. Cleanup: snapshot first, then delete old completed orders
 CREATE OR REPLACE FUNCTION cleanup_old_orders(
     keep_days INT DEFAULT 7,
     force BOOLEAN DEFAULT false
@@ -53,10 +53,10 @@ BEGIN
         cutoff_date := now() - (keep_days || ' days')::interval;
     END IF;
 
-    -- STEP 3: Delete only COMPLETED / CANCELLED orders older than cutoff
+    -- STEP 3: Delete only COMPLETED orders older than cutoff
     DELETE FROM "Order"
     WHERE "createdAt" < cutoff_date
-      AND status IN ('COMPLETED', 'CANCELLED');
+      AND status = 'COMPLETED';
 
     GET DIAGNOSTICS deleted_count = ROW_COUNT;
 

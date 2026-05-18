@@ -312,17 +312,17 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  {/* Realtime connection indicator */}
  <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 
  ${realtimeStatus === 'connected'
- ? 'bg-green-900/20/10 text-green-500'
+ ? 'bg-green-900/20 text-green-500'
  : realtimeStatus === 'error'
- ? 'bg-red-900/20/10 text-primary'
- : 'bg-amber-900/200/10 text-amber-500'
+ ? 'bg-red-900/20 text-primary'
+ : 'bg-amber-900/20 text-amber-500'
  }`}>
  <span className={`size-1.5 inline-block
  ${realtimeStatus === 'connected'
  ? 'bg-green-900/20 animate-pulse'
  : realtimeStatus === 'error'
  ? 'bg-red-900/20'
- : 'bg-amber-900/200 animate-pulse'
+ : 'bg-amber-900/20 animate-pulse'
  }`} />
  {realtimeStatus === 'connected' ? 'Live' : realtimeStatus === 'error' ? 'Offline' : 'Connecting…'}
  </span>
@@ -491,7 +491,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  visible: { opacity: 1, x: 0 }
  }}
  key={order.id}
- className={`hover:bg-background-card /40 transition-colors cursor-pointer ${selectedIds.has(order.id) ? 'bg-background-subtle/50' : ''}`}
+ className={`hover:bg-background-card/40 transition-colors cursor-pointer ${selectedIds.has(order.id) ? 'bg-background-subtle/50' : ''}`}
  onClick={() => setSelectedOrder(order)}
  >
  <td className="py-4 px-3" onClick={(e) => e.stopPropagation()}>
@@ -679,7 +679,7 @@ export const OrdersPanel: React.FC<OrdersPanelProps> = ({ currentUserId }) => {
  </div>
 
  {/* Content: Items and Amount */}
- <div className="flex justify-between items-center py-3 border-t border-b border-border /50 mb-3">
+ <div className="flex justify-between items-center py-3 border-t border-b border-border/50 mb-3">
  <div className="flex items-center gap-2 text-sm text-foreground-muted ">
  {order.items && order.items.length > 0 ? (
  <>

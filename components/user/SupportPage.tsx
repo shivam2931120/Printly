@@ -49,7 +49,7 @@ export const SupportPage: React.FC = () => {
  const [config, setConfig] = useState<ShopConfig>(DEFAULT_SHOP_CONFIG);
 
  useEffect(() => {
- const stored = localStorage.getItem('printwise_shop_config');
+ const stored = localStorage.getItem('printly_shop_config') || localStorage.getItem('printwise_shop_config');
  if (stored) {
  try {
  setConfig({ ...DEFAULT_SHOP_CONFIG, ...JSON.parse(stored) });
@@ -103,7 +103,7 @@ export const SupportPage: React.FC = () => {
  </div>
 
  {/* No Cancellation / No Refund Policy Banner */}
- <div className="p-5 bg-red-900/20/10 border border-error/20 ">
+ <div className="p-5 bg-red-900/20 border border-error/20 ">
  <div className="flex items-start gap-3">
  <AlertCircle size={20} className="text-error shrink-0 mt-0.5" />
  <div>
@@ -182,11 +182,11 @@ export const SupportPage: React.FC = () => {
  </div>
 
  {submitStatus === 'success' ? (
- <div className="p-6 bg-green-900/20/10 border border-green-500/20 text-green-400 flex flex-col items-center text-center animate-fade-in">
+ <div className="p-6 bg-green-900/20 border border-green-500/20 text-green-400 flex flex-col items-center text-center animate-fade-in">
  <CheckCircle2 size={48} className="mb-4" />
  <h3 className="text-lg font-bold text-foreground mb-2">Message Sent!</h3>
  <p className="text-sm opacity-80 mb-6">Thanks for reaching out. We'll get back to you shortly.</p>
- <Button variant="outline" onClick={() => setSubmitStatus('idle')} className="text-foreground border-green-500/30 hover:bg-green-900/300/20">
+ <Button variant="outline" onClick={() => setSubmitStatus('idle')} className="text-foreground border-green-500/30 hover:bg-green-900/30">
  Send another message
  </Button>
  </div>

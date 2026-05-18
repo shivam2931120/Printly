@@ -35,7 +35,7 @@ export const StickyCheckout: React.FC<StickyCheckoutProps> = ({
  className={cn(
  'w-full py-4 text-base font-bold flex items-center justify-center gap-3 transition-all duration-200',
  hasFiles && !disabled
- ? 'bg-primary text-foreground -[0_0_30px_rgba(255,255,255,0.1)]'
+ ? 'bg-primary text-foreground shadow-[0_0_30px_rgba(255,255,255,0.1)]'
  : 'bg-background-subtle text-foreground-muted cursor-not-allowed',
  )}
  >

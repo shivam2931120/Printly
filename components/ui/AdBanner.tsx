@@ -11,14 +11,19 @@ export const AdBanner: React.FC<AdBannerProps> = ({
  dataAdFormat = "auto",
  dataFullWidthResponsive = true,
 }) => {
+ const adClient = import.meta.env.VITE_GOOGLE_ADSENSE_CLIENT_ID;
+
  useEffect(() => {
+ if (!adClient || !dataAdSlot) return;
  try {
  // @ts-ignore
  (window.adsbygoogle = window.adsbygoogle || []).push({});
  } catch (error) {
  console.error("AdSense error", error);
  }
- }, []);
+ }, [adClient, dataAdSlot]);
+
+ if (!adClient || !dataAdSlot) return null;
 
  return (
  <div className="my-4 overflow-hidden border border-border bg-background-card p-2 text-center">
@@ -26,7 +31,7 @@ export const AdBanner: React.FC<AdBannerProps> = ({
  <ins
  className="adsbygoogle block"
  style={{ display: "block" }}
- data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" // Replace with actual Client ID
+ data-ad-client={adClient}
  data-ad-slot={dataAdSlot}
  data-ad-format={dataAdFormat}
  data-full-width-responsive={dataFullWidthResponsive ? "true" : "false"}

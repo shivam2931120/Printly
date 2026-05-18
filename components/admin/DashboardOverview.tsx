@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Icon } from '../ui/Icon';
 import { fetchAllOrdersForAnalytics, fetchInventory, InventoryRow } from '../../services/data';
 import { Order } from '../../types';
+import { useClerkSupabase } from '../../services/clerkSupabase';
 import {
   AreaChart,
   Area,
@@ -32,15 +33,17 @@ interface DashboardOverviewProps {
 }
 
 export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate }) => {
+  const { getAuthenticatedClient } = useClerkSupabase();
   const [orders, setOrders] = useState<Order[]>([]);
   const [inventory, setInventory] = useState<InventoryRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadData = async () => {
     try {
+      const dbClient = await getAuthenticatedClient();
       const [orderData, invData] = await Promise.all([
-        fetchAllOrdersForAnalytics(),
-        fetchInventory(),
+        fetchAllOrdersForAnalytics(dbClient),
+        fetchInventory(dbClient),
       ]);
       setOrders(orderData);
       setInventory(invData);
@@ -180,8 +183,8 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
           <div className="bg-background-card border border-border rounded-2xl shadow-2xl p-6">
             <h3 className="text-lg font-bold text-foreground mb-4">Quick Actions</h3>
             <div className="space-y-3">
-              <QuickAction icon="print" label="Manage Orders" color="bg-background-subtle0" onClick={() => onNavigate('orders')} />
-              <QuickAction icon="inventory_2" label="Add Products" color="bg-amber-900/200" onClick={() => onNavigate('products')} />
+              <QuickAction icon="print" label="Manage Orders" color="bg-background-subtle" onClick={() => onNavigate('orders')} />
+              <QuickAction icon="inventory_2" label="Add Products" color="bg-amber-900/20" onClick={() => onNavigate('products')} />
               <QuickAction icon="warehouse" label="Check Inventory" color="bg-primary/10" onClick={() => onNavigate('inventory')} />
               <QuickAction icon="attach_money" label="Update Pricing" color="bg-green-900/20" onClick={() => onNavigate('pricing')} />
               <QuickAction icon="settings" label="Settings" color="bg-background-card0" onClick={() => onNavigate('settings')} />
@@ -208,7 +211,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
                     const isCritical = item.stock <= item.threshold * 0.3;
                     return (
                       <div key={item.id} className="flex items-center gap-3">
-                        <div className={`size-2 ${isCritical ? 'bg-red-900/20' : 'bg-yellow-900/200'}`} />
+                        <div className={`size-2 ${isCritical ? 'bg-red-900/20' : 'bg-yellow-900/20'}`} />
                         <span className="text-sm text-foreground-muted flex-1 truncate">{item.name}</span>
                         <span className={`text-xs font-bold ${isCritical ? 'text-primary ' : 'text-yellow-400 '}`}>
                           {item.stock} {item.unit}
@@ -247,7 +250,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({ onNavigate
             </div>
           ) : (
             orders.slice(0, 4).map((order) => (
-              <div key={order.id} className="flex items-center justify-between p-4 hover:bg-background-card /40 transition-colors">
+              <div key={order.id} className="flex items-center justify-between p-4 hover:bg-background-card/40 transition-colors">
                 <div className="flex items-center gap-4">
                   <div className="size-10 bg-background-subtle flex items-center justify-center font-bold text-primary ">
                     {(order.userName || 'C').charAt(0).toUpperCase()}

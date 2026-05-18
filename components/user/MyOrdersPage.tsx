@@ -27,10 +27,10 @@ import { OrderTracker } from './OrderTracker';
 import { downloadOrderReceipt } from '../../lib/receipt';
 
 const statusConfig: Record<string, { color: string; icon: any; label: string }> = {
- pending: { color: 'text-yellow-500 bg-yellow-900/200/10 border-yellow-500/20', icon: Clock, label: 'Pending' },
- confirmed: { color: 'text-primary bg-background-subtle0/10 border-primary/20', icon: CheckCircle2, label: 'Confirmed' },
+ pending: { color: 'text-yellow-500 bg-yellow-900/20 border-yellow-500/20', icon: Clock, label: 'Pending' },
+ confirmed: { color: 'text-primary bg-background-subtle/10 border-primary/20', icon: CheckCircle2, label: 'Confirmed' },
  printing: { color: 'text-primary bg-primary/10 border-primary/20', icon: Loader2, label: 'Printing' },
- ready: { color: 'text-green-500 bg-green-900/20/10 border-green-500/20', icon: CheckCircle2, label: 'Ready for Pickup' },
+ ready: { color: 'text-green-500 bg-green-900/20 border-green-500/20', icon: CheckCircle2, label: 'Ready for Pickup' },
  completed: { color: 'text-foreground-muted bg-background-subtle border-border', icon: CheckCircle2, label: 'Completed' },
 };
 
@@ -376,7 +376,7 @@ export const MyOrdersPage: React.FC = () => {
  {order.orderToken.split('').map((char, idx) => (
  <div
  key={idx}
- className="w-8 h-10 bg-amber-900/200/10 border border-amber-500/30 flex items-center justify-center text-lg font-black text-amber-400 font-mono"
+ className="w-8 h-10 bg-amber-900/20 border border-amber-500/30 flex items-center justify-center text-lg font-black text-amber-400 font-mono"
  >
  {char}
  </div>
@@ -388,7 +388,7 @@ export const MyOrdersPage: React.FC = () => {
  className={cn(
  "flex items-center gap-1.5 px-3 py-2 text-xs font-bold transition-all",
  copiedId === order.id
- ? "bg-green-900/20/20 text-green-400 border border-green-500/30"
+ ? "bg-green-900/20 text-green-400 border border-green-500/30"
  : "bg-background-subtle text-foreground-muted border border-border hover:bg-background-subtle hover:text-foreground"
  )}
  >

@@ -16,6 +16,7 @@ import {
 } from 'recharts';
 import { Icon } from '../ui/Icon';
 import { fetchAllOrdersForAnalytics } from '../../services/data';
+import { useClerkSupabase } from '../../services/clerkSupabase';
 
 type TimePeriod = 'week' | 'month' | 'year' | 'all';
 
@@ -28,6 +29,7 @@ interface AnalyticsOrder {
 }
 
 export const AnalyticsDashboard: React.FC = () => {
+  const { getAuthenticatedClient } = useClerkSupabase();
   const [period, setPeriod] = useState<TimePeriod>('month');
   const [orders, setOrders] = useState<AnalyticsOrder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,7 +37,8 @@ export const AnalyticsDashboard: React.FC = () => {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const fetchedOrders = await fetchAllOrdersForAnalytics();
+      const dbClient = await getAuthenticatedClient();
+      const fetchedOrders = await fetchAllOrdersForAnalytics(dbClient);
       setOrders(fetchedOrders.map(o => ({
         totalAmount: o.totalAmount,
         createdAt: typeof o.createdAt === 'string' ? o.createdAt : new Date(o.createdAt).toISOString(),
@@ -48,7 +51,7 @@ export const AnalyticsDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [getAuthenticatedClient]);
 
   useEffect(() => { loadData(); }, [loadData]);
 

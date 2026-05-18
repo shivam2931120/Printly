@@ -24,12 +24,12 @@ const InfoCard: React.FC<{
  lines: string[];
  action?: { label: string; href: string };
 }> = ({ icon, title, lines, action }) => (
- <div className="group relative bg-background-card border border-border rounded-2xl shadow-2xl/[0.06] p-6 hover:border-border/[0.12] transition-all duration-500 overflow-hidden">
+ <div className="group relative bg-background-card border border-border rounded-2xl shadow-2xl p-6 hover:border-border/[0.12] transition-all duration-500 overflow-hidden">
  {/* spotlight hover glow */}
  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none bg-[radial-gradient(300px_circle_at_50%_50%,rgba(255,255,255,0.04),transparent_70%)]" />
 
  <div className="relative z-10">
- <div className="size-12 bg-background-subtle border border-border rounded-2xl shadow-2xl/[0.06] flex items-center justify-center mb-4 text-foreground group-hover:bg-background-card/[0.1] transition-colors duration-300">
+ <div className="size-12 bg-background-subtle border border-border rounded-2xl shadow-2xl flex items-center justify-center mb-4 text-foreground group-hover:bg-background-card/[0.1] transition-colors duration-300">
  {icon}
  </div>
  <h3 className="text-sm font-black text-foreground uppercase tracking-widest mb-2">{title}</h3>
@@ -112,7 +112,7 @@ export const ContactPage: React.FC<{ shopConfig?: ShopConfig }> = ({ shopConfig 
  </button>
 
  <div className="text-center max-w-2xl mx-auto mb-16">
- <div className="inline-flex items-center gap-2 px-4 py-2 bg-background-subtle border border-border rounded-2xl shadow-2xl/[0.06] text-[10px] font-black text-foreground-muted uppercase tracking-[0.2em] mb-6">
+ <div className="inline-flex items-center gap-2 px-4 py-2 bg-background-subtle border border-border rounded-2xl shadow-2xl text-[10px] font-black text-foreground-muted uppercase tracking-[0.2em] mb-6">
  <MessageSquare size={12} />
  Get in Touch
  </div>
@@ -152,7 +152,7 @@ export const ContactPage: React.FC<{ shopConfig?: ShopConfig }> = ({ shopConfig 
  {/* ──── Map + Form ──── */}
  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
  {/* Map */}
- <div className="bg-background-card border border-border rounded-2xl shadow-2xl/[0.06] overflow-hidden">
+ <div className="bg-background-card border border-border rounded-2xl shadow-2xl overflow-hidden">
  <div className="p-5 border-b border-border/[0.06] flex items-center gap-3">
  <div className="size-9 bg-background-subtle flex items-center justify-center">
  <Navigation size={16} />
@@ -177,7 +177,7 @@ export const ContactPage: React.FC<{ shopConfig?: ShopConfig }> = ({ shopConfig 
  </div>
 
  {/* Contact Form */}
- <div className="bg-background-card border border-border rounded-2xl shadow-2xl/[0.06] p-6 md:p-8">
+ <div className="bg-background-card border border-border rounded-2xl shadow-2xl p-6 md:p-8">
  <div className="flex items-center gap-3 mb-8">
  <div className="size-9 bg-background-subtle flex items-center justify-center">
  <Send size={16} />
@@ -190,7 +190,7 @@ export const ContactPage: React.FC<{ shopConfig?: ShopConfig }> = ({ shopConfig 
 
  {submitStatus === 'success' ? (
  <div className="flex flex-col items-center justify-center py-16 text-center animate-in">
- <div className="size-16 bg-green-900/20/10 border border-green-500/20 flex items-center justify-center mb-4">
+ <div className="size-16 bg-green-900/20 border border-green-500/20 flex items-center justify-center mb-4">
  <CheckCircle2 className="text-green-400" size={28} />
  </div>
  <h3 className="text-xl font-black text-foreground mb-2">Message Sent!</h3>
@@ -205,7 +205,7 @@ export const ContactPage: React.FC<{ shopConfig?: ShopConfig }> = ({ shopConfig 
  ) : (
  <form onSubmit={handleSubmit} className="space-y-5">
  {submitStatus === 'error' && (
- <div className="p-4 bg-red-900/20/10 border border-error/20 text-error text-xs font-bold text-center flex items-center justify-center gap-2">
+ <div className="p-4 bg-red-900/20 border border-error/20 text-error text-xs font-bold text-center flex items-center justify-center gap-2">
  <AlertCircle size={14} />
  Failed to send. Please try again or email us directly.
  </div>

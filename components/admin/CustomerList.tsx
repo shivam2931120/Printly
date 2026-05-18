@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '../ui/Icon';
 import { fetchCustomers, CustomerSummary } from '../../services/data';
+import { useClerkSupabase } from '../../services/clerkSupabase';
 
 const AVATAR_COLORS = [
  'bg-red-900/20 text-primary ',
@@ -11,13 +12,19 @@ const AVATAR_COLORS = [
 ];
 
 export const CustomerList: React.FC = () => {
+ const { getAuthenticatedClient } = useClerkSupabase();
  const [customers, setCustomers] = useState<CustomerSummary[]>([]);
  const [loading, setLoading] = useState(true);
  const [searchQuery, setSearchQuery] = useState('');
 
+ const loadCustomers = async () => {
+ const dbClient = await getAuthenticatedClient();
+ return fetchCustomers(dbClient);
+ };
+
  useEffect(() => {
  setLoading(true);
- fetchCustomers()
+ loadCustomers()
  .then(setCustomers)
  .finally(() => setLoading(false));
  }, []);
@@ -43,7 +50,7 @@ export const CustomerList: React.FC = () => {
  <p className="text-foreground-muted text-sm mt-1">All users who have placed at least one order</p>
  </div>
  <button
- onClick={() => { setLoading(true); fetchCustomers().then(setCustomers).finally(() => setLoading(false)); }}
+ onClick={() => { setLoading(true); loadCustomers().then(setCustomers).finally(() => setLoading(false)); }}
  className="inline-flex items-center justify-center h-10 px-4 bg-background-card bg-background-card text-foreground text-sm font-bold hover:opacity-90 transition-colors gap-2"
  >
  <Icon name="refresh" className="text-lg" />
@@ -108,7 +115,7 @@ export const CustomerList: React.FC = () => {
  const initials = customer.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?';
  const color = AVATAR_COLORS[i % AVATAR_COLORS.length];
  return (
- <tr key={customer.email} className="hover:bg-background-card /40 transition-colors">
+ <tr key={customer.email} className="hover:bg-background-card/40 transition-colors">
  <td className="py-4 px-4">
  <div className="flex items-center gap-3">
  {customer.avatar ? (
@@ -142,4 +149,3 @@ export const CustomerList: React.FC = () => {
  </div>
  );
 };
-

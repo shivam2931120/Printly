@@ -129,7 +129,7 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({
  </p>
  <button
  onClick={handleCopyToken}
- className={`flex items-center gap-1 px-3 py-1.5 text-xs font-bold transition-all ${copied ? 'bg-green-900/20/20 text-green-400 border border-green-500/30' : 'bg-background-subtle text-foreground-muted border border-border hover:bg-background-subtle hover:text-foreground'}`}
+ className={`flex items-center gap-1 px-3 py-1.5 text-xs font-bold transition-all ${copied ? 'bg-green-900/20 text-green-400 border border-green-500/30' : 'bg-background-subtle text-foreground-muted border border-border hover:bg-background-subtle hover:text-foreground'}`}
  >
  {copied ? <><Check size={12} /> Copied</> : <><Copy size={12} /> Copy</>}
  </button>
@@ -140,7 +140,7 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({
  <div className="p-6 space-y-5">
  {/* Item Preview (First item or summary) */}
  <div className="flex items-center gap-4 p-4 bg-background-card/5 border border-border">
- <div className="size-12 bg-red-900/20/10 flex items-center justify-center text-primary shrink-0">
+ <div className="size-12 bg-red-900/20 flex items-center justify-center text-primary shrink-0">
  <FileText size={24} />
  </div>
  <div className="flex-1 min-w-0">
@@ -158,13 +158,13 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({
  <div className="grid grid-cols-2 gap-3 text-sm">
  <div className="p-3 bg-background-dark border border-border-dark">
  <p className="text-xs text-foreground-muted mb-1">Print Color</p>
- <p className="font-bold text-foreground-secondary capitalize">
+ <p className="font-bold text-foreground-muted capitalize">
  {order.options.colorMode === 'color' ? 'Color' : 'Black & White'}
  </p>
  </div>
  <div className="p-3 bg-background-dark border border-border-dark">
  <p className="text-xs text-foreground-muted mb-1">Paper Size</p>
- <p className="font-bold text-foreground-secondary uppercase">{order.options.paperSize}</p>
+ <p className="font-bold text-foreground-muted uppercase">{order.options.paperSize}</p>
  </div>
  </div>
  )}

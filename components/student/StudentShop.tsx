@@ -85,7 +85,7 @@ export const StudentShop: React.FC<StudentShopProps> = ({ onAddToCart }) => {
  {/* Product Grid */}
  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
  {filteredProducts.map(product => (
- <div key={product.id} className="group bg-background-card border border-border rounded-2xl shadow-2xl overflow-hidden /5 hover:border-primary/50 transition-all duration-300">
+ <div key={product.id} className="group bg-background-card border border-border rounded-2xl shadow-2xl overflow-hidden hover:border-primary/50 transition-all duration-300">
  <div className="h-48 bg-background-subtle flex items-center justify-center text-6xl text-foreground-muted relative overflow-hidden">
  {product.image?.startsWith('http') || product.image?.startsWith('/') ? (
  <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
@@ -136,7 +136,7 @@ export const StudentShop: React.FC<StudentShopProps> = ({ onAddToCart }) => {
 
  {filteredProducts.length === 0 && (
  <div className="text-center py-20">
- <Icon name="storefront" className="text-6xl text-foreground-secondary mb-4" />
+ <Icon name="storefront" className="text-6xl text-foreground-muted mb-4" />
  <h3 className="text-xl font-bold text-foreground ">No products found</h3>
  <p className="text-foreground-muted ">Try adjusting your search or category</p>
  </div>

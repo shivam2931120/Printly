@@ -115,7 +115,6 @@ BEGIN
         now() AS "updatedAt"
     FROM "Order"
     WHERE COALESCE("isDeleted", false) = false
-      AND status != 'CANCELLED'
     GROUP BY day
     ON CONFLICT (date) DO UPDATE SET
         revenue          = EXCLUDED.revenue,

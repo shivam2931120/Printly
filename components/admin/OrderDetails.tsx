@@ -260,7 +260,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ order: initialOrder,
  )}
  </div>
  {item.fileUrl && (
- <div className="flex flex-wrap gap-2 mt-3 pt-2 border-t border-border /50">
+ <div className="flex flex-wrap gap-2 mt-3 pt-2 border-t border-border/50">
  <a
  href={item.fileUrl}
  target="_blank"

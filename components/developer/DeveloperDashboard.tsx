@@ -51,7 +51,7 @@ export const DeveloperDashboard: React.FC<DeveloperDashboardProps> = ({
  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
  <div className="flex items-center justify-between h-16">
  <div className="flex items-center gap-3">
- <div className="flex items-center justify-center size-10 bg-background-card border border-border rounded-2xl shadow-2xl text-foreground -[0_0_20px_rgba(255,255,255,0.06)]">
+ <div className="flex items-center justify-center size-10 bg-background-card border border-border rounded-2xl shadow-2xl text-foreground shadow-[0_0_20px_rgba(255,255,255,0.06)]">
  <Icon name="code" className="text-xl" />
  </div>
  <div>
@@ -125,7 +125,7 @@ export const DeveloperDashboard: React.FC<DeveloperDashboardProps> = ({
 
  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
  {/* Navigation Tabs */}
- <div className="flex gap-1 p-1 bg-background-card border border-border rounded-2xl shadow-2xl mb-6 w-fit -[0_10px_30px_rgba(0,0,0,0.25)]">
+ <div className="flex gap-1 p-1 bg-background-card border border-border rounded-2xl shadow-2xl mb-6 w-fit shadow-[0_10px_30px_rgba(0,0,0,0.25)]">
  {NAV_ITEMS.map((item) => (
  <button
  key={item.id}
@@ -133,7 +133,7 @@ export const DeveloperDashboard: React.FC<DeveloperDashboardProps> = ({
  className={`
  flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-all duration-200
  ${activeSection === item.id
- ? 'bg-background-card/15 text-foreground border border-border -[0_0_0_1px_rgba(255,255,255,0.05)]'
+ ? 'bg-background-card/15 text-foreground border border-border shadow-[0_0_0_1px_rgba(255,255,255,0.05)]'
  : 'text-text-secondary hover:text-foreground hover:bg-background-subtle'
  }
  `}

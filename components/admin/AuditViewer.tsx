@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Icon } from '../ui/Icon';
 import { Skeleton } from '../ui/Skeleton';
 import { fetchAuditLog, AuditLogEntry } from '../../services/data';
+import { useClerkSupabase } from '../../services/clerkSupabase';
 
 export const AuditViewer: React.FC = () => {
+ const { getAuthenticatedClient } = useClerkSupabase();
  const [logs, setLogs] = useState<AuditLogEntry[]>([]);
  const [loading, setLoading] = useState(true);
  const [limit, setLimit] = useState(50);
@@ -14,7 +16,8 @@ export const AuditViewer: React.FC = () => {
 
  const loadLogs = async () => {
  setLoading(true);
- const data = await fetchAuditLog(limit);
+ const dbClient = await getAuthenticatedClient();
+ const data = await fetchAuditLog(limit, dbClient);
  setLogs(data);
  setLoading(false);
  };
@@ -102,7 +105,7 @@ export const AuditViewer: React.FC = () => {
  return (
  <div
  key={log.id}
- className="px-6 py-4 hover:bg-background-card /40 transition-colors"
+ className="px-6 py-4 hover:bg-background-card/40 transition-colors"
  >
  <div className="flex items-start gap-4">
  <div className="mt-0.5">

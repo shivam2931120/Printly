@@ -24,18 +24,10 @@ if (!supabaseUrl || !supabaseAnonKey) {
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 /**
- * Admin client — bypasses RLS using service role key.
- * ONLY used for admin-gated operations (analytics read/write, snapshot).
- * Falls back to the anon client if the key is not set.
+ * Backward-compatible alias for older service helpers.
+ *
+ * Never create a browser Supabase client with the service-role key. Any
+ * VITE_* env var is shipped to the client bundle, so privileged operations
+ * must use a Clerk-authenticated anon client and rely on RLS policies.
  */
-const serviceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
-export const supabaseAdmin = serviceRoleKey
-    ? createClient(supabaseUrl, serviceRoleKey, {
-        auth: {
-            persistSession: false,
-            autoRefreshToken: false,
-            detectSessionInUrl: false,
-            storageKey: 'supabase-admin-auth',   // separate storage key — no collision with main client
-        },
-    })
-    : supabase;
+export const supabaseAdmin = supabase;

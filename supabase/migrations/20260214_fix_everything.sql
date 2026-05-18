@@ -148,8 +148,7 @@ BEGIN
             COUNT(DISTINCT "userId") AS unique_customers,
             "shopId"
         FROM public."Order"
-        WHERE status != 'CANCELLED'
-          AND "isDeleted" = false
+        WHERE "isDeleted" = false
         GROUP BY DATE("createdAt"), "shopId"
     LOOP
         INSERT INTO public."DailyStats" (
@@ -544,11 +543,11 @@ DECLARE
 BEGIN
     LOOP
         new_token := LPAD(FLOOR(1000 + random() * 9000)::int::text, 4, '0');
-        -- Check if this token is already used by an active (non-completed, non-cancelled) order
+        -- Check if this token is already used by an active (non-completed) order
         IF NOT EXISTS (
             SELECT 1 FROM public."Order"
             WHERE "orderToken" = new_token
-              AND status NOT IN ('COMPLETED', 'CANCELLED')
+              AND status <> 'COMPLETED'
               AND "isDeleted" = false
         ) THEN
             RETURN new_token;

@@ -3,8 +3,10 @@ import { toast } from 'sonner';
 import { Icon } from '../ui/Icon';
 import { Service, SERVICE_CATEGORIES, ServiceCategory } from '../../types';
 import { fetchServices, saveServices } from '../../services/data';
+import { useClerkSupabase } from '../../services/clerkSupabase';
 
 export const ServiceManagement: React.FC = () => {
+ const { getAuthenticatedClient } = useClerkSupabase();
  const [services, setServices] = useState<Service[]>([]);
  const [loading, setLoading] = useState(true);
  const [saving, setSaving] = useState(false);
@@ -14,10 +16,11 @@ export const ServiceManagement: React.FC = () => {
 
  useEffect(() => {
  setLoading(true);
- fetchServices()
+ getAuthenticatedClient()
+ .then((dbClient) => fetchServices(dbClient))
  .then(setServices)
  .finally(() => setLoading(false));
- }, []);
+ }, [getAuthenticatedClient]);
 
  const filteredServices = services.filter(service =>
  selectedCategory === 'all' || service.category === selectedCategory
@@ -42,7 +45,8 @@ export const ServiceManagement: React.FC = () => {
 
  const handleSave = async () => {
  setSaving(true);
- const result = await saveServices(services);
+ const dbClient = await getAuthenticatedClient();
+ const result = await saveServices(services, dbClient);
  setSaving(false);
  if (result.success) {
  toast.success('Services saved!');
@@ -137,7 +141,7 @@ export const ServiceManagement: React.FC = () => {
  >
  {/* Service Header */}
  <div
- className="flex items-center justify-between p-5 cursor-pointer hover:bg-background-card /50 transition-colors"
+ className="flex items-center justify-between p-5 cursor-pointer hover:bg-background-card/50 transition-colors"
  onClick={() => setExpandedService(expandedService === service.id ? null : service.id)}
  >
  <div className="flex items-center gap-4">
@@ -170,7 +174,7 @@ export const ServiceManagement: React.FC = () => {
 
  {/* Expanded Variants */}
  {expandedService === service.id && (
- <div className="border-t border-border p-5 bg-background-card /30">
+ <div className="border-t border-border p-5 bg-background-card/30">
  <h4 className="text-sm font-semibold text-foreground-muted mb-3">Pricing Variants</h4>
  <div className="grid gap-3">
  {service.variants.map((variant, index) => (
@@ -209,4 +213,3 @@ export const ServiceManagement: React.FC = () => {
  </div>
  );
 };
-

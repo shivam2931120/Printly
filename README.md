@@ -1,17 +1,10 @@
 # Printly - College Printing Service
 
-## 🔑 Login Credentials
+## Authentication
 
-The demo accounts have been replaced with a real database account.
-
-| Role | Email | Password |
-|------|-------|----------|
-| **Developer** | `shivam.bgp@outlook.com` | `Sh@2931120` |
-
-> This account has full access to:
-> - Student Portal
-> - Admin Dashboard
-> - Developer Panel
+Printly uses Clerk for authentication and Supabase RLS for data access. Create
+developer or admin users in the `User` table by assigning the `DEVELOPER` or
+`ADMIN` role to the row linked to the Clerk `authId`.
 
 ## Setup & Run
 
@@ -28,7 +21,7 @@ The demo accounts have been replaced with a real database account.
      - `RAZORPAY_KEY_SECRET`
      - `RAZORPAY_WEBHOOK_SECRET`
      - `SUPABASE_URL` or `VITE_SUPABASE_URL`
-     - `SUPABASE_SERVICE_ROLE_KEY`
+     - `SUPABASE_SERVICE_ROLE_KEY` (server-only; never prefix this with `VITE_`)
    - The browser creates a Printly order first, `/api/razorpay-order` creates the Razorpay order, Checkout receives that `order_id`, and `/api/verify-razorpay-payment` verifies the returned signature before marking the order paid.
    - Cloud uploads need provider app credentials before picker wiring can be enabled:
      - `VITE_GOOGLE_PICKER_API_KEY`

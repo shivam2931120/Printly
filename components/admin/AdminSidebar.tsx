@@ -91,7 +91,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
  <div className="p-4 flex justify-center shrink-0">
  <button
  onClick={onToggle}
- className="p-3 text-foreground-muted hover:text-primary hover:bg-red-900/20/10 transition-colors"
+ className="p-3 text-foreground-muted hover:text-primary hover:bg-red-900/20 transition-colors"
  >
  <Icon name="chevron_right" className="text-xl" />
  </button>

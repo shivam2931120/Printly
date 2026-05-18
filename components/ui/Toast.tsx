@@ -31,8 +31,8 @@ export const Toast: React.FC<ToastProps> = ({
  const colors = {
  success: 'bg-green-900/20 text-foreground',
  error: 'bg-red-900/20 text-foreground',
- info: 'bg-background-subtle0 text-foreground',
- warning: 'bg-yellow-900/200 text-foreground',
+ info: 'bg-background-subtle text-foreground',
+ warning: 'bg-yellow-900/20 text-foreground',
  };
 
  const icons = {
