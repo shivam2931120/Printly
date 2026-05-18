@@ -4,9 +4,12 @@ import fs from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
 
-// Load local environment. .env.local wins when both files define a key.
-dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
-dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+// Load explicit env first, then local fallbacks. Earlier files win.
+[
+    process.env.DOTENV_CONFIG_PATH,
+    path.resolve(process.cwd(), '.env.local'),
+    path.resolve(process.cwd(), '.env'),
+].filter(Boolean).forEach((envPath) => dotenv.config({ path: envPath, quiet: true }));
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -15,12 +18,18 @@ if (!connectionString) {
     process.exit(1);
 }
 
-// Modify connection string for Session Pooler (port 5432) if needed, 
-// but Supabase Transaction Pooler (6543) often supports simple queries.
-// Let's try as is first.
+function normalizeConnectionString(value) {
+    try {
+        const url = new URL(value);
+        url.searchParams.delete('sslmode');
+        return url.toString();
+    } catch {
+        return value.replace(/([?&])sslmode=[^&]+&?/, '$1').replace(/[?&]$/, '');
+    }
+}
 
 const client = new pg.Client({
-    connectionString,
+    connectionString: normalizeConnectionString(connectionString),
     ssl: { rejectUnauthorized: false }
 });
 
