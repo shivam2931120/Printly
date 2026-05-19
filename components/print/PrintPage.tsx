@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, Clock, FileText, MapPin, ReceiptText, Store, Settings, Plus } from 'lucide-react';
+import { PDFDocument } from 'pdf-lib';
+import { toast } from 'sonner';
 import { PricingConfig, PrintOptions, ShopConfig, User } from '../../types';
 import { calculatePrintPrice } from '../../lib/pricing';
 import { useCartStore } from '../../store/useCartStore';
@@ -40,6 +42,12 @@ const DEFAULT_OPTIONS: PrintOptions = {
     coverPage: 'none',
 };
 
+const getPdfPageCount = async (file: File): Promise<number> => {
+    const bytes = await file.arrayBuffer();
+    const pdf = await PDFDocument.load(bytes, { ignoreEncryption: true });
+    return pdf.getPageCount();
+};
+
 export const PrintPage: React.FC<PrintPageProps> = ({ currentUser, onSignInClick, pricing, shopConfig }) => {
     const navigate = useNavigate();
     const addToCartPrint = useCartStore((state) => state.addToCartPrint);
@@ -74,6 +82,19 @@ export const PrintPage: React.FC<PrintPageProps> = ({ currentUser, onSignInClick
             pageCount: 0,
         }));
         setFiles((prev) => [...prev, ...processed]);
+
+        processed.forEach(async (fileWrapper) => {
+            try {
+                const pageCount = await getPdfPageCount(fileWrapper.file);
+                if (pageCount <= 0) throw new Error('PDF has no pages');
+                setFiles((prev) => prev.map((item) => (
+                    item.id === fileWrapper.id ? { ...item, pageCount } : item
+                )));
+            } catch (error) {
+                console.error('Failed to read PDF page count:', fileWrapper.file.name, error);
+                toast.error(`Could not read ${fileWrapper.file.name}. Remove it and upload a valid PDF.`);
+            }
+        });
     };
 
     const handleFileRemove = (id: string) => {
@@ -330,6 +351,7 @@ export const PrintPage: React.FC<PrintPageProps> = ({ currentUser, onSignInClick
                             file={files.length > 0 ? files[files.length - 1].file : null}
                             totalPrice={totalPrice}
                             onAddToCart={handleAddToCart}
+                            disabled={isDisabled}
                             onPageCountChange={handleUpdatePageCount}
                             pageRangeText={options.pageRangeText}
                             onPageRangeChange={(value) => setOptions((prev) => ({ ...prev, pageRangeText: value }))}

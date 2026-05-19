@@ -108,7 +108,15 @@ export default async function handler(req: Request) {
         return json({ error: 'Invalid Razorpay payment response' }, { status: 400 });
     }
 
-    const supabase = getSupabaseAdmin();
+    let supabase: ReturnType<typeof getSupabaseAdmin>;
+    let razorpaySecret: string;
+    try {
+        supabase = getSupabaseAdmin();
+        razorpaySecret = getRazorpaySecret();
+    } catch (error: any) {
+        console.error('[verify-razorpay-payment] Configuration error:', error?.message || error);
+        return json({ error: 'Payment verification is not configured' }, { status: 500 });
+    }
     const { data: savedOrder, error: orderError } = await supabase
         .from('Order')
         .select('id, status, paymentStatus, razorpayOrderId')
@@ -140,7 +148,7 @@ export default async function handler(req: Request) {
 
     const expectedSignature = await hmacSha256Hex(
         `${order.razorpayOrderId}|${body.razorpay_payment_id}`,
-        getRazorpaySecret()
+        razorpaySecret
     );
 
     if (!constantTimeEqual(expectedSignature, body.razorpay_signature.toLowerCase())) {

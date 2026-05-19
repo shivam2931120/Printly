@@ -33,7 +33,7 @@ async function main() {
 
     const { data: shop, error: shopError } = await supabase
         .from('Shop')
-        .select('id,name')
+        .select('id,shopName')
         .eq('isActive', true)
         .limit(1)
         .maybeSingle();

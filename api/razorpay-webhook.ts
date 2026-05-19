@@ -120,7 +120,13 @@ export default async function handler(req: Request) {
         return json({ received: true, processed: false });
     }
 
-    const supabase = getSupabaseAdmin();
+    let supabase: ReturnType<typeof getSupabaseAdmin>;
+    try {
+        supabase = getSupabaseAdmin();
+    } catch (error: any) {
+        console.error('[webhook] Configuration error:', error?.message || error);
+        return json({ error: 'Webhook storage is not configured' }, { status: 500 });
+    }
     const paymentId: string = paymentEntity.id;
     const razorpayOrderId: string | undefined = paymentEntity.order_id;
     const appOrderId: string | undefined =

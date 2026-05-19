@@ -68,8 +68,16 @@ export default async function handler(req: Request) {
         return json({ error: 'Missing appOrderId' }, { status: 400 });
     }
 
-    const supabase = getSupabaseAdmin();
-    const { keyId, keySecret } = getRazorpayKeys();
+    let supabase: ReturnType<typeof getSupabaseAdmin>;
+    let keyId: string;
+    let keySecret: string;
+    try {
+        supabase = getSupabaseAdmin();
+        ({ keyId, keySecret } = getRazorpayKeys());
+    } catch (error: any) {
+        console.error('[razorpay-order] Configuration error:', error?.message || error);
+        return json({ error: 'Payment service is not configured' }, { status: 500 });
+    }
 
     const { data: savedOrder, error: orderError } = await supabase
         .from('Order')

@@ -13,6 +13,7 @@ interface PreviewStepProps {
  file: File | null;
  onAddToCart: () => void;
  totalPrice: number;
+ disabled?: boolean;
  onPageCountChange?: (count: number) => void;
  pageRangeText?: string;
  onPageRangeChange?: (value: string) => void;
@@ -22,6 +23,7 @@ export const PreviewStep: React.FC<PreviewStepProps> = ({
  file,
  onAddToCart,
  totalPrice,
+ disabled = false,
  onPageCountChange,
  pageRangeText = '',
  onPageRangeChange
@@ -172,6 +174,7 @@ export const PreviewStep: React.FC<PreviewStepProps> = ({
  </div>
  <Button
  onClick={onAddToCart}
+ disabled={disabled || !file || isLoading}
  className="flex-[2] h-14 text-lg font-bold bg-primary text-foreground hover:bg-background-card/90 flex items-center justify-center gap-2 "
  >
  <ShoppingCart size={20} />
