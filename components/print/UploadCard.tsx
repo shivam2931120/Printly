@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { FilePreview } from './FilePreview';
 import { cn } from '../../lib/utils';
 import type { PrintFile } from '../../lib/printFiles';
+import type { CloudProviderStatus } from '../../lib/cloudDocuments';
 
 interface UploadCardProps {
  files: PrintFile[];
@@ -15,6 +16,7 @@ interface UploadCardProps {
  onFilePreview?: (id: string) => void;
  onCloudPick: (provider: 'google-drive' | 'onedrive') => void;
  cloudProvider?: 'google-drive' | 'onedrive' | null;
+ cloudStatuses?: { googleDrive: CloudProviderStatus; oneDrive: CloudProviderStatus };
 }
 
 export const UploadCard: React.FC<UploadCardProps> = ({
@@ -24,6 +26,7 @@ export const UploadCard: React.FC<UploadCardProps> = ({
  onFilePreview,
  onCloudPick,
  cloudProvider,
+ cloudStatuses,
 }) => {
  const dropRef = useRef<HTMLDivElement>(null);
  const [glowPos, setGlowPos] = useState({ x: 0, y: 0 });
@@ -140,6 +143,7 @@ export const UploadCard: React.FC<UploadCardProps> = ({
 	 type="button"
 	 disabled={Boolean(cloudProvider)}
 	 onClick={() => onCloudPick('google-drive')}
+	 title={cloudStatuses?.googleDrive.message || 'Upload from Google Drive'}
 	 className="flex items-center justify-center gap-2 px-3 py-2 bg-background-subtle border border-border text-xs font-semibold text-foreground-muted hover:text-foreground hover:bg-background-card transition-all"
 	 >
 	 {cloudProvider === 'google-drive' ? <Loader2 size={14} className="animate-spin" /> : <Cloud size={14} />}
@@ -149,6 +153,7 @@ export const UploadCard: React.FC<UploadCardProps> = ({
 	 type="button"
 	 disabled={Boolean(cloudProvider)}
 	 onClick={() => onCloudPick('onedrive')}
+	 title={cloudStatuses?.oneDrive.message || 'Upload from OneDrive'}
 	 className="flex items-center justify-center gap-2 px-3 py-2 bg-background-subtle border border-border text-xs font-semibold text-foreground-muted hover:text-foreground hover:bg-background-card transition-all"
 	 >
 	 {cloudProvider === 'onedrive' ? <Loader2 size={14} className="animate-spin" /> : <HardDrive size={14} />}

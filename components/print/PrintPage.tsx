@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, Clock, FileText, MapPin, ReceiptText, Store } from 'lucide-react';
 import { toast } from 'sonner';
@@ -11,7 +11,7 @@ import { cn } from '../../lib/utils';
 import { getShopOpenState } from '../../lib/shopHours';
 import { getPdfPageCount, createPrintFileId, validatePrintFile } from '../../lib/printFiles';
 import type { PrintFile } from '../../lib/printFiles';
-import { openGoogleDrivePdfPicker, openOneDrivePdfPicker, preloadCloudDocumentPickers } from '../../lib/cloudDocuments';
+import { getCloudProviderStatuses, openGoogleDrivePdfPicker, openOneDrivePdfPicker, preloadCloudDocumentPickers } from '../../lib/cloudDocuments';
 
 // Desktop: new premium components
 import { UploadCard } from './UploadCard';
@@ -58,6 +58,7 @@ export const PrintPage: React.FC<PrintPageProps> = ({ currentUser, onSignInClick
     const [step, setStep] = useState(0); // Mobile stepper: 0=Upload, 1=Settings, 2=Preview
     const [previewFileId, setPreviewFileId] = useState<string | null>(null);
     const [cloudProvider, setCloudProvider] = useState<'google-drive' | 'onedrive' | null>(null);
+    const cloudStatuses = useMemo(() => getCloudProviderStatuses(), []);
 
     // Recalculate price
     useEffect(() => {
@@ -141,6 +142,11 @@ export const PrintPage: React.FC<PrintPageProps> = ({ currentUser, onSignInClick
     const handleCloudPick = async (provider: 'google-drive' | 'onedrive') => {
         if (!currentUser) {
             onSignInClick();
+            return;
+        }
+        const status = provider === 'google-drive' ? cloudStatuses.googleDrive : cloudStatuses.oneDrive;
+        if (!status.configured) {
+            toast.error(status.message || `${status.label} upload is not configured.`);
             return;
         }
 
@@ -284,6 +290,7 @@ export const PrintPage: React.FC<PrintPageProps> = ({ currentUser, onSignInClick
                         onFilePreview={setPreviewFileId}
                         onCloudPick={handleCloudPick}
                         cloudProvider={cloudProvider}
+                        cloudStatuses={cloudStatuses}
                     />
                 </div>
 
@@ -353,6 +360,7 @@ export const PrintPage: React.FC<PrintPageProps> = ({ currentUser, onSignInClick
                             onNext={() => setStep(1)}
                             canContinue={!isDisabled}
                             cloudProvider={cloudProvider}
+                            cloudStatuses={cloudStatuses}
                         />
                     )}
 

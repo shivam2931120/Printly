@@ -1,6 +1,14 @@
 import { ensurePdfFileName, MAX_PRINT_FILE_SIZE_BYTES, PDF_MIME_TYPE } from './printFiles';
 
-type CloudProvider = 'google-drive' | 'onedrive';
+export type CloudProvider = 'google-drive' | 'onedrive';
+
+export interface CloudProviderStatus {
+    provider: CloudProvider;
+    label: string;
+    configured: boolean;
+    missingEnv: string[];
+    message?: string;
+}
 
 interface GooglePickerDocument {
     id?: string;
@@ -61,12 +69,42 @@ const loadScript = (src: string) => {
     return promise;
 };
 
-const requireEnv = (name: string, value: string | undefined, provider: CloudProvider) => {
-    if (!value) {
-        const label = provider === 'google-drive' ? 'Google Drive' : 'OneDrive';
-        throw new Error(`${label} is not configured. Missing ${name}.`);
+const isSet = (value: string | undefined) => Boolean(value?.trim());
+
+export const getCloudProviderStatus = (provider: CloudProvider): CloudProviderStatus => {
+    const requiredEnv = provider === 'google-drive'
+        ? [
+            ['VITE_GOOGLE_CLIENT_ID', import.meta.env.VITE_GOOGLE_CLIENT_ID],
+            ['VITE_GOOGLE_PICKER_API_KEY', import.meta.env.VITE_GOOGLE_PICKER_API_KEY],
+        ]
+        : [['VITE_ONEDRIVE_CLIENT_ID', import.meta.env.VITE_ONEDRIVE_CLIENT_ID]];
+    const missingEnv = requiredEnv
+        .filter(([, value]) => !isSet(value))
+        .map(([name]) => name);
+    const label = provider === 'google-drive' ? 'Google Drive' : 'OneDrive';
+
+    return {
+        provider,
+        label,
+        configured: missingEnv.length === 0,
+        missingEnv,
+        message: missingEnv.length === 0
+            ? undefined
+            : `${label} upload is not configured. Missing ${missingEnv.join(', ')}.`,
+    };
+};
+
+export const getCloudProviderStatuses = () => ({
+    googleDrive: getCloudProviderStatus('google-drive'),
+    oneDrive: getCloudProviderStatus('onedrive'),
+});
+
+const requireConfiguredProvider = (provider: CloudProvider) => {
+    const status = getCloudProviderStatus(provider);
+    if (!status.configured) {
+        throw new Error(status.message);
     }
-    return value;
+    return status;
 };
 
 const fileFromResponse = async (response: Response, name: string) => {
@@ -122,8 +160,9 @@ const downloadGoogleDocument = async (doc: GooglePickerDocument, token: string) 
 };
 
 export const openGoogleDrivePdfPicker = async (): Promise<File[]> => {
-    const clientId = requireEnv('VITE_GOOGLE_CLIENT_ID', import.meta.env.VITE_GOOGLE_CLIENT_ID, 'google-drive');
-    const developerKey = requireEnv('VITE_GOOGLE_PICKER_API_KEY', import.meta.env.VITE_GOOGLE_PICKER_API_KEY, 'google-drive');
+    requireConfiguredProvider('google-drive');
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    const developerKey = import.meta.env.VITE_GOOGLE_PICKER_API_KEY;
 
     await Promise.all([loadGooglePickerApi(), loadScript('https://accounts.google.com/gsi/client')]);
 
@@ -188,7 +227,8 @@ export const openGoogleDrivePdfPicker = async (): Promise<File[]> => {
 };
 
 export const openOneDrivePdfPicker = async (): Promise<File[]> => {
-    const clientId = requireEnv('VITE_ONEDRIVE_CLIENT_ID', import.meta.env.VITE_ONEDRIVE_CLIENT_ID, 'onedrive');
+    requireConfiguredProvider('onedrive');
+    const clientId = import.meta.env.VITE_ONEDRIVE_CLIENT_ID;
     await loadScript('https://js.live.net/v7.2/OneDrive.js');
 
     if (!window.OneDrive?.open) {
@@ -230,9 +270,15 @@ export const openOneDrivePdfPicker = async (): Promise<File[]> => {
 
 export const preloadCloudDocumentPickers = async () => {
     if (typeof window === 'undefined') return;
-    await Promise.allSettled([
-        loadGooglePickerApi(),
-        loadScript('https://accounts.google.com/gsi/client'),
-        loadScript('https://js.live.net/v7.2/OneDrive.js'),
-    ]);
+    const { googleDrive, oneDrive } = getCloudProviderStatuses();
+    const preloadTasks: Promise<void>[] = [];
+
+    if (googleDrive.configured) {
+        preloadTasks.push(loadGooglePickerApi(), loadScript('https://accounts.google.com/gsi/client'));
+    }
+    if (oneDrive.configured) {
+        preloadTasks.push(loadScript('https://js.live.net/v7.2/OneDrive.js'));
+    }
+
+    await Promise.allSettled(preloadTasks);
 };
