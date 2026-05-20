@@ -1,29 +1,47 @@
 import React, { useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Cloud, FileText, HardDrive, UploadCloud, X } from 'lucide-react';
+import type { FileRejection } from 'react-dropzone';
+import { AlertTriangle, Cloud, Eye, FileText, HardDrive, Loader2, UploadCloud, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '../ui/Button';
 import { cn } from '../../lib/utils';
+import type { PrintFile } from '../../lib/printFiles';
 
 interface UploadStepProps {
-    files: { id: string; file: File; pageCount: number }[];
+    files: PrintFile[];
     onFilesAdded: (newFiles: File[]) => void;
     onFileRemove: (id: string) => void;
+    onFilePreview: (id: string) => void;
+    onCloudPick: (provider: 'google-drive' | 'onedrive') => void;
     onNext: () => void;
+    canContinue: boolean;
+    cloudProvider?: 'google-drive' | 'onedrive' | null;
 }
 
 export const UploadStep: React.FC<UploadStepProps> = ({
     files,
     onFilesAdded,
     onFileRemove,
-    onNext
+    onFilePreview,
+    onCloudPick,
+    onNext,
+    canContinue,
+    cloudProvider
 }) => {
     const onDrop = useCallback((acceptedFiles: File[]) => {
         onFilesAdded(acceptedFiles);
     }, [onFilesAdded]);
 
+    const onDropRejected = useCallback((rejections: FileRejection[]) => {
+        rejections.forEach(({ file, errors }) => {
+            const message = errors.map((error) => error.message).join(', ') || 'This file cannot be uploaded.';
+            toast.error(`${file.name}: ${message}`);
+        });
+    }, []);
+
     const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
         onDrop,
+        onDropRejected,
         accept: { 'application/pdf': ['.pdf'] },
         maxSize: 50 * 1024 * 1024, // 50MB
         multiple: true,
@@ -31,19 +49,6 @@ export const UploadStep: React.FC<UploadStepProps> = ({
         onDragOver: () => undefined,
         onDragLeave: () => undefined,
     });
-
-    const handleCloudPicker = (provider: 'Google Drive' | 'OneDrive') => {
-        const configured = provider === 'Google Drive'
-            ? Boolean(import.meta.env.VITE_GOOGLE_PICKER_API_KEY && import.meta.env.VITE_GOOGLE_CLIENT_ID)
-            : Boolean(import.meta.env.VITE_ONEDRIVE_CLIENT_ID);
-
-        if (!configured) {
-            toast.info(`${provider} upload needs OAuth credentials configured first.`);
-            return;
-        }
-
-        toast.info(`${provider} picker credentials found. Picker wiring can be enabled for this deployment.`);
-    };
 
     return (
         <div className="space-y-6 animate-fade-in">
@@ -77,12 +82,12 @@ export const UploadStep: React.FC<UploadStepProps> = ({
                     <Button variant="outline" className="w-full" onClick={() => open()}>
                         Browse Files
                     </Button>
-                    <Button variant="outline" className="w-full gap-2" onClick={() => handleCloudPicker('Google Drive')}>
-                        <Cloud size={16} />
+                    <Button variant="outline" className="w-full gap-2" disabled={Boolean(cloudProvider)} onClick={() => onCloudPick('google-drive')}>
+                        {cloudProvider === 'google-drive' ? <Loader2 size={16} className="animate-spin" /> : <Cloud size={16} />}
                         Drive
                     </Button>
-                    <Button variant="outline" className="w-full gap-2" onClick={() => handleCloudPicker('OneDrive')}>
-                        <HardDrive size={16} />
+                    <Button variant="outline" className="w-full gap-2" disabled={Boolean(cloudProvider)} onClick={() => onCloudPick('onedrive')}>
+                        {cloudProvider === 'onedrive' ? <Loader2 size={16} className="animate-spin" /> : <HardDrive size={16} />}
                         OneDrive
                     </Button>
                 </div>
@@ -92,7 +97,7 @@ export const UploadStep: React.FC<UploadStepProps> = ({
             <div className="lg:hidden w-full pt-4">
                 <Button
                     onClick={onNext}
-                    disabled={files.length === 0}
+                    disabled={!canContinue}
                     className="w-full h-14 text-lg font-bold rounded-2xl bg-primary text-foreground hover:bg-primary-hover shadow-glow-red hover:shadow-glow-red-lg transition-all active:scale-[0.98]"
                 >
                     Continue ({files.length})
@@ -114,9 +119,20 @@ export const UploadStep: React.FC<UploadStepProps> = ({
                             <div className="flex-1 min-w-0 text-left">
                                 <p className="text-sm font-medium text-foreground line-clamp-1">{fileWrapper.file.name}</p>
                                 <p className="text-xs text-foreground-muted">
-                                    {(fileWrapper.file.size / 1024 / 1024).toFixed(2)} MB • {fileWrapper.pageCount > 0 ? `${fileWrapper.pageCount} pages` : 'Analyzing...'}
+                                    {(fileWrapper.file.size / 1024 / 1024).toFixed(2)} MB • {fileWrapper.error ? fileWrapper.error : fileWrapper.pageCount > 0 ? `${fileWrapper.pageCount} pages` : 'Analyzing...'}
                                 </p>
                             </div>
+                            {fileWrapper.error ? (
+                                <AlertTriangle size={18} className="text-amber-300 shrink-0" />
+                            ) : (
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onFilePreview(fileWrapper.id); }}
+                                    className="p-2 text-foreground-muted hover:text-foreground transition-colors"
+                                    aria-label="Preview file"
+                                >
+                                    <Eye size={20} />
+                                </button>
+                            )}
                             <button
                                 onClick={(e) => { e.stopPropagation(); onFileRemove(fileWrapper.id); }}
                                 className="p-2 text-foreground-muted hover:text-primary transition-colors"

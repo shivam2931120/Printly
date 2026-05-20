@@ -28,9 +28,10 @@ export const PreviewStep: React.FC<PreviewStepProps> = ({
  pageRangeText = '',
  onPageRangeChange
 }) => {
- const [numPages, setNumPages] = useState<number>(0);
- const [pageNumber, setPageNumber] = useState<number>(1);
- const [isLoading, setIsLoading] = useState(true);
+	 const [numPages, setNumPages] = useState<number>(0);
+	 const [pageNumber, setPageNumber] = useState<number>(1);
+	 const [isLoading, setIsLoading] = useState(true);
+	 const [loadError, setLoadError] = useState<string | null>(null);
  const rangeInfo = React.useMemo(() => parsePageRange(pageRangeText, numPages), [pageRangeText, numPages]);
  const thumbnailPages = React.useMemo(
  () => Array.from({ length: Math.min(numPages, 8) }, (_, index) => index + 1),
@@ -38,19 +39,21 @@ export const PreviewStep: React.FC<PreviewStepProps> = ({
  );
  const previewHeight = typeof window !== 'undefined' ? window.innerHeight * 0.52 : 420;
 
- useEffect(() => {
- setPageNumber(1);
- setIsLoading(Boolean(file));
- }, [file]);
+	 useEffect(() => {
+	 setPageNumber(1);
+	 setNumPages(0);
+	 setLoadError(null);
+	 setIsLoading(Boolean(file));
+	 }, [file]);
 
  const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
- console.log('PDF loaded with', numPages, 'pages');
- setNumPages(numPages);
- setIsLoading(false);
- if (onPageCountChange) {
- onPageCountChange(numPages);
- }
- };
+	 setNumPages(numPages);
+	 setIsLoading(false);
+	 setLoadError(null);
+	 if (onPageCountChange) {
+	 onPageCountChange(numPages);
+	 }
+	 };
 
  return (
  <div className="space-y-6 animate-fade-in pb-32 h-full flex flex-col">
@@ -62,25 +65,37 @@ export const PreviewStep: React.FC<PreviewStepProps> = ({
  <div className="flex-1 flex flex-col items-center justify-center min-h-[400px] relative bg-background-subtle border border-border overflow-hidden">
  {file ? (
  <div className="h-full w-full flex flex-col items-center justify-center p-4 overflow-hidden">
- <Document
- file={file}
- onLoadSuccess={onDocumentLoadSuccess}
- loading={
+ {loadError ? (
+ <div className="max-w-sm p-6 text-center">
+ <AlertTriangle className="mx-auto mb-3 text-amber-300" size={32} />
+ <p className="text-sm font-semibold text-foreground">Preview unavailable</p>
+ <p className="mt-1 text-xs text-foreground-muted">{loadError}</p>
+ </div>
+ ) : (
+	 <Document
+	 file={file}
+	 onLoadSuccess={onDocumentLoadSuccess}
+	 onLoadError={(error) => {
+	 setLoadError(error.message || 'Could not render this PDF.');
+	 setIsLoading(false);
+	 }}
+	 loading={
  <div className="absolute inset-0 flex items-center justify-center">
  <Loader2 className="animate-spin text-foreground" size={32} />
  </div>
  }
- className="flex flex-col items-center justify-center h-full w-full gap-3"
- >
- <div className="flex-1 min-h-0 w-full flex items-center justify-center overflow-hidden">
- <Page
+	 error={null}
+	 className="flex flex-col items-center justify-center h-full w-full gap-3"
+	 >
+	 <div className="flex-1 min-h-0 w-full flex items-center justify-center overflow-hidden">
+	 <Page
  pageNumber={pageNumber}
  className=" max-h-full max-w-full flex items-center justify-center [&_canvas]:!h-auto [&_canvas]:!w-auto [&_canvas]:max-h-[60vh] [&_canvas]:max-w-full [&_canvas]:object-contain"
  renderTextLayer={false}
  renderAnnotationLayer={false}
  height={previewHeight}
- />
- </div>
+	 />
+	 </div>
  {thumbnailPages.length > 1 && (
  <div className="w-full overflow-x-auto pb-1">
  <div className="flex gap-2 min-w-max px-1">
@@ -110,13 +125,14 @@ export const PreviewStep: React.FC<PreviewStepProps> = ({
  </div>
  )}
  </Document>
+ )}
  </div>
  ) : (
  <div className="text-foreground-muted">No file selected</div>
  )}
 
  {/* Pagination Controls */}
- {numPages > 1 && (
+ {numPages > 1 && !loadError && (
  <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-black/80 px-4 py-2 border border-border z-10">
  <button
  disabled={pageNumber <= 1}
@@ -174,7 +190,7 @@ export const PreviewStep: React.FC<PreviewStepProps> = ({
  </div>
  <Button
  onClick={onAddToCart}
- disabled={disabled || !file || isLoading}
+	 disabled={disabled || !file || isLoading || Boolean(loadError)}
  className="flex-[2] h-14 text-lg font-bold bg-primary text-foreground hover:bg-background-card/90 flex items-center justify-center gap-2 "
  >
  <ShoppingCart size={20} />

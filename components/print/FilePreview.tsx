@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { FileText, X, CheckCircle2 } from 'lucide-react';
+import { Eye, FileText, X, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { cn } from '../../lib/utils';
 
@@ -9,13 +9,15 @@ pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 interface FilePreviewProps {
  file: File;
  pageCount: number;
+ error?: string;
  onRemove: () => void;
+ onPreview?: () => void;
  index: number;
 }
 
-export const FilePreview: React.FC<FilePreviewProps> = ({ file, pageCount, onRemove, index }) => {
+export const FilePreview: React.FC<FilePreviewProps> = ({ file, pageCount, error, onRemove, onPreview, index }) => {
  const sizeMB = (file.size / 1024 / 1024).toFixed(2);
- const isAnalyzing = pageCount === 0;
+ const isAnalyzing = !error && pageCount === 0;
 
  return (
  <motion.div
@@ -27,8 +29,8 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, pageCount, onRem
  >
  {/* Thumbnail */}
  <div className="size-14 bg-background-subtle flex items-center justify-center shrink-0 overflow-hidden border border-border">
- {isAnalyzing ? (
- <FileText size={20} className="text-gray-400" />
+	 {isAnalyzing || error ? (
+	 <FileText size={20} className="text-gray-400" />
  ) : (
  <Document
  file={file}
@@ -52,24 +54,38 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, pageCount, onRem
  <div className="flex items-center gap-2 mt-0.5">
  <span className="text-xs text-foreground-muted">{sizeMB} MB</span>
  <span className="text-xs text-foreground-muted">•</span>
- {isAnalyzing ? (
- <span className="text-xs text-foreground-muted animate-pulse">Analyzing...</span>
- ) : (
+	 {error ? (
+	 <span className="text-xs text-error">{error}</span>
+	 ) : isAnalyzing ? (
+	 <span className="text-xs text-foreground-muted animate-pulse">Analyzing...</span>
+	 ) : (
  <span className="text-xs text-gray-400 font-medium">{pageCount} pages</span>
  )}
  </div>
  </div>
 
  {/* Status */}
- {!isAnalyzing && (
- <motion.div
+	 {!isAnalyzing && !error && (
+	 <motion.div
  initial={{ scale: 0 }}
  animate={{ scale: 1 }}
  transition={{ type: 'spring', stiffness: 500, damping: 25 }}
  >
  <CheckCircle2 size={18} className="text-emerald-500" />
  </motion.div>
- )}
+	 )}
+	 {onPreview && !error && (
+	 <button
+	 onClick={(e) => { e.stopPropagation(); onPreview(); }}
+	 className="p-1.5 text-foreground-muted hover:text-foreground hover:bg-background-subtle transition-all"
+	 aria-label="Preview file"
+	 >
+	 <Eye size={16} />
+	 </button>
+	 )}
+	 {error && (
+	 <AlertTriangle size={18} className="text-amber-300 shrink-0" />
+	 )}
 
  {/* Remove */}
  <button

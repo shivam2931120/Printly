@@ -1,34 +1,49 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
+import type { FileRejection } from 'react-dropzone';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Cloud, HardDrive, UploadCloud, Eye } from 'lucide-react';
+import { Cloud, HardDrive, Loader2, UploadCloud, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { FilePreview } from './FilePreview';
 import { cn } from '../../lib/utils';
+import type { PrintFile } from '../../lib/printFiles';
 
 interface UploadCardProps {
- files: { id: string; file: File; pageCount: number }[];
+ files: PrintFile[];
  onFilesAdded: (files: File[]) => void;
  onFileRemove: (id: string) => void;
- onPreview?: () => void;
+ onFilePreview?: (id: string) => void;
+ onCloudPick: (provider: 'google-drive' | 'onedrive') => void;
+ cloudProvider?: 'google-drive' | 'onedrive' | null;
 }
 
 export const UploadCard: React.FC<UploadCardProps> = ({
  files,
  onFilesAdded,
  onFileRemove,
- onPreview,
+ onFilePreview,
+ onCloudPick,
+ cloudProvider,
 }) => {
  const dropRef = useRef<HTMLDivElement>(null);
  const [glowPos, setGlowPos] = useState({ x: 0, y: 0 });
  const [showGlow, setShowGlow] = useState(false);
+ const firstPreviewableFile = files.find((file) => !file.error);
 
  const onDrop = useCallback((accepted: File[]) => {
  onFilesAdded(accepted);
  }, [onFilesAdded]);
 
+ const onDropRejected = useCallback((rejections: FileRejection[]) => {
+ rejections.forEach(({ file, errors }) => {
+ const message = errors.map((error) => error.message).join(', ') || 'This file cannot be uploaded.';
+ toast.error(`${file.name}: ${message}`);
+ });
+ }, []);
+
  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
  onDrop,
+ onDropRejected,
  accept: { 'application/pdf': ['.pdf'] },
  maxSize: 50 * 1024 * 1024,
  multiple: true,
@@ -41,19 +56,6 @@ export const UploadCard: React.FC<UploadCardProps> = ({
  if (!dropRef.current) return;
  const rect = dropRef.current.getBoundingClientRect();
  setGlowPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
- };
-
- const handleCloudPicker = (provider: 'Google Drive' | 'OneDrive') => {
- const configured = provider === 'Google Drive'
- ? Boolean(import.meta.env.VITE_GOOGLE_PICKER_API_KEY && import.meta.env.VITE_GOOGLE_CLIENT_ID)
- : Boolean(import.meta.env.VITE_ONEDRIVE_CLIENT_ID);
-
- if (!configured) {
- toast.info(`${provider} upload needs OAuth credentials configured first.`);
- return;
- }
-
- toast.info(`${provider} picker credentials found. Picker wiring can be enabled for this deployment.`);
  };
 
  return (
@@ -69,14 +71,14 @@ export const UploadCard: React.FC<UploadCardProps> = ({
  <h2 className="text-xl font-bold text-foreground tracking-tight">Upload Documents</h2>
  <p className="text-sm text-foreground-muted mt-0.5">Select the PDF files you want to print</p>
  </div>
- {files.length > 0 && onPreview && (
- <motion.button
+	 {firstPreviewableFile && onFilePreview && (
+	 <motion.button
  whileHover={{ scale: 1.05 }}
  whileTap={{ scale: 0.95 }}
- onClick={onPreview}
+	 onClick={() => onFilePreview(firstPreviewableFile.id)}
  className="flex items-center gap-2 px-4 py-2 bg-background-subtle border border-border rounded-2xl shadow-2xl text-sm font-medium text-gray-400 hover:text-foreground hover:border-border transition-all"
  >
- <Eye size={16} />
+	 <Eye size={16} />
  Preview
  </motion.button>
  )}
@@ -134,21 +136,23 @@ export const UploadCard: React.FC<UploadCardProps> = ({
  Browse Files
  </motion.button>
  <div className="mt-3 grid grid-cols-2 gap-2">
- <button
- type="button"
- onClick={() => handleCloudPicker('Google Drive')}
- className="flex items-center justify-center gap-2 px-3 py-2 bg-background-subtle border border-border text-xs font-semibold text-foreground-muted hover:text-foreground hover:bg-background-card transition-all"
- >
- <Cloud size={14} />
- Drive
- </button>
- <button
- type="button"
- onClick={() => handleCloudPicker('OneDrive')}
- className="flex items-center justify-center gap-2 px-3 py-2 bg-background-subtle border border-border text-xs font-semibold text-foreground-muted hover:text-foreground hover:bg-background-card transition-all"
- >
- <HardDrive size={14} />
- OneDrive
+	 <button
+	 type="button"
+	 disabled={Boolean(cloudProvider)}
+	 onClick={() => onCloudPick('google-drive')}
+	 className="flex items-center justify-center gap-2 px-3 py-2 bg-background-subtle border border-border text-xs font-semibold text-foreground-muted hover:text-foreground hover:bg-background-card transition-all"
+	 >
+	 {cloudProvider === 'google-drive' ? <Loader2 size={14} className="animate-spin" /> : <Cloud size={14} />}
+	 Drive
+	 </button>
+	 <button
+	 type="button"
+	 disabled={Boolean(cloudProvider)}
+	 onClick={() => onCloudPick('onedrive')}
+	 className="flex items-center justify-center gap-2 px-3 py-2 bg-background-subtle border border-border text-xs font-semibold text-foreground-muted hover:text-foreground hover:bg-background-card transition-all"
+	 >
+	 {cloudProvider === 'onedrive' ? <Loader2 size={14} className="animate-spin" /> : <HardDrive size={14} />}
+	 OneDrive
  </button>
  </div>
  </div>
@@ -164,10 +168,12 @@ export const UploadCard: React.FC<UploadCardProps> = ({
  {files.map((f, i) => (
  <FilePreview
  key={f.id}
- file={f.file}
- pageCount={f.pageCount}
- onRemove={() => onFileRemove(f.id)}
- index={i}
+	 file={f.file}
+	 pageCount={f.pageCount}
+	 error={f.error}
+	 onRemove={() => onFileRemove(f.id)}
+	 onPreview={onFilePreview ? () => onFilePreview(f.id) : undefined}
+	 index={i}
  />
  ))}
  </AnimatePresence>

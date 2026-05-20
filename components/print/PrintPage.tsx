@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, Clock, FileText, MapPin, ReceiptText, Store, Settings, Plus } from 'lucide-react';
-import { PDFDocument } from 'pdf-lib';
+import { Check, Clock, FileText, MapPin, ReceiptText, Store } from 'lucide-react';
 import { toast } from 'sonner';
 import { PricingConfig, PrintOptions, ShopConfig, User } from '../../types';
 import { calculatePrintPrice } from '../../lib/pricing';
@@ -9,8 +8,10 @@ import { useCartStore } from '../../store/useCartStore';
 import { useOrderStore } from '../../store/useOrderStore';
 import { useShopStore } from '../../store/useShopStore';
 import { cn } from '../../lib/utils';
-import { Button } from '../ui/Button';
 import { getShopOpenState } from '../../lib/shopHours';
+import { getPdfPageCount, createPrintFileId, validatePrintFile } from '../../lib/printFiles';
+import type { PrintFile } from '../../lib/printFiles';
+import { openGoogleDrivePdfPicker, openOneDrivePdfPicker, preloadCloudDocumentPickers } from '../../lib/cloudDocuments';
 
 // Desktop: new premium components
 import { UploadCard } from './UploadCard';
@@ -21,6 +22,7 @@ import { SummaryCard } from './SummaryCard';
 import { UploadStep } from '../upload/UploadStep';
 import { SettingsStep } from '../upload/SettingsStep';
 import { PreviewStep } from '../upload/PreviewStep';
+import { DocumentPreviewModal } from '../upload/DocumentPreviewModal';
 
 interface PrintPageProps {
     currentUser: User | null;
@@ -42,12 +44,6 @@ const DEFAULT_OPTIONS: PrintOptions = {
     coverPage: 'none',
 };
 
-const getPdfPageCount = async (file: File): Promise<number> => {
-    const bytes = await file.arrayBuffer();
-    const pdf = await PDFDocument.load(bytes, { ignoreEncryption: true });
-    return pdf.getPageCount();
-};
-
 export const PrintPage: React.FC<PrintPageProps> = ({ currentUser, onSignInClick, pricing, shopConfig }) => {
     const navigate = useNavigate();
     const addToCartPrint = useCartStore((state) => state.addToCartPrint);
@@ -56,34 +52,54 @@ export const PrintPage: React.FC<PrintPageProps> = ({ currentUser, onSignInClick
     const selectedShopId = useShopStore((state) => state.selectedShopId);
     const setSelectedShopId = useShopStore((state) => state.setSelectedShopId);
 
-    const [files, setFiles] = useState<{ id: string; file: File; pageCount: number }[]>([]);
+    const [files, setFiles] = useState<PrintFile[]>([]);
     const [options, setOptions] = useState<PrintOptions>(DEFAULT_OPTIONS);
     const [totalPrice, setTotalPrice] = useState(0);
     const [step, setStep] = useState(0); // Mobile stepper: 0=Upload, 1=Settings, 2=Preview
+    const [previewFileId, setPreviewFileId] = useState<string | null>(null);
+    const [cloudProvider, setCloudProvider] = useState<'google-drive' | 'onedrive' | null>(null);
 
     // Recalculate price
     useEffect(() => {
         let total = 0;
-        files.forEach((f) => {
+        files.filter((f) => !f.error).forEach((f) => {
             total += calculatePrintPrice(options, f.pageCount, pricing);
         });
         setTotalPrice(total);
     }, [files, options, pricing]);
 
+    useEffect(() => {
+        preloadCloudDocumentPickers().catch((error) => {
+            console.warn('Cloud picker preload failed:', error);
+        });
+    }, []);
+
     // File handlers
-    const handleFilesAdded = (newFiles: File[]) => {
+    const handleFilesAdded = (newFiles: File[], source: PrintFile['source'] = 'local') => {
         if (!currentUser) {
             onSignInClick();
             return;
         }
-        const processed = newFiles.map((file) => ({
-            id: Math.random().toString(36).substr(2, 9),
-            file,
-            pageCount: 0,
-        }));
-        setFiles((prev) => [...prev, ...processed]);
+        const accepted: PrintFile[] = [];
+        newFiles.forEach((file) => {
+            const validationError = validatePrintFile(file);
+            if (validationError) {
+                toast.error(`${file.name}: ${validationError}`);
+                return;
+            }
+            accepted.push({
+                id: createPrintFileId(),
+                file,
+                pageCount: 0,
+                source,
+            });
+        });
 
-        processed.forEach(async (fileWrapper) => {
+        if (accepted.length === 0) return;
+
+        setFiles((prev) => [...prev, ...accepted]);
+
+        accepted.forEach(async (fileWrapper) => {
             try {
                 const pageCount = await getPdfPageCount(fileWrapper.file);
                 if (pageCount <= 0) throw new Error('PDF has no pages');
@@ -92,6 +108,10 @@ export const PrintPage: React.FC<PrintPageProps> = ({ currentUser, onSignInClick
                 )));
             } catch (error) {
                 console.error('Failed to read PDF page count:', fileWrapper.file.name, error);
+                const message = error instanceof Error ? error.message : 'Could not read this PDF.';
+                setFiles((prev) => prev.map((item) => (
+                    item.id === fileWrapper.id ? { ...item, error: message } : item
+                )));
                 toast.error(`Could not read ${fileWrapper.file.name}. Remove it and upload a valid PDF.`);
             }
         });
@@ -99,31 +119,53 @@ export const PrintPage: React.FC<PrintPageProps> = ({ currentUser, onSignInClick
 
     const handleFileRemove = (id: string) => {
         setFiles((prev) => prev.filter((f) => f.id !== id));
+        setPreviewFileId((prev) => prev === id ? null : prev);
     };
 
-    const handleUpdatePageCount = (count: number) => {
-        if (files.length > 0) {
-            const lastIdx = files.length - 1;
-            if (files[lastIdx].pageCount !== count) {
-                setFiles((prev) => {
-                    const copy = [...prev];
-                    copy[lastIdx] = { ...copy[lastIdx], pageCount: count };
-                    return copy;
-                });
-            }
-        }
+    const handleUpdatePageCount = (fileId: string, count: number) => {
+        setFiles((prev) => prev.map((item) => (
+            item.id === fileId && item.pageCount !== count ? { ...item, pageCount: count, error: undefined } : item
+        )));
     };
 
     const handleAddToCart = () => {
-        if (files.length === 0 || files.some((f) => f.pageCount === 0)) return;
-        addToCartPrint(files, options, pricing);
+        if (files.length === 0 || files.some((f) => f.pageCount <= 0 || Boolean(f.error))) return;
+        const readyFiles = files.filter((f) => !f.error);
+        addToCartPrint(readyFiles, options, pricing);
         setFiles([]);
         setStep(0);
         setOptions(DEFAULT_OPTIONS);
+        setPreviewFileId(null);
     };
 
-    const totalPages = files.reduce((s, f) => s + f.pageCount, 0) || 1;
-    const isDisabled = files.length === 0 || files.some((f) => f.pageCount === 0);
+    const handleCloudPick = async (provider: 'google-drive' | 'onedrive') => {
+        if (!currentUser) {
+            onSignInClick();
+            return;
+        }
+
+        setCloudProvider(provider);
+        try {
+            const cloudFiles = provider === 'google-drive'
+                ? await openGoogleDrivePdfPicker()
+                : await openOneDrivePdfPicker();
+            if (cloudFiles.length > 0) {
+                handleFilesAdded(cloudFiles, provider);
+                toast.success(`Added ${cloudFiles.length} file${cloudFiles.length === 1 ? '' : 's'} from ${provider === 'google-drive' ? 'Drive' : 'OneDrive'}.`);
+            }
+        } catch (error) {
+            console.error('Cloud picker failed:', error);
+            toast.error(error instanceof Error ? error.message : 'Cloud picker failed.');
+        } finally {
+            setCloudProvider(null);
+        }
+    };
+
+    const readyFiles = files.filter((f) => !f.error);
+    const totalPages = readyFiles.reduce((s, f) => s + f.pageCount, 0) || 1;
+    const isDisabled = files.length === 0 || files.some((f) => f.pageCount <= 0 || Boolean(f.error));
+    const previewItem = files.find((file) => file.id === previewFileId) || null;
+    const lastFile = files[files.length - 1] || null;
     const openState = getShopOpenState(shopConfig.operatingHours);
     const recentOrders = [...orders]
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -233,26 +275,15 @@ export const PrintPage: React.FC<PrintPageProps> = ({ currentUser, onSignInClick
 
             {/* ======= DESKTOP: 3-Column Premium Grid ======= */}
             <div className="hidden lg:grid grid-cols-12 gap-6 w-full h-full max-h-[calc(100vh-140px)]">
-                {/* Hidden PDF counter */}
-                <div className="hidden">
-                    {files.length > 0 && (
-                        <PreviewStep
-                            file={files[files.length - 1].file}
-                            totalPrice={totalPrice}
-                            onAddToCart={() => { }}
-                            onPageCountChange={handleUpdatePageCount}
-                            pageRangeText={options.pageRangeText}
-                            onPageRangeChange={(value) => setOptions((prev) => ({ ...prev, pageRangeText: value }))}
-                        />
-                    )}
-                </div>
-
                 {/* LEFT — Upload */}
                 <div className="col-span-4 bg-background-card border border-border rounded-2xl p-6 overflow-y-auto no-scrollbar">
                     <UploadCard
                         files={files}
                         onFilesAdded={handleFilesAdded}
                         onFileRemove={handleFileRemove}
+                        onFilePreview={setPreviewFileId}
+                        onCloudPick={handleCloudPick}
+                        cloudProvider={cloudProvider}
                     />
                 </div>
 
@@ -309,20 +340,6 @@ export const PrintPage: React.FC<PrintPageProps> = ({ currentUser, onSignInClick
                 ))}
             </div>
 
-            {/* Hidden PDF counter for mobile */}
-            <div className="hidden lg:hidden">
-                {files.length > 0 && (
-                    <PreviewStep
-                        file={files[files.length - 1].file}
-                        totalPrice={totalPrice}
-                        onAddToCart={() => { }}
-                        onPageCountChange={handleUpdatePageCount}
-                        pageRangeText={options.pageRangeText}
-                        onPageRangeChange={(value) => setOptions((prev) => ({ ...prev, pageRangeText: value }))}
-                    />
-                )}
-            </div>
-
             {/* Mobile: Stepper Views */}
             <div className="lg:hidden flex-1 pb-32">
                 <div className="animate-in">
@@ -331,7 +348,11 @@ export const PrintPage: React.FC<PrintPageProps> = ({ currentUser, onSignInClick
                             files={files}
                             onFilesAdded={handleFilesAdded}
                             onFileRemove={handleFileRemove}
+                            onFilePreview={setPreviewFileId}
+                            onCloudPick={handleCloudPick}
                             onNext={() => setStep(1)}
+                            canContinue={!isDisabled}
+                            cloudProvider={cloudProvider}
                         />
                     )}
 
@@ -348,11 +369,11 @@ export const PrintPage: React.FC<PrintPageProps> = ({ currentUser, onSignInClick
 
                     {step === 2 && (
                         <PreviewStep
-                            file={files.length > 0 ? files[files.length - 1].file : null}
+                            file={lastFile ? lastFile.file : null}
                             totalPrice={totalPrice}
                             onAddToCart={handleAddToCart}
                             disabled={isDisabled}
-                            onPageCountChange={handleUpdatePageCount}
+                            onPageCountChange={(count) => lastFile && handleUpdatePageCount(lastFile.id, count)}
                             pageRangeText={options.pageRangeText}
                             onPageRangeChange={(value) => setOptions((prev) => ({ ...prev, pageRangeText: value }))}
                         />
@@ -360,6 +381,13 @@ export const PrintPage: React.FC<PrintPageProps> = ({ currentUser, onSignInClick
                 </div>
             </div>
             </div>
+            <DocumentPreviewModal
+                item={previewItem}
+                pageRangeText={options.pageRangeText}
+                onClose={() => setPreviewFileId(null)}
+                onPageRangeChange={(value) => setOptions((prev) => ({ ...prev, pageRangeText: value }))}
+                onPageCountChange={handleUpdatePageCount}
+            />
         </div>
     );
 };
