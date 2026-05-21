@@ -27,13 +27,6 @@ developer or admin users in the `User` table by assigning the `DEVELOPER` or
    - The browser creates a Printly order first, `/api/razorpay-order` creates the Razorpay order, Checkout receives that `order_id`, and `/api/verify-razorpay-payment` verifies the returned signature before marking the order paid.
    - Run `supabase/migrations/create_prints_bucket.sql` or `npx tsx scripts/create-bucket.ts` when provisioning storage. The `prints` bucket is public-read, authenticated-write, accepts PDF/images/DOC/DOCX, and has a 50 MB file limit.
    - The local inventory agent uses `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from `local-agent/.env`.
-   - Cloud uploads need provider app credentials:
-     - `VITE_GOOGLE_PICKER_API_KEY`
-     - `VITE_GOOGLE_CLIENT_ID`
-     - `VITE_GOOGLE_APP_ID` (Google Cloud project number, recommended)
-     - `VITE_ONEDRIVE_CLIENT_ID`
-     - `VITE_ONEDRIVE_REDIRECT_URI` (optional; defaults to `/onedrive-picker-redirect.html`, which must be registered in Azure)
-
 3. **Run Locally**:
    ```bash
    npm run dev

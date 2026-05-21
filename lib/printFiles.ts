@@ -8,7 +8,6 @@ export interface PrintFile {
     file: File;
     pageCount: number;
     error?: string;
-    source?: 'local' | 'google-drive' | 'onedrive';
 }
 
 export const createPrintFileId = () => {

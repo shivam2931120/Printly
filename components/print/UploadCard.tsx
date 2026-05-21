@@ -2,21 +2,17 @@ import React, { useCallback, useRef, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import type { FileRejection } from 'react-dropzone';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Cloud, HardDrive, Loader2, UploadCloud, Eye } from 'lucide-react';
+import { UploadCloud, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { FilePreview } from './FilePreview';
 import { cn } from '../../lib/utils';
 import type { PrintFile } from '../../lib/printFiles';
-import type { CloudProviderStatus } from '../../lib/cloudDocuments';
 
 interface UploadCardProps {
  files: PrintFile[];
  onFilesAdded: (files: File[]) => void;
  onFileRemove: (id: string) => void;
  onFilePreview?: (id: string) => void;
- onCloudPick: (provider: 'google-drive' | 'onedrive') => void;
- cloudProvider?: 'google-drive' | 'onedrive' | null;
- cloudStatuses?: { googleDrive: CloudProviderStatus; oneDrive: CloudProviderStatus };
 }
 
 export const UploadCard: React.FC<UploadCardProps> = ({
@@ -24,9 +20,6 @@ export const UploadCard: React.FC<UploadCardProps> = ({
  onFilesAdded,
  onFileRemove,
  onFilePreview,
- onCloudPick,
- cloudProvider,
- cloudStatuses,
 }) => {
  const dropRef = useRef<HTMLDivElement>(null);
  const [glowPos, setGlowPos] = useState({ x: 0, y: 0 });
@@ -138,28 +131,6 @@ export const UploadCard: React.FC<UploadCardProps> = ({
  >
  Browse Files
  </motion.button>
- <div className="mt-3 grid grid-cols-2 gap-2">
-	 <button
-	 type="button"
-	 disabled={Boolean(cloudProvider)}
-	 onClick={() => onCloudPick('google-drive')}
-	 title={cloudStatuses?.googleDrive.message || 'Upload from Google Drive'}
-	 className="flex items-center justify-center gap-2 px-3 py-2 bg-background-subtle border border-border text-xs font-semibold text-foreground-muted hover:text-foreground hover:bg-background-card transition-all"
-	 >
-	 {cloudProvider === 'google-drive' ? <Loader2 size={14} className="animate-spin" /> : <Cloud size={14} />}
-	 Drive
-	 </button>
-	 <button
-	 type="button"
-	 disabled={Boolean(cloudProvider)}
-	 onClick={() => onCloudPick('onedrive')}
-	 title={cloudStatuses?.oneDrive.message || 'Upload from OneDrive'}
-	 className="flex items-center justify-center gap-2 px-3 py-2 bg-background-subtle border border-border text-xs font-semibold text-foreground-muted hover:text-foreground hover:bg-background-card transition-all"
-	 >
-	 {cloudProvider === 'onedrive' ? <Loader2 size={14} className="animate-spin" /> : <HardDrive size={14} />}
-	 OneDrive
- </button>
- </div>
  </div>
  </div>
 

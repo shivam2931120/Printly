@@ -1,23 +1,19 @@
 import React, { useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import type { FileRejection } from 'react-dropzone';
-import { AlertTriangle, Cloud, Eye, FileText, HardDrive, Loader2, UploadCloud, X } from 'lucide-react';
+import { AlertTriangle, Eye, FileText, UploadCloud, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '../ui/Button';
 import { cn } from '../../lib/utils';
 import type { PrintFile } from '../../lib/printFiles';
-import type { CloudProviderStatus } from '../../lib/cloudDocuments';
 
 interface UploadStepProps {
     files: PrintFile[];
     onFilesAdded: (newFiles: File[]) => void;
     onFileRemove: (id: string) => void;
     onFilePreview: (id: string) => void;
-    onCloudPick: (provider: 'google-drive' | 'onedrive') => void;
     onNext: () => void;
     canContinue: boolean;
-    cloudProvider?: 'google-drive' | 'onedrive' | null;
-    cloudStatuses?: { googleDrive: CloudProviderStatus; oneDrive: CloudProviderStatus };
 }
 
 export const UploadStep: React.FC<UploadStepProps> = ({
@@ -25,11 +21,8 @@ export const UploadStep: React.FC<UploadStepProps> = ({
     onFilesAdded,
     onFileRemove,
     onFilePreview,
-    onCloudPick,
     onNext,
-    canContinue,
-    cloudProvider,
-    cloudStatuses
+    canContinue
 }) => {
     const onDrop = useCallback((acceptedFiles: File[]) => {
         onFilesAdded(acceptedFiles);
@@ -84,26 +77,6 @@ export const UploadStep: React.FC<UploadStepProps> = ({
                 <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs relative z-10" onClick={(e) => e.stopPropagation()}>
                     <Button variant="outline" className="w-full" onClick={() => open()}>
                         Browse Files
-                    </Button>
-                    <Button
-                        variant="outline"
-                        className="w-full gap-2"
-                        disabled={Boolean(cloudProvider)}
-                        title={cloudStatuses?.googleDrive.message || 'Upload from Google Drive'}
-                        onClick={() => onCloudPick('google-drive')}
-                    >
-                        {cloudProvider === 'google-drive' ? <Loader2 size={16} className="animate-spin" /> : <Cloud size={16} />}
-                        Drive
-                    </Button>
-                    <Button
-                        variant="outline"
-                        className="w-full gap-2"
-                        disabled={Boolean(cloudProvider)}
-                        title={cloudStatuses?.oneDrive.message || 'Upload from OneDrive'}
-                        onClick={() => onCloudPick('onedrive')}
-                    >
-                        {cloudProvider === 'onedrive' ? <Loader2 size={16} className="animate-spin" /> : <HardDrive size={16} />}
-                        OneDrive
                     </Button>
                 </div>
             </div>
