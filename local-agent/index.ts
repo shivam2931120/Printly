@@ -4,6 +4,8 @@ import { runAlertCheck } from "./alerts";
 import { config, validateConfig } from "./config";
 
 let supabase: SupabaseClient;
+let isPolling = false;
+let isCheckingAlerts = false;
 
 async function main() {
   console.log("[Agent] Starting Printly Local Inventory Agent...");
@@ -13,33 +15,50 @@ async function main() {
 
   // Poll for unprocessed orders
   console.log(`[Agent] Polling every ${config.POLL_INTERVAL_MS / 1000}s`);
+  if (config.SHOP_ID) {
+    console.log(`[Agent] Shop scope: ${config.SHOP_ID}`);
+  }
 
-  setInterval(async () => {
+  const runPollOnce = async () => {
+    if (isPolling) {
+      console.warn("[Agent] Previous poll still running; skipping this interval");
+      return;
+    }
+    isPolling = true;
     try {
       await pollOrders(supabase);
     } catch (err) {
       console.error("[Agent] Poll error:", err);
+    } finally {
+      isPolling = false;
     }
-  }, config.POLL_INTERVAL_MS);
+  };
 
   // Run low-stock alert check every 60s
-  setInterval(async () => {
+  const runAlertCheckOnce = async () => {
+    if (isCheckingAlerts) return;
+    isCheckingAlerts = true;
     try {
-      await runAlertCheck(supabase);
+      await runAlertCheck(supabase, config.SHOP_ID || undefined);
     } catch (err) {
       console.error("[Agent] Alert check error:", err);
+    } finally {
+      isCheckingAlerts = false;
     }
-  }, 60_000);
+  };
+
+  setInterval(runPollOnce, config.POLL_INTERVAL_MS);
+  setInterval(runAlertCheckOnce, 60_000);
 
   // Also run immediately on start
-  await pollOrders(supabase);
-  await runAlertCheck(supabase);
+  await runPollOnce();
+  await runAlertCheckOnce();
 }
 
 async function pollOrders(client: SupabaseClient) {
   // Fetch orders that are confirmed/printing but not yet inventory-processed
   // We use a metadata flag "inventoryProcessed" to track
-  const { data: orders, error } = await client
+  let query = client
     .from("Order")
     .select("*")
     .in("status", config.TRIGGER_STATUSES)
@@ -47,6 +66,12 @@ async function pollOrders(client: SupabaseClient) {
     .lt("printJobAttempts", config.MAX_JOB_ATTEMPTS)
     .order("createdAt", { ascending: true })
     .limit(config.BATCH_SIZE);
+
+  if (config.SHOP_ID) {
+    query = query.eq("shopId", config.SHOP_ID);
+  }
+
+  const { data: orders, error } = await query;
 
   if (error) {
     console.error("[Agent] Fetch error:", error.message);

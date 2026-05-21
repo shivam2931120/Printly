@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { CartItem, Product, PrintOptions, PricingConfig } from '../types';
 import { calculatePrintPrice } from '../lib/pricing';
+import { generateId } from '../lib/utils';
 
 interface CartState {
     cart: CartItem[];
@@ -20,6 +21,19 @@ interface CartState {
     getItemCount: () => number;
 }
 
+const isPersistableCartItem = (item: CartItem) => {
+    if (item.type === 'product') return true;
+    return Boolean(item.fileUrl);
+};
+
+const sanitizePersistedCart = (cart: unknown): CartItem[] => {
+    if (!Array.isArray(cart)) return [];
+    return cart.filter((item): item is CartItem => {
+        if (!item || typeof item !== 'object') return false;
+        return isPersistableCartItem(item as CartItem);
+    });
+};
+
 export const useCartStore = create<CartState>()(
     persist(
         (set, get) => ({
@@ -28,33 +42,17 @@ export const useCartStore = create<CartState>()(
 
             addToCartPrint: (files, options, pricing) => {
                 const newItems: CartItem[] = files.map(f => {
-                    // Calculate price for a SINGLE copy of this file with these options
-                    // The quantity later multiplies this base price
-
-                    // We need to calculate the price for ONE unit (which might have options.copies built in? 
-                    // No, usually cart item quantity handles "number of identical jobs". 
-                    // But PrintOptions has "copies". 
-                    // Let's assume options.copies refers to "copies per set" inside the job, 
-                    // and cart.quantity refers to "number of these jobs".
-                    // However, standard e-commerce usually treats "quantity" as the multiplier.
-                    // For logic consistency: calculatePrintPrice includes the `options.copies`.
-                    // So we set cartItem.quantity to 1 initially.
-
-                    // Update: Logic check. If I want 5 copies of a doc, do I set options.copies=5 or item.quantity=5?
-                    // options.copies is specific to print settings (collated etc). 
-                    // Let's trust calculatePrintPrice to handle the total cost of the 'Job'.
-
                     const jobPrice = calculatePrintPrice(options, f.pageCount, pricing);
 
                     return {
-                        id: Math.random().toString(36).substr(2, 9),
+                        id: `print-${generateId()}`,
                         type: 'print',
                         name: f.file.name,
                         fileName: f.file.name,
                         price: jobPrice,
                         quantity: 1, // distinct from options.copies
                         file: f.file,
-                        options: options,
+                        options: { ...options },
                         pageCount: f.pageCount
                     };
                 });
@@ -136,7 +134,15 @@ export const useCartStore = create<CartState>()(
         {
             name: 'printly-cart-storage',
             storage: createJSONStorage(() => localStorage),
-            partialize: (state) => ({ cart: state.cart }), // Don't persist isCartOpen
+            version: 1,
+            partialize: (state) => ({ cart: state.cart.filter(isPersistableCartItem) }), // Don't persist isCartOpen or in-memory File objects
+            migrate: (persisted) => {
+                const state = persisted as Partial<CartState>;
+                return {
+                    ...state,
+                    cart: sanitizePersistedCart(state.cart),
+                };
+            },
         }
     )
 );

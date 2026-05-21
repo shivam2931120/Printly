@@ -11,6 +11,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit --pretty false",
+    "test": "npm run test:pricing && npm run test:local-agent",
+    "test:pricing": "tsx test/pricing.test.ts",
     "test:local-agent": "npm test --prefix local-agent"
   },
   "dependencies": {

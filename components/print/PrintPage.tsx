@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Check, Clock, FileText, MapPin, ReceiptText, Store } from 'lucide-react';
 import { toast } from 'sonner';
 import { PricingConfig, PrintOptions, ShopConfig, User } from '../../types';
-import { calculatePrintPrice } from '../../lib/pricing';
+import { calculatePrintJobsBreakdown } from '../../lib/pricing';
 import { useCartStore } from '../../store/useCartStore';
 import { useOrderStore } from '../../store/useOrderStore';
 import { useShopStore } from '../../store/useShopStore';
@@ -59,11 +59,10 @@ export const PrintPage: React.FC<PrintPageProps> = ({ currentUser, onSignInClick
 
     // Recalculate price
     useEffect(() => {
-        let total = 0;
-        files.filter((f) => !f.error).forEach((f) => {
-            total += calculatePrintPrice(options, f.pageCount, pricing);
-        });
-        setTotalPrice(total);
+        const pageCounts = files
+            .filter((file) => !file.error && file.pageCount > 0)
+            .map((file) => file.pageCount);
+        setTotalPrice(calculatePrintJobsBreakdown(options, pageCounts, pricing).total);
     }, [files, options, pricing]);
 
     // File handlers
@@ -130,7 +129,10 @@ export const PrintPage: React.FC<PrintPageProps> = ({ currentUser, onSignInClick
     };
 
     const readyFiles = files.filter((f) => !f.error);
-    const totalPages = readyFiles.reduce((s, f) => s + f.pageCount, 0) || 1;
+    const readyPageCounts = readyFiles
+        .filter((file) => file.pageCount > 0)
+        .map((file) => file.pageCount);
+    const totalPages = readyPageCounts.reduce((s, pageCount) => s + pageCount, 0) || 1;
     const isDisabled = files.length === 0 || files.some((f) => f.pageCount <= 0 || Boolean(f.error));
     const previewItem = files.find((file) => file.id === previewFileId) || null;
     const lastFile = files[files.length - 1] || null;
@@ -259,6 +261,7 @@ export const PrintPage: React.FC<PrintPageProps> = ({ currentUser, onSignInClick
                         options={options}
                         onChange={setOptions}
                         pageCount={totalPages}
+                        pageCounts={readyPageCounts}
                         pricing={pricing}
                     />
                 </div>
@@ -268,6 +271,7 @@ export const PrintPage: React.FC<PrintPageProps> = ({ currentUser, onSignInClick
                     <SummaryCard
                         options={options}
                         pageCount={totalPages}
+                        pageCounts={readyPageCounts}
                         totalPrice={totalPrice}
                         fileCount={files.length}
                         hasFiles={files.length > 0 && !isDisabled}
@@ -326,6 +330,7 @@ export const PrintPage: React.FC<PrintPageProps> = ({ currentUser, onSignInClick
                             onChange={setOptions}
                             totalPrice={totalPrice}
                             pageCount={totalPages}
+                            pageCounts={readyPageCounts}
                             onNext={() => setStep(2)}
                             pricing={pricing}
                         />

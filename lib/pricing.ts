@@ -2,62 +2,6 @@ import { PricingConfig, PrintOptions, CartItem } from '../types';
 import { getSelectedPageCount } from './pageRanges';
 
 /**
- * Calculates the price for a single print job based on options and configuration.
- */
-export const calculatePrintPrice = (
-    options: PrintOptions,
-    pageCount: number,
-    config: PricingConfig
-): number => {
-    let total = 0;
-    const billablePageCount = getSelectedPageCount(options.pageRangeText, pageCount);
-
-    // 1. Base Copy Price (Black & White vs Color)
-    const baseRate = options.colorMode === 'color' ? config.perPageColor : config.perPageBW;
-    let pageCost = baseRate * billablePageCount;
-
-    // 2. Double-Sided Discount
-    // If double-sided, we might apply a discount per sheet (2 pages) or per page.
-    // The config has `doubleSidedDiscount` which implies a per-page reduction.
-    if (options.sides === 'double') {
-        pageCost -= (config.doubleSidedDiscount * billablePageCount);
-    }
-
-    // Ensure we don't go below zero
-    pageCost = Math.max(0, pageCost);
-
-    // 3. Paper Size Multiplier
-    const sizeMultiplier = config.paperSizeMultiplier[options.paperSize] || 1;
-    pageCost *= sizeMultiplier;
-
-    // 4. Paper Type Fees (Per Page)
-    const paperTypeFee = config.paperTypeFees[options.paperType] || 0;
-    pageCost += (paperTypeFee * billablePageCount);
-
-    total += pageCost;
-
-    // 5. Binding Fees (Flat fee per document)
-    const bindingFee = config.bindingPrices[options.binding] || 0;
-    total += bindingFee;
-
-    // 6. Hole Punch Fee (Flat fee per document)
-    if (options.holePunch) {
-        total += config.holePunchPrice;
-    }
-
-    // 7. Cover Page Fee
-    if (options.coverPage !== 'none') {
-        const covers = options.coverPage === 'front_back' ? 2 : 1;
-        total += (config.coverPagePrice * covers);
-    }
-
-    // 8. Multiply by Copies
-    total *= options.copies;
-
-    return total;
-};
-
-/**
  * Returns a line-by-line cost breakdown for a single print job.
  */
 export interface PriceBreakdownLine {
@@ -66,13 +10,37 @@ export interface PriceBreakdownLine {
     detail?: string;
 }
 
-export const calculatePriceBreakdown = (
+export interface PriceBreakdown {
+    lines: PriceBreakdownLine[];
+    total: number;
+    billablePageCount: number;
+    jobCount: number;
+}
+
+const titleCase = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
+
+/**
+ * Returns a line-by-line cost breakdown for one or more print jobs using the
+ * same options. Flat finishing charges are applied once per uploaded file.
+ */
+export const calculatePrintJobsBreakdown = (
     options: PrintOptions,
-    pageCount: number,
+    pageCounts: number[],
     config: PricingConfig
-): { lines: PriceBreakdownLine[]; total: number } => {
+): PriceBreakdown => {
+    const validPageCounts = pageCounts.filter((pageCount) => pageCount > 0);
+    const jobCount = validPageCounts.length;
+    const billablePageCount = validPageCounts.reduce(
+        (sum, pageCount) => sum + getSelectedPageCount(options.pageRangeText, pageCount),
+        0
+    );
     const lines: PriceBreakdownLine[] = [];
-    const billablePageCount = getSelectedPageCount(options.pageRangeText, pageCount);
+
+    if (jobCount === 0 || billablePageCount === 0) {
+        return { lines, total: 0, billablePageCount: 0, jobCount: 0 };
+    }
+
+    const fileDetail = jobCount > 1 ? `${jobCount} files` : undefined;
 
     // 1. Base print cost
     const baseRate = options.colorMode === 'color' ? config.perPageColor : config.perPageBW;
@@ -80,57 +48,107 @@ export const calculatePriceBreakdown = (
     lines.push({
         label: options.colorMode === 'color' ? 'Color printing' : 'B&W printing',
         amount: baseCost,
-        detail: `${billablePageCount} pg × ₹${baseRate}`,
+        detail: `${billablePageCount} pg x Rs ${baseRate}`,
     });
 
-    // 2. Double-sided discount
-    if (options.sides === 'double' && config.doubleSidedDiscount > 0) {
-        const discount = -(config.doubleSidedDiscount * billablePageCount);
-        lines.push({ label: 'Double-sided discount', amount: discount, detail: `-₹${config.doubleSidedDiscount}/pg` });
+    // 2. Double-sided discount, capped so page cost never goes below zero
+    const rawDiscount = options.sides === 'double'
+        ? config.doubleSidedDiscount * billablePageCount
+        : 0;
+    const discount = Math.min(rawDiscount, baseCost);
+    if (discount > 0) {
+        lines.push({
+            label: 'Double-sided discount',
+            amount: -discount,
+            detail: `-Rs ${config.doubleSidedDiscount}/pg`,
+        });
     }
 
+    const discountedPageCost = Math.max(0, baseCost - discount);
+
     // 3. Paper size surcharge
-    const sizeMulti = config.paperSizeMultiplier[options.paperSize] || 1;
-    if (sizeMulti !== 1) {
-        const pageCostSoFar = lines.reduce((s, l) => s + l.amount, 0);
-        const surcharge = pageCostSoFar * (sizeMulti - 1);
-        lines.push({ label: `${options.paperSize.toUpperCase()} paper`, amount: surcharge, detail: `×${sizeMulti}` });
+    const sizeMultiplier = config.paperSizeMultiplier[options.paperSize] || 1;
+    if (sizeMultiplier !== 1) {
+        lines.push({
+            label: `${options.paperSize.toUpperCase()} paper`,
+            amount: discountedPageCost * (sizeMultiplier - 1),
+            detail: `x${sizeMultiplier}`,
+        });
     }
 
     // 4. Paper type fee
     const paperFee = config.paperTypeFees[options.paperType] || 0;
     if (paperFee > 0) {
-        lines.push({ label: `${options.paperType.charAt(0).toUpperCase() + options.paperType.slice(1)} paper`, amount: paperFee * billablePageCount, detail: `${billablePageCount} pg × ₹${paperFee}` });
+        lines.push({
+            label: `${titleCase(options.paperType)} paper`,
+            amount: paperFee * billablePageCount,
+            detail: `${billablePageCount} pg x Rs ${paperFee}`,
+        });
     }
 
     // 5. Binding
-    const bindFee = config.bindingPrices[options.binding] || 0;
-    if (bindFee > 0) {
-        lines.push({ label: `${options.binding.charAt(0).toUpperCase() + options.binding.slice(1)} binding`, amount: bindFee });
+    const bindingFee = config.bindingPrices[options.binding] || 0;
+    if (bindingFee > 0) {
+        lines.push({
+            label: `${titleCase(options.binding)} binding`,
+            amount: bindingFee * jobCount,
+            detail: jobCount > 1 ? `${jobCount} files x Rs ${bindingFee}` : undefined,
+        });
     }
 
     // 6. Hole punch
     if (options.holePunch && config.holePunchPrice > 0) {
-        lines.push({ label: 'Hole punch', amount: config.holePunchPrice });
+        lines.push({
+            label: 'Hole punch',
+            amount: config.holePunchPrice * jobCount,
+            detail: fileDetail,
+        });
     }
 
-    // 8. Cover page
-    if (options.coverPage !== 'none') {
+    // 7. Cover page
+    if (options.coverPage !== 'none' && config.coverPagePrice > 0) {
         const covers = options.coverPage === 'front_back' ? 2 : 1;
-        lines.push({ label: `Cover page (${options.coverPage.replace('_', '+')})`, amount: config.coverPagePrice * covers });
+        const coverCount = covers * jobCount;
+        lines.push({
+            label: `Cover page (${options.coverPage.replace('_', '+')})`,
+            amount: config.coverPagePrice * coverCount,
+            detail: coverCount > 1 ? `${coverCount} covers x Rs ${config.coverPagePrice}` : undefined,
+        });
     }
 
     // Subtotal before copies
-    const subtotalPerCopy = lines.reduce((s, l) => s + l.amount, 0);
+    const subtotalPerCopy = lines.reduce((sum, line) => sum + line.amount, 0);
 
-    // 9. Copies
+    // 8. Copies
     if (options.copies > 1) {
-        lines.push({ label: `× ${options.copies} copies`, amount: subtotalPerCopy * (options.copies - 1) });
+        lines.push({
+            label: `x ${options.copies} copies`,
+            amount: subtotalPerCopy * (options.copies - 1),
+        });
     }
 
-    const total = Math.max(0, subtotalPerCopy * options.copies);
-    return { lines, total };
+    return {
+        lines,
+        total: Math.max(0, subtotalPerCopy * options.copies),
+        billablePageCount,
+        jobCount,
+    };
 };
+
+export const calculatePriceBreakdown = (
+    options: PrintOptions,
+    pageCount: number,
+    config: PricingConfig
+): PriceBreakdown => calculatePrintJobsBreakdown(options, [pageCount], config);
+
+/**
+ * Calculates the price for a single print job based on options and configuration.
+ */
+export const calculatePrintPrice = (
+    options: PrintOptions,
+    pageCount: number,
+    config: PricingConfig
+): number => calculatePriceBreakdown(options, pageCount, config).total;
 
 /**
  * Calculates the total functionality for the entire cart, including service fees.

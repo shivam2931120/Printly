@@ -8,11 +8,12 @@ import {
  X,
  Minus,
  Plus,
+ ChevronDown,
  ChevronRight,
  RotateCcw
 } from 'lucide-react';
 import { PrintOptions, PricingConfig } from '../../types';
-import { calculatePriceBreakdown } from '../../lib/pricing';
+import { calculatePrintJobsBreakdown } from '../../lib/pricing';
 import { cn } from '../../lib/utils';
 import { Button } from '../ui/Button';
 
@@ -21,6 +22,7 @@ interface SettingsStepProps {
  onChange: (opts: PrintOptions) => void;
  totalPrice: number;
  pageCount?: number;
+ pageCounts?: number[];
  onNext: () => void;
  pricing: PricingConfig;
 }
@@ -30,6 +32,7 @@ export const SettingsStep: React.FC<SettingsStepProps> = ({
  onChange,
  totalPrice,
  pageCount = 1,
+ pageCounts = [],
  onNext,
  pricing,
 }) => {
@@ -49,8 +52,8 @@ export const SettingsStep: React.FC<SettingsStepProps> = ({
 
  // Live cost breakdown
  const breakdown = useMemo(
- () => calculatePriceBreakdown(options, pageCount, pricing),
- [options, pageCount, pricing]
+ () => calculatePrintJobsBreakdown(options, pageCounts.length > 0 ? pageCounts : [pageCount], pricing),
+ [options, pageCount, pageCounts, pricing]
  );
 
  // Price delta helpers
@@ -60,10 +63,6 @@ export const SettingsStep: React.FC<SettingsStepProps> = ({
  spiral: pricing.bindingPrices.spiral,
  soft: pricing.bindingPrices.soft,
  hard: pricing.bindingPrices.hard,
- };
- const deltaLabel = (amount: number) => {
- if (amount === 0) return null;
- return amount > 0 ? `+₹${amount}` : `-₹${Math.abs(amount)}`;
  };
 
  const pill = (selected: boolean) => cn(
@@ -125,6 +124,43 @@ export const SettingsStep: React.FC<SettingsStepProps> = ({
 
  <div className="border-t border-border/[0.06]" />
 
+ {/* Paper */}
+ <div className="space-y-3">
+ <div className="flex items-center justify-between gap-3">
+ <span className="text-[10px] font-black text-foreground-muted uppercase tracking-widest">Paper Size</span>
+ <div className="relative min-w-[160px]">
+ <select
+ value={options.paperSize}
+ onChange={(event) => updateOption('paperSize', event.target.value as PrintOptions['paperSize'])}
+ className="w-full appearance-none bg-background-subtle border border-border px-3 py-2 pr-8 text-xs font-bold text-foreground outline-none focus:border-primary"
+ >
+ <option value="a4">A4</option>
+ <option value="a3">A3</option>
+ <option value="letter">Letter</option>
+ <option value="legal">Legal</option>
+ </select>
+ <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-foreground-muted pointer-events-none" />
+ </div>
+ </div>
+ <div className="flex items-center justify-between gap-3">
+ <span className="text-[10px] font-black text-foreground-muted uppercase tracking-widest">Paper Type</span>
+ <div className="relative min-w-[160px]">
+ <select
+ value={options.paperType}
+ onChange={(event) => updateOption('paperType', event.target.value as PrintOptions['paperType'])}
+ className="w-full appearance-none bg-background-subtle border border-border px-3 py-2 pr-8 text-xs font-bold text-foreground outline-none focus:border-primary"
+ >
+ <option value="normal">Normal</option>
+ <option value="bond">Bond (+₹{pricing.paperTypeFees.bond}/pg)</option>
+ <option value="glossy">Glossy (+₹{pricing.paperTypeFees.glossy}/pg)</option>
+ </select>
+ <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-foreground-muted pointer-events-none" />
+ </div>
+ </div>
+ </div>
+
+ <div className="border-t border-border/[0.06]" />
+
  {/* Binding */}
  <div className="flex items-center justify-between" role="group" aria-label="Binding type">
  <span className="text-[10px] font-black text-foreground-muted uppercase tracking-widest">Binding</span>
@@ -153,6 +189,46 @@ export const SettingsStep: React.FC<SettingsStepProps> = ({
  </button>
  );
  })}
+ </div>
+ </div>
+
+ <div className="border-t border-border/[0.06]" />
+
+ {/* Finishing */}
+ <div className="flex items-center justify-between" role="group" aria-label="Finishing options">
+ <span className="text-[10px] font-black text-foreground-muted uppercase tracking-widest">Finishing</span>
+ <div className="flex gap-1.5 flex-wrap justify-end">
+ <button
+ onClick={() => updateOption('holePunch', !options.holePunch)}
+ className={pill(options.holePunch)}
+ aria-pressed={options.holePunch}
+ >
+ <FileIcon size={12} />
+ <span>Punch</span>
+ {!options.holePunch && pricing.holePunchPrice > 0 && (
+ <span className="text-[9px] text-amber-400 font-bold">+₹{pricing.holePunchPrice}</span>
+ )}
+ {options.holePunch && <Check size={10} />}
+ </button>
+ {([
+ { id: 'none', label: 'No Cover', price: 0 },
+ { id: 'front', label: 'Front', price: pricing.coverPagePrice },
+ { id: 'front_back', label: 'Both', price: pricing.coverPagePrice * 2 },
+ ] as const).map((cover) => (
+ <button
+ key={cover.id}
+ onClick={() => updateOption('coverPage', cover.id as PrintOptions['coverPage'])}
+ className={pill(options.coverPage === cover.id)}
+ aria-pressed={options.coverPage === cover.id}
+ >
+ {cover.id === 'none' ? <X size={12} /> : <Book size={12} />}
+ <span>{cover.label}</span>
+ {cover.price > 0 && options.coverPage !== cover.id && (
+ <span className="text-[9px] text-amber-400 font-bold">+₹{cover.price}</span>
+ )}
+ {options.coverPage === cover.id && <Check size={10} />}
+ </button>
+ ))}
  </div>
  </div>
 

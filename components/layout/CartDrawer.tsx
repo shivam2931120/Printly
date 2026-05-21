@@ -24,9 +24,10 @@ import { useNotificationStore } from '../../store/useNotificationStore';
 import { toast } from 'sonner';
 import { Button } from '../ui/Button';
 import { cn } from '../../lib/utils';
-import { CartItem, Order } from '../../types';
+import { CartItem, Order, PricingConfig } from '../../types';
 import { RateLimits } from '../../lib/rateLimiter';
 import { generateId } from '../../lib/utils';
+import { calculateCartTotal } from '../../lib/pricing';
 
 import { OrderConfirmation } from '../user/OrderConfirmation';
 
@@ -162,7 +163,11 @@ const verifyRazorpayPayment = async (
     return body as { success: true; orderId: string; alreadyPaid?: boolean };
 };
 
-export const CartDrawer: React.FC = () => {
+interface CartDrawerProps {
+    pricing: PricingConfig;
+}
+
+export const CartDrawer: React.FC<CartDrawerProps> = ({ pricing }) => {
     const { user } = useAuth();
     const { getAuthenticatedClient } = useClerkSupabase();
     const navigate = useNavigate();
@@ -172,13 +177,14 @@ export const CartDrawer: React.FC = () => {
         toggleCart,
         removeFromCart,
         updateQuantity,
-        getCartTotal,
         clearCart
     } = useCartStore();
     const { addOrder } = useOrderStore();
     const selectedShopId = useShopStore((state) => state.selectedShopId);
 
-    const cartTotal = getCartTotal();
+    const cartSummary = React.useMemo(() => calculateCartTotal(cart, pricing), [cart, pricing]);
+    const cartSubtotal = cartSummary.subtotal;
+    const checkoutTotal = cartSummary.total;
 
     // State for upload progress
     const [uploadProgress, setUploadProgress] = React.useState(0);
@@ -189,7 +195,7 @@ export const CartDrawer: React.FC = () => {
     const blockingIssues = React.useMemo(() => cartIssues.filter((issue) => issue.severity === 'error'), [cartIssues]);
 
     const handlePayment = useCallback(async () => {
-        if (cart.length === 0 || cartTotal <= 0) {
+        if (cart.length === 0 || checkoutTotal <= 0) {
             toast.error('Your cart is empty.');
             return;
         }
@@ -278,7 +284,7 @@ export const CartDrawer: React.FC = () => {
             return;
         }
 
-        const totalAmount = parseFloat((cartTotal * 1.05).toFixed(2));
+        const totalAmount = parseFloat(checkoutTotal.toFixed(2));
         const now = new Date();
         const pendingOrder: Order = {
             id: generateId(),
@@ -406,7 +412,7 @@ export const CartDrawer: React.FC = () => {
             setIsProcessing(false);
         });
         paymentObject.open();
-    }, [cartTotal, clearCart, toggleCart, addOrder, cart, user, navigate, getAuthenticatedClient, selectedShopId, blockingIssues]);
+    }, [checkoutTotal, clearCart, toggleCart, addOrder, cart, user, navigate, getAuthenticatedClient, selectedShopId, blockingIssues]);
 
     if (!isCartOpen) return null;
 
@@ -588,15 +594,17 @@ export const CartDrawer: React.FC = () => {
                         <div className="space-y-4 mb-6">
                             <div className="flex justify-between text-sm text-foreground-muted">
                                 <span>Subtotal</span>
-                                <span>₹{cartTotal.toFixed(2)}</span>
+                                <span>₹{cartSubtotal.toFixed(2)}</span>
                             </div>
-                            <div className="flex justify-between text-sm text-foreground-muted">
-                                <span>Tax (5%)</span>
-                                <span>₹{(cartTotal * 0.05).toFixed(2)}</span>
-                            </div>
+                            {cartSummary.serviceFee > 0 && (
+                                <div className="flex justify-between text-sm text-foreground-muted">
+                                    <span>Service fee</span>
+                                    <span>₹{cartSummary.serviceFee.toFixed(2)}</span>
+                                </div>
+                            )}
                             <div className="flex justify-between items-end pt-4 border-t border-border">
                                 <span className="text-foreground font-bold text-lg">Total</span>
-                                <span className="text-2xl font-bold text-primary">₹{(cartTotal * 1.05).toFixed(2)}</span>
+                                <span className="text-2xl font-bold text-primary">₹{checkoutTotal.toFixed(2)}</span>
                             </div>
                         </div>
 

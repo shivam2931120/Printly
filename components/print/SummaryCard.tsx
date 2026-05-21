@@ -2,12 +2,13 @@ import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { FileText, ShoppingCart } from 'lucide-react';
 import { PrintOptions, PricingConfig } from '../../types';
-import { calculatePriceBreakdown } from '../../lib/pricing';
+import { calculatePrintJobsBreakdown } from '../../lib/pricing';
 import { cn } from '../../lib/utils';
 
 interface SummaryCardProps {
  options: PrintOptions;
  pageCount: number;
+ pageCounts?: number[];
  totalPrice: number;
  fileCount: number;
  hasFiles: boolean;
@@ -47,6 +48,7 @@ const AnimatedPrice: React.FC<{ value: number }> = ({ value }) => {
 export const SummaryCard: React.FC<SummaryCardProps> = ({
  options,
  pageCount,
+ pageCounts = [],
  totalPrice,
  fileCount,
  hasFiles,
@@ -54,7 +56,10 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
  disabled,
  pricing,
 }) => {
- const breakdown = calculatePriceBreakdown(options, pageCount, pricing);
+ const breakdown = calculatePrintJobsBreakdown(options, pageCounts.length > 0 ? pageCounts : [pageCount], pricing);
+ const pageLabel = breakdown.billablePageCount > 0 && breakdown.billablePageCount !== pageCount
+ ? `${breakdown.billablePageCount} selected / ${pageCount} total`
+ : `${pageCount}`;
 
  return (
  <motion.div
@@ -77,7 +82,7 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
  </div>
  <div className="flex items-center justify-between text-sm">
  <span className="text-foreground-muted">Pages</span>
- <span className="text-foreground font-medium">{pageCount}</span>
+ <span className="text-foreground font-medium">{pageLabel}</span>
  </div>
  <div className="flex items-center justify-between text-sm">
  <span className="text-foreground-muted">Color</span>
@@ -99,6 +104,20 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
  <div className="flex items-center justify-between text-sm">
  <span className="text-foreground-muted">Binding</span>
  <span className="text-foreground font-medium capitalize">{options.binding}</span>
+ </div>
+ )}
+ {options.paperType !== 'normal' && (
+ <div className="flex items-center justify-between text-sm">
+ <span className="text-foreground-muted">Paper type</span>
+ <span className="text-foreground font-medium capitalize">{options.paperType}</span>
+ </div>
+ )}
+ {(options.holePunch || options.coverPage !== 'none') && (
+ <div className="flex items-center justify-between text-sm">
+ <span className="text-foreground-muted">Finishing</span>
+ <span className="text-foreground font-medium">
+ {[options.holePunch ? 'Hole punch' : '', options.coverPage !== 'none' ? options.coverPage.replace('_', ' + ') : ''].filter(Boolean).join(', ')}
+ </span>
  </div>
  )}
  </div>

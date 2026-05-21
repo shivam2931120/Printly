@@ -1,5 +1,11 @@
 import React, { useEffect } from 'react';
 
+declare global {
+ interface Window {
+ adsbygoogle?: unknown[];
+ }
+}
+
 interface AdBannerProps {
  dataAdSlot: string;
  dataAdFormat?: string;
@@ -16,8 +22,8 @@ export const AdBanner: React.FC<AdBannerProps> = ({
  useEffect(() => {
  if (!adClient || !dataAdSlot) return;
  try {
- // @ts-ignore
- (window.adsbygoogle = window.adsbygoogle || []).push({});
+ window.adsbygoogle = window.adsbygoogle || [];
+ window.adsbygoogle.push({});
  } catch (error) {
  console.error("AdSense error", error);
  }

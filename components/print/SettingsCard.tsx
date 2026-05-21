@@ -12,7 +12,7 @@ import {
  ChevronDown,
 } from 'lucide-react';
 import { PrintOptions, PricingConfig } from '../../types';
-import { calculatePriceBreakdown, PriceBreakdownLine } from '../../lib/pricing';
+import { calculatePrintJobsBreakdown } from '../../lib/pricing';
 import { OptionButton } from './OptionButton';
 import { cn } from '../../lib/utils';
 
@@ -20,6 +20,7 @@ interface SettingsCardProps {
  options: PrintOptions;
  onChange: (opts: PrintOptions) => void;
  pageCount: number;
+ pageCounts?: number[];
  pricing: PricingConfig;
 }
 
@@ -27,6 +28,7 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
  options,
  onChange,
  pageCount,
+ pageCounts = [],
  pricing,
 }) => {
 
@@ -54,8 +56,8 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
 
  // Live cost breakdown for the sidebar
  const breakdown = useMemo(
- () => calculatePriceBreakdown(options, pageCount, pricing),
- [options, pageCount, pricing],
+ () => calculatePrintJobsBreakdown(options, pageCounts.length > 0 ? pageCounts : [pageCount], pricing),
+ [options, pageCount, pageCounts, pricing],
  );
 
  return (
@@ -140,9 +142,26 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
  </select>
  <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground-muted pointer-events-none" />
  </div>
+	 </section>
+
+ {/* PAPER TYPE */}
+ <section>
+ <label className="text-[10px] font-bold text-foreground-muted uppercase tracking-widest mb-3 block">Paper Type</label>
+ <div className="relative">
+ <select
+ value={options.paperType}
+ onChange={(e) => update('paperType', e.target.value as PrintOptions['paperType'])}
+ className="w-full appearance-none px-4 py-3 bg-background-card border border-border rounded-2xl shadow-2xl text-foreground text-sm font-medium focus:outline-none focus:border-border transition-colors cursor-pointer"
+ >
+ <option value="normal">Normal paper</option>
+ <option value="bond">Bond paper (+₹{pricing.paperTypeFees.bond}/pg)</option>
+ <option value="glossy">Glossy paper (+₹{pricing.paperTypeFees.glossy}/pg)</option>
+ </select>
+ <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground-muted pointer-events-none" />
+ </div>
  </section>
 
- {/* COPIES */}
+	 {/* COPIES */}
  <section>
  <label className="text-[10px] font-bold text-foreground-muted uppercase tracking-widest mb-3 block">Copies</label>
  <div className="flex items-center gap-4">
@@ -200,8 +219,38 @@ export const SettingsCard: React.FC<SettingsCardProps> = ({
  />
  ))}
  </div>
- </section>
+	 </section>
+
+ {/* FINISHING */}
+ <section>
+ <label className="text-[10px] font-bold text-foreground-muted uppercase tracking-widest mb-3 block">Finishing</label>
+ <div className="grid grid-cols-2 gap-2">
+ <OptionButton
+ label="Hole Punch"
+ selected={options.holePunch}
+ onClick={() => update('holePunch', !options.holePunch)}
+ icon={<FileText size={14} />}
+ badge={pricing.holePunchPrice > 0 ? `+₹${pricing.holePunchPrice}` : undefined}
+ badgeColor="text-amber-400"
+ />
+ {([
+ { id: 'none', label: 'No Cover', price: 0 },
+ { id: 'front', label: 'Front Cover', price: pricing.coverPagePrice },
+ { id: 'front_back', label: 'Front + Back', price: pricing.coverPagePrice * 2 },
+ ] as const).map((cover) => (
+ <OptionButton
+ key={cover.id}
+ label={cover.label}
+ selected={options.coverPage === cover.id}
+ onClick={() => update('coverPage', cover.id as PrintOptions['coverPage'])}
+ icon={cover.id === 'none' ? <XIcon size={14} /> : <BookOpen size={14} />}
+ badge={cover.price > 0 ? `+₹${cover.price}` : undefined}
+ badgeColor="text-amber-400"
+ />
+ ))}
  </div>
+ </section>
+	 </div>
 
  {/* Desktop: Inline Cost Breakdown */}
  <div className="hidden lg:block mt-6 pt-6 border-t border-border/[0.06]">

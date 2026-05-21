@@ -1,3 +1,10 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import dotenv from "dotenv";
+
+const agentDir = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.join(agentDir, ".env"), quiet: true });
+
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 
 export const config = {
@@ -9,6 +16,7 @@ export const config = {
   POLL_INTERVAL_MS: parseInt(process.env.POLL_INTERVAL_MS || "5000", 10),
   BATCH_SIZE: parseInt(process.env.BATCH_SIZE || "20", 10),
   MAX_JOB_ATTEMPTS: parseInt(process.env.MAX_JOB_ATTEMPTS || "3", 10),
+  SHOP_ID: process.env.SHOP_ID || "",
 
   // Which order statuses trigger inventory deduction
   TRIGGER_STATUSES: ["CONFIRMED", "PRINTING"],

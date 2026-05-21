@@ -32,13 +32,27 @@ developer or admin users in the `User` table by assigning the `DEVELOPER` or
    npm run dev
    ```
 
-4. **Database Management**:
+4. **Quality checks**:
+   ```bash
+   npm run typecheck
+   npm test
+   npm run build
+   ```
+
+5. **Database Management**:
    - To update schema: `npx prisma db push`
    - To seed users: `npx prisma generate && npx tsx prisma/seed.ts`
 
-5. **Local Inventory Agent**:
+6. **Local Inventory Agent**:
    ```bash
    npm install --prefix local-agent
    npm start --prefix local-agent
    ```
    The agent polls confirmed/printing orders where `inventoryProcessed` is null or false, retries failed jobs up to `MAX_JOB_ATTEMPTS`, and marks inventory processing state on the `Order` row.
+   Set `SHOP_ID` in `local-agent/.env` to restrict one agent to one shop.
+
+## Pricing behavior
+
+Print job totals use the active shop pricing configuration. Per-order checkout
+totals add the configured `serviceFee` once per non-empty cart; they do not add a
+hardcoded tax percentage.

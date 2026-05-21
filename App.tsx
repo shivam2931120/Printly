@@ -209,7 +209,7 @@ const AppContent: React.FC = () => {
         </AnimatePresence>
       </Suspense>
 
-      <CartDrawer />
+      <CartDrawer pricing={pricing} />
     </div>
   );
 };
